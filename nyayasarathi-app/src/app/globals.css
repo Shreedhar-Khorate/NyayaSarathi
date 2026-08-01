@@ -1,0 +1,142 @@
+/* Fonts loaded via next/font/google in layout.tsx */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --obsidian: #0b0f17;
+  --slate: #111827;
+  --slate-raised: #161d2b;
+  --amber: #f59e0b;
+  --amber-deep: #d97706;
+  --indigo: #3730a3;
+  --cobalt: #1e3a8a;
+  --cream: #f9fafb;
+  --ash: #9ca3af;
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  background: var(--obsidian);
+  color: var(--cream);
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: clip;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-playfair), serif;
+}
+
+/* Faint film-grain overlay — sits above the ambient glow, below content */
+.grain-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Ambient radial glow field behind the hero */
+.ambient-field {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(45% 40% at 22% 20%, rgba(245, 158, 11, 0.14), transparent 70%),
+    radial-gradient(50% 45% at 82% 12%, rgba(30, 58, 138, 0.28), transparent 70%),
+    radial-gradient(60% 50% at 50% 100%, rgba(55, 48, 163, 0.22), transparent 70%);
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-raised {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 20px 60px -20px rgba(0, 0, 0, 0.6);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(120deg, #fcd34d 0%, #f59e0b 45%, #d97706 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hairline {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.shimmer-btn {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.7s ease;
+}
+.shimmer-btn:hover::after {
+  left: 150%;
+}
+
+.entity-underline {
+  text-decoration: none;
+  border-bottom: 1.5px solid;
+  padding-bottom: 1px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.entity-judge { border-color: #f59e0b; }
+.entity-judge:hover { background: rgba(245, 158, 11, 0.12); }
+.entity-section { border-color: #60a5fa; }
+.entity-section:hover { background: rgba(96, 165, 250, 0.12); }
+.entity-act { border-color: #a78bfa; }
+.entity-act:hover { background: rgba(167, 139, 250, 0.12); }
+.entity-date { border-color: #34d399; }
+.entity-date:hover { background: rgba(52, 211, 153, 0.12); }
+
+::selection {
+  background: rgba(245, 158, 11, 0.35);
+  color: #fff;
+}
+
+/* Custom scrollbar for the mock document reader */
+.doc-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.doc-scroll::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.25);
+  border-radius: 999px;
+}
+.doc-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
