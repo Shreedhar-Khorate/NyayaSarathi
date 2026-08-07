@@ -1,19 +1,18 @@
 import type { Metadata } from 'next';
-import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google';
+import { Space_Grotesk, Inter } from 'next/font/google';
 import './globals.css';
 
-const playfair = Playfair_Display({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  style: ['normal', 'italic'],
-  variable: '--font-playfair',
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-display',
   display: 'swap',
 });
 
-const jakarta = Plus_Jakarta_Sans({
+const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-jakarta',
+  variable: '--font-body',
   display: 'swap',
 });
 
@@ -27,7 +26,7 @@ import SmoothScroll from '@/components/layout/SmoothScroll';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${playfair.variable} ${jakarta.variable}`}>
+    <html lang="en" className={`dark ${spaceGrotesk.variable} ${inter.variable}`}>
       <body className="bg-obsidian text-cream antialiased">
         <SmoothScroll>{children}</SmoothScroll>
       </body>

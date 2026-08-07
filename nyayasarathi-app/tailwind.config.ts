@@ -22,8 +22,8 @@ const config: Config = {
         ash: '#9CA3AF',
       },
       fontFamily: {
-        display: ['var(--font-playfair)', 'serif'],
-        sans: ['var(--font-jakarta)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-body)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         gold: '0 0 40px -8px rgba(245, 158, 11, 0.35)',

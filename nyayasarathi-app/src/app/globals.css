@@ -23,7 +23,7 @@ html,
 body {
   background: var(--obsidian);
   color: var(--cream);
-  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   overflow-x: clip;
 }
 
@@ -32,7 +32,8 @@ h2,
 h3,
 h4,
 .font-display {
-  font-family: var(--font-playfair), serif;
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 /* Faint film-grain overlay — sits above the ambient glow, below content */
