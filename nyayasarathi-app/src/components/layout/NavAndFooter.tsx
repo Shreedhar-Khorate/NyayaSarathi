@@ -5,9 +5,9 @@ import { motion } from 'framer-motion';
 import { Scale } from 'lucide-react';
 
 const NAV_LINKS = [
-  { href: '#pipeline', label: 'How it works' },
-  { href: '#capabilities', label: 'Capabilities' },
-  { href: '#workspace', label: 'Workspace' },
+  { href: '#pipeline',      label: 'How it works' },
+  { href: '#capabilities',  label: 'Capabilities' },
+  { href: '#workspace',     label: 'Workspace' },
 ];
 
 export function Navbar() {
@@ -23,34 +23,41 @@ export function Navbar() {
     <motion.header
       initial={{ y: -30, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
-        scrolled ? 'border-b hairline bg-obsidian/80 backdrop-blur-md' : 'bg-transparent'
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'border-b border-[#3B3A33] bg-[#151716]/92 backdrop-blur-md'
+          : 'bg-transparent'
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber/15">
-            <Scale className="h-4 w-4 text-amber" strokeWidth={2} />
-          </div>
-          <span className="font-display text-lg font-semibold tracking-wide text-cream">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <Scale
+            className="h-5 w-5 text-[#B59A68]"
+            strokeWidth={1.4}
+          />
+          <span className="font-display text-xl font-semibold tracking-wide text-ivory"
+            style={{ letterSpacing: '0.04em' }}>
             NyayaSarathi
           </span>
         </div>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        {/* Nav links */}
+        <nav className="hidden items-center gap-9 md:flex">
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="font-sans text-sm text-ash transition-colors duration-200 hover:text-cream"
+              className="font-sans text-sm font-medium text-stone transition-colors duration-200 hover:text-ivory"
             >
               {link.label}
             </a>
           ))}
         </nav>
 
-        <button className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 font-sans text-sm font-medium text-cream backdrop-blur-sm transition-colors hover:border-amber/30 hover:bg-amber/10">
+        {/* CTA */}
+        <button className="btn-oxblood rounded px-5 py-2 font-sans text-sm font-semibold tracking-wide">
           Sign In
         </button>
       </div>
@@ -60,19 +67,30 @@ export function Navbar() {
 
 export function Footer() {
   return (
-    <footer className="relative border-t hairline py-14">
-      <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-6 md:flex-row md:items-center">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber/15">
-            <Scale className="h-3.5 w-3.5 text-amber" strokeWidth={2} />
+    <footer className="relative border-t border-[#3B3A33] py-16 bg-[#151716]">
+      <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-10 px-6 md:flex-row md:items-center">
+        {/* Brand */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <Scale className="h-4 w-4 text-[#B59A68]" strokeWidth={1.4} />
+            <span className="font-display text-lg font-semibold text-ivory">NyayaSarathi</span>
           </div>
-          <span className="font-display text-base font-semibold text-cream">NyayaSarathi</span>
+          <p className="font-legal italic text-sm text-stone/70 mt-1">
+            &ldquo;Fiat justitia ruat caelum.&rdquo;
+          </p>
         </div>
-        <p className="max-w-md text-xs leading-relaxed text-ash">
-          Built for legal researchers, judicial clerks, and chambers who need answers that hold up
-          under cross-examination. Every citation is verifiable, every source is shown.
+
+        {/* Descriptor */}
+        <p className="max-w-sm font-sans text-xs leading-relaxed text-stone">
+          Built for legal researchers, judicial clerks, and chambers who need
+          answers that hold up under cross-examination. Every citation is
+          verifiable, every source is shown.
         </p>
-        <p className="font-sans text-xs text-ash">&copy; {new Date().getFullYear()} NyayaSarathi</p>
+
+        {/* Copyright */}
+        <p className="font-sans text-xs text-stone/50">
+          &copy; {new Date().getFullYear()} NyayaSarathi
+        </p>
       </div>
     </footer>
   );

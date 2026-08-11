@@ -1,18 +1,30 @@
 import type { Metadata } from 'next';
-import { Space_Grotesk, Inter } from 'next/font/google';
+import { Cormorant_Garamond, Manrope, Source_Serif_4 } from 'next/font/google';
 import './globals.css';
 
-const spaceGrotesk = Space_Grotesk({
+// ── Cormorant Garamond — display / editorial headings ─────────────────────
+const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
   variable: '--font-display',
   display: 'swap',
 });
 
-const inter = Inter({
+// ── Manrope — UI, navigation, labels, body copy ───────────────────────────
+const manrope = Manrope({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
+  weight: ['300', '400', '500', '600', '700'],
   variable: '--font-body',
+  display: 'swap',
+});
+
+// ── Source Serif 4 — legal documents, quotations, excerpts ────────────────
+const sourceSerif = Source_Serif_4({
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  style: ['normal', 'italic'],
+  variable: '--font-legal',
   display: 'swap',
 });
 
@@ -26,8 +38,11 @@ import SmoothScroll from '@/components/layout/SmoothScroll';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${spaceGrotesk.variable} ${inter.variable}`}>
-      <body className="bg-obsidian text-cream antialiased">
+    <html
+      lang="en"
+      className={`${cormorant.variable} ${manrope.variable} ${sourceSerif.variable}`}
+    >
+      <body className="bg-ink text-ivory antialiased">
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>

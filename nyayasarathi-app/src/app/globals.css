@@ -3,16 +3,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ────────────────────────────────────────────────────────────
+   Neo-Classical Legal Palette — Ink, Oxblood & Vellum
+   ──────────────────────────────────────────────────────────── */
 :root {
-  --obsidian: #0b0f17;
-  --slate: #111827;
-  --slate-raised: #161d2b;
-  --amber: #f59e0b;
-  --amber-deep: #d97706;
-  --indigo: #3730a3;
-  --cobalt: #1e3a8a;
-  --cream: #f9fafb;
-  --ash: #9ca3af;
+  --ink:        #151716;
+  --charcoal:   #1D211F;
+  --olive:      #242925;
+  --oxblood:    #6E2634;
+  --oxblood-l:  #8A3545;
+  --verdigris:  #71877A;
+  --brass:      #B59A68;
+  --vellum:     #F2EBDD;
+  --vellum-dk:  #DED5C4;
+  --ivory:      #F4EFE5;
+  --stone:      #A9A49A;
+  --border:     #3B3A33;
+
+  /* Legacy aliases so BackgroundVideo & other components don't break */
+  --obsidian:   #151716;
+  --amber:      #B59A68;
 }
 
 * {
@@ -21,8 +31,8 @@
 
 html,
 body {
-  background: var(--obsidian);
-  color: var(--cream);
+  background: var(--ink);
+  color: var(--ivory);
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   overflow-x: clip;
 }
@@ -32,74 +42,91 @@ h2,
 h3,
 h4,
 .font-display {
-  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.01em;
 }
 
-/* Faint film-grain overlay — sits above the ambient glow, below content */
+/* ── Document / legal text surface ───────────────────────── */
+.font-legal {
+  font-family: var(--font-legal), Georgia, serif;
+}
+
+/* ── Subtle linen/parchment grain overlay ────────────────── */
 .grain-overlay {
   pointer-events: none;
   position: fixed;
   inset: 0;
   z-index: 2;
-  opacity: 0.045;
+  opacity: 0.035;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* Ambient radial glow field behind the hero */
-.ambient-field {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(45% 40% at 22% 20%, rgba(245, 158, 11, 0.14), transparent 70%),
-    radial-gradient(50% 45% at 82% 12%, rgba(30, 58, 138, 0.28), transparent 70%),
-    radial-gradient(60% 50% at 50% 100%, rgba(55, 48, 163, 0.22), transparent 70%);
+/* ── Dark ink panel (main application surfaces) ──────────── */
+.ink-panel {
+  background: var(--charcoal);
+  border: 1px solid var(--border);
 }
 
-.glass-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
-  backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.ink-raised {
+  background: var(--olive);
+  border: 1px solid var(--border);
 }
 
-.glass-panel-raised {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
-  backdrop-filter: blur(22px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 20px 60px -20px rgba(0, 0, 0, 0.6);
+/* ── Warm vellum document surface ────────────────────────── */
+.document-card {
+  background: var(--vellum);
+  border: 1px solid var(--vellum-dk);
+  color: var(--ink);
 }
 
-.text-gradient-gold {
-  background: linear-gradient(120deg, #fcd34d 0%, #f59e0b 45%, #d97706 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
+/* ── Subtle section divider ──────────────────────────────── */
 .hairline {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--border);
 }
 
-.shimmer-btn {
+/* ── Brass text accent (citations, numbers) ──────────────── */
+.text-brass {
+  color: var(--brass);
+}
+
+/* ── Verdigris verified badge ────────────────────────────── */
+.verdigris-badge {
+  background: rgba(113, 135, 122, 0.1);
+  border: 1px solid rgba(113, 135, 122, 0.35);
+  color: var(--verdigris);
+}
+
+/* ── Oxblood primary button ──────────────────────────────── */
+.btn-oxblood {
   position: relative;
   overflow: hidden;
+  background: var(--oxblood);
+  color: var(--ivory);
+  transition: background 0.25s ease, transform 0.2s ease;
 }
-.shimmer-btn::after {
+.btn-oxblood:hover {
+  background: var(--oxblood-l);
+  transform: translateY(-1px);
+}
+
+/* Subtle shimmer on hover for primary button */
+.btn-oxblood::after {
   content: '';
   position: absolute;
   top: 0;
   left: -150%;
   width: 60%;
   height: 100%;
-  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.12), transparent);
   transform: skewX(-20deg);
-  transition: left 0.7s ease;
+  transition: left 0.6s ease;
 }
-.shimmer-btn:hover::after {
+.btn-oxblood:hover::after {
   left: 150%;
 }
 
+/* ── Entity underlines in legal documents ────────────────── */
 .entity-underline {
   text-decoration: none;
   border-bottom: 1.5px solid;
@@ -107,30 +134,93 @@ h4,
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-.entity-judge { border-color: #f59e0b; }
-.entity-judge:hover { background: rgba(245, 158, 11, 0.12); }
-.entity-section { border-color: #60a5fa; }
-.entity-section:hover { background: rgba(96, 165, 250, 0.12); }
-.entity-act { border-color: #a78bfa; }
-.entity-act:hover { background: rgba(167, 139, 250, 0.12); }
-.entity-date { border-color: #34d399; }
-.entity-date:hover { background: rgba(52, 211, 153, 0.12); }
+.entity-judge   { border-color: var(--brass); }
+.entity-judge:hover  { background: rgba(181, 154, 104, 0.15); }
+.entity-section { border-color: var(--verdigris); }
+.entity-section:hover { background: rgba(113, 135, 122, 0.12); }
+.entity-act     { border-color: var(--oxblood-l); }
+.entity-act:hover    { background: rgba(138, 53, 69, 0.12); }
+.entity-date    { border-color: var(--stone); }
+.entity-date:hover   { background: rgba(169, 164, 154, 0.12); }
 
+/* ── Text selection ──────────────────────────────────────── */
 ::selection {
-  background: rgba(245, 158, 11, 0.35);
-  color: #fff;
+  background: rgba(110, 38, 52, 0.35);
+  color: var(--ivory);
 }
 
-/* Custom scrollbar for the mock document reader */
+/* ── Custom scrollbar for document reader ────────────────── */
 .doc-scroll::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 .doc-scroll::-webkit-scrollbar-thumb {
-  background: rgba(245, 158, 11, 0.25);
+  background: rgba(181, 154, 104, 0.3);
   border-radius: 999px;
 }
 .doc-scroll::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* ── Thin editorial left-border label ────────────────────── */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--brass);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--stone);
+}
+
+
+/* ── Stage Card — Border Beam animation ─────────────────────
+   Uses CSS @property to animate a custom angle property,
+   which drives a conic-gradient rotating around the border.
+   This is the GPU-friendliest approach (no JS, no repaints).
+   ──────────────────────────────────────────────────────────── */
+@property --beam-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.border-beam-track {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0%,
+    transparent 72%,
+    rgba(110, 38, 52, 0.55) 80%,
+    rgba(138, 53, 69, 0.75) 85%,
+    rgba(110, 38, 52, 0.55) 90%,
+    transparent 96%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam-spin 4.5s linear infinite;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.stage-card:hover .border-beam-track,
+.stage-card.beam-visible .border-beam-track {
+  opacity: 1;
+}
+
+@keyframes beam-spin {
+  to { --beam-angle: 360deg; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -141,3 +231,4 @@ h4,
     scroll-behavior: auto !important;
   }
 }
+

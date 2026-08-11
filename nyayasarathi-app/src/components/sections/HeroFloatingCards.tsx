@@ -9,10 +9,10 @@ interface FloatingCard {
   subtitle: string;
   content: string;
   icon: typeof FileText;
-  iconColor: string;
   meta: string;
   status: string;
-  statusColor: string;
+  statusClass: string;
+  iconClass: string;
   initialRotate: number;
 }
 
@@ -22,10 +22,10 @@ const floatingCardsData: FloatingCard[] = [
     subtitle: 'Forensic PDF Scan',
     content: 'CRIMINAL BRIEF: Discrepancies noted in digital signature timestamps on page 42.',
     icon: FileText,
-    iconColor: 'text-amber',
+    iconClass: 'text-[#B59A68]',
     meta: 'SECURED DEPOSIT',
     status: 'Ready to Map',
-    statusColor: 'text-amber bg-amber/10 border-amber/20',
+    statusClass: 'text-[#B59A68] bg-[#B59A68]/8 border-[#B59A68]/30',
     initialRotate: -8,
   },
   {
@@ -33,10 +33,10 @@ const floatingCardsData: FloatingCard[] = [
     subtitle: 'State of MH v. K. Shah (2022)',
     content: 'CRIMINAL LAW: Precedent governs admissibility of electronic records without certificate.',
     icon: Scale,
-    iconColor: 'text-emerald-400',
+    iconClass: 'text-[#71877A]',
     meta: 'BM25 INDEX',
     status: '98% Confident',
-    statusColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+    statusClass: 'text-[#71877A] bg-[#71877A]/8 border-[#71877A]/30',
     initialRotate: 6,
   },
   {
@@ -44,10 +44,10 @@ const floatingCardsData: FloatingCard[] = [
     subtitle: 'IPC Section 302',
     content: 'GROUND TRUTH: Verifying corpus mapping against Bharatiya Nyaya Sanhita equivalents.',
     icon: ShieldAlert,
-    iconColor: 'text-rose-400',
+    iconClass: 'text-[#8A3545]',
     meta: 'CROSS-VERIFICATION',
     status: 'Warning Checked',
-    statusColor: 'text-rose-400 bg-rose-400/10 border-rose-400/20',
+    statusClass: 'text-[#8A3545] bg-[#6E2634]/10 border-[#6E2634]/30',
     initialRotate: -5,
   },
   {
@@ -55,10 +55,10 @@ const floatingCardsData: FloatingCard[] = [
     subtitle: 'Paragraph 14 Analysis',
     content: 'RAG CONTEXT: Sentence boundaries extracted. NER matches Judge name "A.K. Sen".',
     icon: Database,
-    iconColor: 'text-indigo-400',
+    iconClass: 'text-stone',
     meta: 'PARAGRAPH CLASSIFIER',
     status: 'Segmented',
-    statusColor: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20',
+    statusClass: 'text-[#A9A49A] bg-[#A9A49A]/8 border-[#A9A49A]/25',
     initialRotate: 7,
   },
   {
@@ -66,10 +66,10 @@ const floatingCardsData: FloatingCard[] = [
     subtitle: 'Anticipatory Bail Scope',
     content: 'SEARCH: Filtered for offenses with jail terms below 7 years under Section 438.',
     icon: Search,
-    iconColor: 'text-sky-400',
+    iconClass: 'text-[#B59A68]',
     meta: 'VECTOR NEIGHBORS',
     status: 'Fitted',
-    statusColor: 'text-sky-400 bg-sky-400/10 border-sky-400/20',
+    statusClass: 'text-[#B59A68] bg-[#B59A68]/8 border-[#B59A68]/30',
     initialRotate: -6,
   },
   {
@@ -77,15 +77,13 @@ const floatingCardsData: FloatingCard[] = [
     subtitle: 'Final Decision Support',
     content: 'RAG GEN: Answer compiled from 4 cited paragraphs. 100% source-grounded.',
     icon: CheckCircle,
-    iconColor: 'text-teal-400',
+    iconClass: 'text-[#71877A]',
     meta: 'DECISION PIPELINE',
     status: 'Verified',
-    statusColor: 'text-teal-400 bg-teal-400/10 border-teal-400/20',
+    statusClass: 'text-[#71877A] bg-[#71877A]/8 border-[#71877A]/30',
     initialRotate: 5,
   },
 ];
-
-/* ─── Floating Card Item (Complies with Rules of Hooks) ─── */
 
 function FloatingCardItem({
   card,
@@ -100,49 +98,46 @@ function FloatingCardItem({
   const start = 0.05 + index * 0.08;
   const end = start + duration;
 
-  // Move only vertically and rotate to prevent horizontal card overlap/clashing
-  const y = useTransform(scrollYProgress, [start, end], [100, 0], { clamp: true });
-  const rotate = useTransform(scrollYProgress, [start, end], [card.initialRotate, 0], { clamp: true });
+  const y       = useTransform(scrollYProgress, [start, end], [100, 0],  { clamp: true });
+  const rotate  = useTransform(scrollYProgress, [start, end], [card.initialRotate, 0], { clamp: true });
   const opacity = useTransform(scrollYProgress, [start, start + duration * 0.4], [0, 1], { clamp: true });
-  const scale = useTransform(scrollYProgress, [start, end], [0.9, 1], { clamp: true });
+  const scale   = useTransform(scrollYProgress, [start, end], [0.92, 1], { clamp: true });
 
   const Icon = card.icon;
 
   return (
     <motion.div style={{ y, rotate, opacity, scale }} className="relative">
       <motion.div
-        whileHover={{
-          y: -10,
-        }}
-        className="glass-panel-raised flex flex-col justify-between rounded-2xl border border-white/5 bg-[#161d2b]/70 p-5 md:p-6 backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-300 hover:border-amber-500/40 hover:bg-[#161d2b]/95 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.2)] h-full"
+        whileHover={{ y: -8 }}
+        className="flex flex-col justify-between h-full rounded border border-[#3B3A33] bg-[#1D211F] p-5 md:p-6 transition-[border-color,background-color] duration-300 hover:border-[#8A3545]/40 hover:bg-[#242925]"
       >
         <div>
-          {/* Card Header */}
+          {/* Card header */}
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-white/5">
-                <Icon className={`h-5 w-5 ${card.iconColor}`} />
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-sm bg-[#151716]">
+                <Icon className={`h-4 w-4 ${card.iconClass}`} strokeWidth={1.5} />
               </div>
               <div>
-                <h4 className="font-semibold text-sm text-cream">{card.title}</h4>
-                <span className="text-[10px] text-ash font-sans">{card.subtitle}</span>
+                <h4 className="font-display text-sm font-semibold text-ivory">{card.title}</h4>
+                <span className="text-[10px] font-sans text-stone">{card.subtitle}</span>
               </div>
             </div>
-            <span className="text-[9px] font-mono tracking-widest text-ash/80 bg-white/5 px-2 py-0.5 rounded">
+            <span className="text-[9px] font-mono tracking-widest text-stone/60 bg-[#151716] border border-[#3B3A33] px-1.5 py-0.5 rounded-sm">
               {card.meta}
             </span>
           </div>
 
-          {/* Card Content */}
-          <p className="text-xs text-ash leading-relaxed mb-6 font-mono bg-black/25 p-3 rounded-lg border border-white/5">
+          {/* Card content — legal document style */}
+          <p className="font-legal text-xs text-stone leading-relaxed mb-5 bg-[#151716]/60 p-3 rounded-sm border border-[#3B3A33]/50 italic">
             {card.content}
           </p>
         </div>
 
-        {/* Card Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-white/5 text-[11px] mt-auto">
-          <span className="text-ash/60">INTELLIGENCE NODE</span>
-          <span className={`px-2.5 py-0.5 rounded-full border text-[10px] font-medium ${card.statusColor}`}>
+        {/* Card footer */}
+        <div className="flex items-center justify-between pt-3 border-t border-[#3B3A33] text-[10px] mt-auto">
+          <span className="font-mono text-stone/40 tracking-widest">INTELLIGENCE NODE</span>
+          <span className={`px-2 py-0.5 rounded-sm border font-sans text-[9px] font-semibold tracking-wide ${card.statusClass}`}>
             {card.status}
           </span>
         </div>
@@ -151,12 +146,9 @@ function FloatingCardItem({
   );
 }
 
-/* ─── Main Component ───────────────────────────────────────── */
-
 export default function HeroFloatingCards() {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Track scroll progress across the parent's scrollable height
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
@@ -165,39 +157,33 @@ export default function HeroFloatingCards() {
   return (
     <section
       ref={containerRef}
-      className="relative h-[220vh] bg-[#0b0f17] text-cream"
+      className="relative h-[220vh] bg-[#151716] text-ivory"
     >
-      {/* Sticky container that keeps elements in screen for the duration of the scroll */}
       <div className="sticky top-0 h-screen w-full flex flex-col justify-center overflow-hidden px-6 md:px-12">
-        {/* Background radial highlight */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_45%,rgba(30,58,138,0.12),transparent_70%)]" />
+        {/* Very subtle top-lit ambient — no radial blobs */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[#3B3A33]" />
 
-        {/* Grid overlay */}
-        <div className="absolute inset-0 bg-grid-faint bg-grid opacity-[0.06] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,black,transparent)]" />
+        {/* Section header */}
+        <div className="relative mx-auto max-w-5xl text-center mb-14 z-10">
+          <div className="mb-5 flex justify-center">
+            <span className="section-label">
+              <Scale className="h-3 w-3 text-[#B59A68]" strokeWidth={1.5} />
+              Interactive Knowledge Graph
+            </span>
+          </div>
 
-        <div className="relative mx-auto max-w-5xl text-center mb-16 z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-400"
-          >
-            <Scale className="h-3.5 w-3.5" />
-            Interactive Knowledge Graph
-          </motion.div>
-
-          <h2 className="font-display text-4xl font-semibold leading-tight text-cream md:text-5xl">
+          <h2 className="font-display text-4xl font-semibold leading-tight text-ivory md:text-5xl">
             Visualizing the Evidence Stack
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-ash text-sm md:text-base leading-relaxed">
-            Scroll down to watch case files, index records, and semantic chunks lock into a verified, structured knowledge grid.
+          <p className="mx-auto mt-4 max-w-xl font-sans text-sm text-stone leading-relaxed">
+            Scroll down to watch case files, index records, and semantic chunks lock
+            into a verified, structured knowledge grid.
           </p>
         </div>
 
-        {/* Cards container */}
+        {/* Cards */}
         <div className="relative mx-auto max-w-5xl w-full flex items-center justify-center px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full relative z-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full relative z-20">
             {floatingCardsData.map((card, index) => (
               <FloatingCardItem
                 key={index}
