@@ -35,6 +35,7 @@ export const metadata: Metadata = {
 };
 
 import SmoothScroll from '@/components/layout/SmoothScroll';
+import AppLoaderWrapper from '@/components/layout/AppLoaderWrapper';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -43,7 +44,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${cormorant.variable} ${manrope.variable} ${sourceSerif.variable}`}
     >
       <body className="bg-ink text-ivory antialiased">
-        <SmoothScroll>{children}</SmoothScroll>
+        <AppLoaderWrapper>
+          <SmoothScroll>{children}</SmoothScroll>
+        </AppLoaderWrapper>
       </body>
     </html>
   );
