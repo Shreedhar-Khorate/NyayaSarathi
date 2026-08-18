@@ -18,7 +18,13 @@
 ┌─────────────────────────────────────────────┐
 │              Backend (FastAPI)              │
 │   backend/  ·  Port: 8000                   │
-│   Python · FastAPI · Uvicorn · Pydantic     │
+│   Python · FastAPI · scikit-learn · DuckDB  │
+└────────────────────┬────────────────────────┘
+                     ▼
+┌─────────────────────────────────────────────┐
+│       Local Judgment Database (SQLite)      │
+│   backend/data/nyayasarathi.db              │
+│   700+ Indexed Indian High Court Judgments  │
 └─────────────────────────────────────────────┘
 ```
 
@@ -74,58 +80,36 @@ A **Neo-Classical Legal Palette** is defined in `tailwind.config.ts`:
 | **Lenis** | ^1.3.25 | Smooth scroll library |
 | **Lucide React** | ^1.28.0 | Icon set |
 
-### Dev Tooling
-
-| Tool | Version | Purpose |
-|---|---|---|
-| **ESLint** | ^9 | JavaScript/TypeScript linting |
-| **eslint-config-next** | 16.2.12 | Next.js specific ESLint rules |
-| **@types/node** | ^20 | Node.js TypeScript type definitions |
-| **@types/react** | ^19 | React TypeScript type definitions |
-| **@types/react-dom** | ^19 | React DOM TypeScript type definitions |
-
-### Project Configuration
-
-| File | Purpose |
-|---|---|
-| `tsconfig.json` | TypeScript compiler config (target: ES2017, strict mode) |
-| `next.config.ts` | Next.js configuration (Webpack mode) |
-| `tailwind.config.ts` | Custom design tokens, fonts & Tailwind theme |
-| `postcss.config.mjs` | PostCSS pipeline config |
-| `eslint.config.mjs` | ESLint flat config |
-
 ---
 
 ## ⚙️ Backend
 
-### Core Framework & Language
+### Core Framework & Machine Learning
 
 | Technology | Version | Purpose |
 |---|---|---|
-| **Python** | 3.8+ | Backend programming language |
-| **FastAPI** | >=0.100.0 | High-performance async REST API framework |
-| **Uvicorn** | >=0.22.0 | ASGI server to run FastAPI (with hot-reload) |
-| **Pydantic** | >=2.0.0 | Data validation & serialization for API schemas |
+| **Python** | 3.10+ | Core language |
+| **FastAPI** | >=0.110.0 | High-performance async REST API framework |
+| **Uvicorn** | >=0.27.0 | ASGI server with hot-reload |
+| **Pydantic** | >=2.6.0 | Strict request/response validation & serialization |
+| **scikit-learn** | >=1.4.0 | TF-IDF vectorization and semantic cosine similarity |
+| **DuckDB** | >=0.10.0 | HTTP Range Queries over Hugging Face Parquet dataset |
+| **SQLite3** | Built-in | Fast local judgment database with B-tree indexing |
 
-### API Endpoints
+### Backend Service Architecture
 
-| Method | Endpoint | Description |
+| Service | File | Purpose |
 |---|---|---|
-| `GET` | `/` | Root handshake / health check |
-| `POST` | `/api/analyze` | Judicial case analysis & decision support |
-
-### Middleware
-
-| Middleware | Purpose |
-|---|---|
-| **CORSMiddleware** | Allows cross-origin requests from `localhost:3000` (Next.js) and `localhost:5173` (Vite/React) |
-
-### Data Models (Pydantic Schemas)
-
-| Model | Fields |
-|---|---|
-| `CaseAnalysisRequest` | `case_type: str`, `description: str` |
-| `CaseAnalysisResponse` | `probability: str`, `legalPrecedents: List[str]`, `keyTakeaway: str`, `confidence: str` |
+| **Case Understanding** | `services/case_understanding.py` | Multi-class Indian legal domain classifier & statutory extractor |
+| **Candidate Retriever** | `services/retrieval.py` | 4-tier candidate retrieval over indexed SQLite database |
+| **Hybrid Ranker** | `services/ranking.py` | TF-IDF semantic cosine similarity + statutory section boost |
+| **Outcome Engine** | `services/outcome_engine.py` | Position-aware outcome mapping & Bayesian Dirichlet probability |
+| **Confidence Engine** | `services/confidence_engine.py` | Multi-dimensional reliability scoring & mandatory abstention |
+| **Precedent Verifier** | `services/precedent_verifier.py` | Precedent existence check, CNR citation format & verbatim quote extraction |
+| **Explanation Engine** | `services/explanation_engine.py` | Plain-language legal synthesis (Takeaways, Supporting & Opposing Factors) |
+| **Validator** | `services/validator.py` | Math integrity, citation authenticity & grounded claims audit |
+| **Ingestion Engine** | `services/ingest.py` | Database creation, seeding & B-tree indexing |
+| **Dataset Client** | `services/dataset_client.py` | DuckDB Parquet connector to `overthelex/indian-court-decisions` |
 
 ---
 
@@ -133,69 +117,44 @@ A **Neo-Classical Legal Palette** is defined in `tailwind.config.ts`:
 
 ```
 NyayaSarathi/
-├── backend/                    # Python FastAPI backend
-│   ├── main.py                 # API entrypoint, routes & case logic
-│   ├── requirements.txt        # Python dependencies
-│   └── README.md               # Backend setup guide
+├── backend/
+│   ├── data/
+│   │   └── nyayasarathi.db           # Local SQLite database (700+ indexed judgments)
+│   ├── models/
+│   │   ├── __init__.py               # Model package exports
+│   │   └── prediction.py             # Unified Pydantic schemas (Request, Response, Precedents, Explanations, Audit)
+│   ├── routers/
+│   │   ├── __init__.py               # Router exports
+│   │   ├── analyze.py                # Prediction API (/api/analyze, /api/predict, /api/precedent/{cnr})
+│   │   └── dataset.py                # Dataset Ingestion & Analytics API (/api/dataset)
+│   ├── services/
+│   │   ├── __init__.py               # Service engine exports
+│   │   ├── case_understanding.py     # Indian case classifier & entity extractor
+│   │   ├── confidence_engine.py      # Reliability & abstention guardrail
+│   │   ├── dataset_client.py         # Hugging Face Parquet client
+│   │   ├── explanation_engine.py     # Grounded legal explanation synthesizer
+│   │   ├── ingest.py                 # SQLite batch ingestion engine
+│   │   ├── legal_parser.py           # Court, bench & citation normalizer
+│   │   ├── outcome_engine.py         # Position-aware Dirichlet formula engine
+│   │   ├── precedent_verifier.py     # Precedent verifier & verbatim quote extractor
+│   │   ├── ranking.py                # Hybrid TF-IDF & statutory section ranker
+│   │   ├── retrieval.py              # 4-tier candidate retriever
+│   │   └── validator.py              # Math & citation validation audit
+│   ├── main.py                       # FastAPI application entrypoint
+│   ├── requirements.txt              # Python dependencies
+│   ├── README.md                     # Backend setup guide
+│   └── backend.md                    # Detailed backend architectural documentation
 │
-├── nyayasarathi-app/           # Next.js frontend app
+├── nyayasarathi-app/                 # Next.js frontend web application
 │   ├── src/
-│   │   ├── app/                # Next.js App Router pages & layout
-│   │   │   ├── layout.tsx      # Root layout (fonts, metadata)
-│   │   │   ├── page.tsx        # Home page
-│   │   │   ├── loading.tsx     # Loading UI
-│   │   │   └── globals.css     # Global CSS styles
-│   │   └── components/
-│   │       ├── layout/         # Layout components (e.g. SmoothScroll)
-│   │       ├── sections/       # Page section components
-│   │       └── ui/             # Reusable UI components
-│   ├── tailwind.config.ts      # Tailwind custom theme
-│   ├── tsconfig.json           # TypeScript config
-│   └── package.json            # npm dependencies & scripts
+│   │   ├── app/                      # Next.js App Router pages
+│   │   └── components/               # React UI components
+│   ├── tailwind.config.ts            # Neo-classical legal design tokens
+│   ├── package.json                  # Frontend dependencies
+│   ├── README.md                     # Frontend setup guide
+│   └── frontend.md                   # Frontend architecture documentation
 │
-├── frontend/                   # (Legacy / dist output)
-├── README.md                   # Root project README
-├── tech.md                     # This document
-└── LICENSE                     # Project license
+├── README.md                         # Project overview
+├── tech.md                           # Technology stack reference
+└── LICENSE                           # MIT License
 ```
-
----
-
-## 🔌 Communication Protocol
-
-- **Transport**: HTTP/REST
-- **Data Format**: JSON
-- **CORS**: Enabled — frontend on `localhost:3000` communicates with backend on `localhost:8000`
-- **API Contract**: Defined via Pydantic models on the backend, consumed as typed fetch calls on the frontend
-
----
-
-## 🚀 Dev Server Commands
-
-### Frontend
-```bash
-cd nyayasarathi-app
-npm install
-npm run dev        # Starts Next.js at http://localhost:3000
-```
-
-### Backend
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate      # Windows
-pip install -r requirements.txt
-python main.py              # Starts FastAPI at http://localhost:8000
-```
-
----
-
-## 🛡️ Code Quality & Type Safety
-
-- TypeScript **strict mode** enabled across the entire frontend codebase
-- Pydantic **v2** enforces runtime validation of all API request/response payloads
-- ESLint with **Next.js recommended** rules for consistent code style
-
----
-
-*Last updated: August 2026*
