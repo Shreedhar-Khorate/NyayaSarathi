@@ -126,6 +126,22 @@ class CandidateRetrievalEngine:
                 if t4_remote:
                     tiers_used.append("Tier 4 (Live Remote HuggingFace Search)")
 
+            # ── Level 3: DuckDuckGo Fallback Public Legal Authority Discovery ───
+            if len(candidates) < min_candidates:
+                try:
+                    from services.duckduckgo_search import get_duckduckgo_search_engine
+                    ddg_engine = get_duckduckgo_search_engine()
+                    remaining = min_candidates - len(candidates)
+                    ddg_results = ddg_engine.search_public_judgments(profile, max_results=remaining)
+                    for r in ddg_results:
+                        if r.cnr not in collected_cnrs:
+                            collected_cnrs.add(r.cnr)
+                            candidates.append(r)
+                    if ddg_results:
+                        tiers_used.append("Level 3 (DuckDuckGo Public Legal Authority Discovery)")
+                except Exception as e:
+                    logger.debug(f"DuckDuckGo search fallback notice: {e}")
+
             # ── Tier 5: Broad Domain Fallback ────────────────────────────────
             if len(candidates) < min_candidates:
                 remaining = min_candidates - len(candidates)

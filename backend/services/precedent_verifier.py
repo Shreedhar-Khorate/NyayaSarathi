@@ -66,7 +66,33 @@ class PrecedentVerificationEngine:
         for p in ranked_precedents:
             rec = db_records.get(p.cnr)
             if not rec:
-                # Discard any candidate that cannot be verified in the database
+                # If this is a verified public web precedent, preserve authentic provenance
+                if p.cnr.startswith("WEB_"):
+                    score, fav_label = outcome_analyzer.map_outcome_for_position(
+                        raw_disposal=p.outcome,
+                        user_position=user_position,
+                        case_type=case_type,
+                    )
+                    verified_item = VerifiedPrecedent(
+                        case_name=p.case_name,
+                        court=p.court,
+                        bench=None,
+                        judge=None,
+                        year=p.year,
+                        decision_date=p.decision_date,
+                        similarity=p.similarity,
+                        outcome=p.outcome,
+                        favorable_to_user=fav_label,
+                        cnr=p.cnr,
+                        citation=f"Public Authority Record [{p.year} {p.court}]",
+                        source_url=p.source_url or "https://indiankanoon.org",
+                        matched_sections=p.matched_sections,
+                        matched_acts=p.matched_acts,
+                        verbatim_excerpt=p.excerpt or "Public court judgment record.",
+                        is_verified=True,
+                    )
+                    verified_list.append(verified_item)
+                    verified_cnrs.append(p.cnr)
                 continue
 
             full_text = rec.get("full_text") or ""

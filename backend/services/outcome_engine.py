@@ -226,3 +226,6 @@ def get_outcome_analyzer() -> HistoricalOutcomeAnalyzer:
     if _outcome_analyzer is None:
         _outcome_analyzer = HistoricalOutcomeAnalyzer()
     return _outcome_analyzer
+
+# Backward compatibility alias
+get_historical_outcome_analyzer = get_outcome_analyzer

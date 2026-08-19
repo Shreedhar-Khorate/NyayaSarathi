@@ -176,9 +176,40 @@ def _enrich_record(record: Dict[str, Any], config: str, split: str) -> Dict[str,
     }
 
 
+def validate_judgment_record(record: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+    """
+    Validates a judgment record before ingestion.
+    Returns (is_valid, failure_reason).
+    """
+    cnr = record.get("cnr")
+    if not cnr or not isinstance(cnr, str) or len(cnr.strip()) < 4:
+        return False, "Missing or invalid CNR identifier"
+
+    title = record.get("title", "")
+    full_text = record.get("full_text", "")
+    if not (title or full_text):
+        return False, "Record must contain at least title or full_text content"
+
+    year = record.get("year")
+    if year is not None:
+        try:
+            year_int = int(year)
+            if year_int < 1950 or year_int > 2030:
+                return False, f"Year {year_int} out of valid range (1950-2030)"
+        except (ValueError, TypeError):
+            return False, "Invalid year value"
+
+    disposal = record.get("disposal_nature") or record.get("disposal_nature_normalized")
+    if not disposal or not str(disposal).strip():
+        # Missing disposal nature is accepted with 'unclear' tag, not dropped
+        pass
+
+    return True, None
+
+
 def _insert_records(conn: sqlite3.Connection, records: List[Dict[str, Any]]) -> tuple:
     """
-    Insert enriched records into the database.
+    Insert enriched records into the database after strict validation.
     Uses INSERT OR IGNORE to skip duplicates (by CNR).
     Returns (inserted_count, skipped_count).
     """
@@ -186,8 +217,14 @@ def _insert_records(conn: sqlite3.Connection, records: List[Dict[str, Any]]) -> 
     skipped = 0
 
     for rec in records:
+        is_valid, error_reason = validate_judgment_record(rec)
+        if not is_valid:
+            logger.debug(f"Skipping invalid record {rec.get('cnr')}: {error_reason}")
+            skipped += 1
+            continue
+
         try:
-            conn.execute("""
+            cursor = conn.execute("""
                 INSERT OR IGNORE INTO judgments (
                     cnr, source, court_code, bench, year, text_length,
                     title, judge, decision_date,
@@ -209,7 +246,7 @@ def _insert_records(conn: sqlite3.Connection, records: List[Dict[str, Any]]) -> 
                 )
             """, rec)
 
-            if conn.total_changes > 0:
+            if cursor.rowcount > 0:
                 inserted += 1
             else:
                 skipped += 1
