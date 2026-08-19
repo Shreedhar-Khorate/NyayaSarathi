@@ -188,31 +188,52 @@ class PrecedentVerificationEngine:
     def _extract_verbatim_holding(
         self, full_text: str, matched_sections: List[str], title: str
     ) -> str:
-        """Extracts the exact verbatim order or statutory holding paragraph."""
+        """Extracts the exact verbatim order or statutory holding paragraph, skipping header noise."""
         if not full_text or len(full_text.strip()) == 0:
             return f"Official judgment record for {title}."
 
-        paragraphs = [p.strip() for p in full_text.split("\n") if len(p.strip()) > 50]
+        # Clean noise headers like ==== or ----
+        cleaned_text = re.sub(r"[=\-]{4,}", " ", full_text)
+        
+        # Split by paragraphs
+        raw_paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", cleaned_text) if len(p.strip()) > 40]
+        if not raw_paragraphs:
+            raw_paragraphs = [p.strip() for p in cleaned_text.split("\n") if len(p.strip()) > 40]
 
-        # 1. Look for paragraph containing matched statutory section
-        if matched_sections:
-            for sec in matched_sections:
-                for p in paragraphs:
-                    if re.search(r"\b" + re.escape(sec) + r"\b", p, re.IGNORECASE):
-                        return p[:380] + ("..." if len(p) > 380 else "")
+        # Filter out obvious case metadata headers
+        substantive = []
+        for p in raw_paragraphs:
+            p_clean = " ".join(p.split())
+            if re.match(r"^(?:in the (?:high|supreme) court|before the|coram:|versus|\(?\d+\)?\s*cr\.?\s*app|district-)", p_clean, re.IGNORECASE):
+                continue
+            if len(p_clean) > 50:
+                substantive.append(p_clean)
 
-        # 2. Look for disposition keywords (order, held, granted, dismissed, disposed)
-        disposition_cues = ["hereby granted", "is allowed", "is dismissed", "stands disposed", "ordered accordingly", "court holds", "in view of the above"]
-        for p in paragraphs:
+        pool = substantive if substantive else [(" ".join(p.split())) for p in raw_paragraphs]
+
+        # 1. Search for disposition cues (operative order)
+        disposition_cues = [
+            "is allowed", "is hereby allowed", "is dismissed", "is hereby dismissed",
+            "bail is granted", "directed to be released on bail", "stands disposed",
+            "ordered accordingly", "court holds", "in view of the above", "impugned order is set aside"
+        ]
+        for p in pool:
             p_lower = p.lower()
             if any(cue in p_lower for cue in disposition_cues):
-                return p[:380] + ("..." if len(p) > 380 else "")
+                return p[:320] + ("..." if len(p) > 320 else "")
+
+        # 2. Look for matched statutory sections
+        if matched_sections:
+            for sec in matched_sections:
+                for p in pool:
+                    if re.search(r"\b" + re.escape(sec) + r"\b", p, re.IGNORECASE):
+                        return p[:320] + ("..." if len(p) > 320 else "")
 
         # 3. Fallback to first substantive paragraph
-        if paragraphs:
-            return paragraphs[0][:380] + ("..." if len(paragraphs[0]) > 380 else "")
+        if pool:
+            return pool[0][:320] + ("..." if len(pool[0]) > 320 else "")
 
-        return full_text[:380] + ("..." if len(full_text) > 380 else "")
+        return " ".join(full_text.split())[:320] + ("..." if len(full_text) > 320 else "")
 
 
 # Singleton

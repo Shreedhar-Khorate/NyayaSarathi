@@ -185,6 +185,12 @@ class GroundedExplanationEngine:
             import urllib.request
             import json
 
+            user_pos_clean = (
+                structured_case.user_position
+                if structured_case.user_position and structured_case.user_position != "unknown"
+                else "applicant / petitioner"
+            )
+
             # Build evidence brief for the prompt
             precedents_brief = "\n".join([
                 f"- Case: {p.case_name} ({p.court}, {p.year})\n  Outcome: {p.outcome} (Impact: {p.favorable_to_user})\n  Holding Excerpt: {p.verbatim_excerpt[:250]}"
@@ -197,7 +203,7 @@ Synthesize an evidence-grounded judicial explanation for an Indian court matter.
 
 CASE FACTS:
 - Legal Domain: {structured_case.case_type}
-- Procedural Position: {structured_case.user_position}
+- Procedural Position: {user_pos_clean}
 - Statutory Sections: {', '.join(structured_case.detected_sections) if structured_case.detected_sections else 'General'}
 - Case Narrative: {structured_case.key_facts[0] if structured_case.key_facts else 'Case brief'}
 
@@ -210,7 +216,7 @@ VERIFIED HISTORICAL PRECEDENTS:
 
 TASK:
 Produce a strictly factual, grounded explanation formatted as valid JSON with these exact keys:
-1. "takeaway": A 2-3 sentence executive summary explaining the judicial likelihood from the perspective of the {structured_case.user_position}.
+1. "takeaway": A 2-3 sentence executive summary explaining the judicial likelihood from the perspective of the {user_pos_clean}.
 2. "supporting_factors": A list of 2-3 specific legal/factual strengths grounded in the statutory provisions or favorable precedents.
 3. "opposing_factors": A list of 2-3 realistic counterarguments, prosecution/defense objections, or evidentiary hurdles.
 4. "limitations": A list of 2-3 standard Indian judicial caveats (e.g. bench discretion, oral arguments, trial evidence).
@@ -239,7 +245,10 @@ CRITICAL RULES:
             with urllib.request.urlopen(req, timeout=8) as response:
                 res_body = json.loads(response.read().decode("utf-8"))
                 text_content = res_body["candidates"][0]["content"]["parts"][0]["text"]
-                parsed = json.loads(text_content)
+                # Strip markdown fences if present
+                clean_json_str = re.sub(r"^```(?:json)?\s*", "", text_content.strip())
+                clean_json_str = re.sub(r"\s*```$", "", clean_json_str)
+                parsed = json.loads(clean_json_str)
 
                 return GroundedExplanation(
                     takeaway=parsed.get("takeaway", ""),
@@ -248,7 +257,7 @@ CRITICAL RULES:
                     limitations=parsed.get("limitations", []),
                     synthesis_engine="Google Gemini 1.5 Flash (Grounded RAG)",
                 )
-        except Exception as e:
+        except Exception:
             return None
 
 
