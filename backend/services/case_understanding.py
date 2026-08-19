@@ -388,8 +388,20 @@ class CaseUnderstandingEngine:
         Main orchestration: converts raw case input into a complete StructuredCaseProfile.
         """
         # Extract statutory acts & sections
-        detected_acts = list(set((acts or []) + self.extract_acts(description)))
-        detected_sections = list(set((sections or []) + self.extract_sections(description)))
+        detected_acts = sorted(list(set((acts or []) + self.extract_acts(description))))
+        
+        # Normalize and clean explicit user sections and extracted sections
+        raw_sections = (sections or []) + self.extract_sections(description)
+        cleaned_sections = []
+        for s in raw_sections:
+            extracted = self.extract_sections(s)
+            if extracted:
+                cleaned_sections.extend(extracted)
+            else:
+                s_clean = re.sub(r"^(?:section|sec|s|article|art)\.?\s*", "", s, flags=re.IGNORECASE).strip()
+                if s_clean:
+                    cleaned_sections.append(s_clean)
+        detected_sections = sorted(list(set(cleaned_sections)))
 
         # Classify case category & confidence
         classified_type, confidence = self.classify_case_type(description, case_type)

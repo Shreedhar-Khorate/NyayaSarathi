@@ -96,7 +96,11 @@ class GroundedExplanationEngine:
         supporting_factors = []
 
         if structured_case.detected_sections:
-            sec_str = ", ".join([f"Section {s}" for s in structured_case.detected_sections[:3]])
+            sec_formatted = [
+                s if s.lower().startswith(("section", "article", "order")) else f"Section {s}"
+                for s in structured_case.detected_sections[:3]
+            ]
+            sec_str = ", ".join(sec_formatted)
             supporting_factors.append(
                 f"Statutory alignment: Case is grounded in recognized provisions under {sec_str}."
             )
