@@ -29,14 +29,16 @@ interface Precedent {
 }
 
 interface AnalyzeResponseData {
+  status?: string;
   success_probability: number;
   confidence: string;
-  outcome: string;
+  predicted_outcome?: string;
+  outcome?: string;
   precedents: Precedent[];
   supporting_factors: string[];
   opposing_factors: string[];
   takeaway: string;
-  disclaimer: string;
+  disclaimer?: string;
   probability?: string;
 }
 
@@ -452,49 +454,71 @@ export default function PredictorPage() {
                 >
                   {/* Probability & Confidence Card */}
                   <div className="ink-panel rounded-xl p-6 border border-[#3B3A33] relative overflow-hidden">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase ${
-                            result.outcome === 'favorable'
-                              ? 'verdigris-badge'
-                              : 'bg-[#6E2634]/30 text-[#8A3545] border border-[#8A3545]/40'
-                          }`}>
-                            {result.outcome === 'favorable' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                            {result.outcome} Outcome
-                          </span>
-                          <span className="text-xs font-mono uppercase tracking-wider px-2.5 py-1 rounded bg-[#242925] border border-[#3B3A33] text-stone">
-                            Confidence: {result.confidence}
-                          </span>
-                        </div>
-                        <h3 className="font-display text-xl font-semibold text-[#F4EFE5]">
-                          Favorable Outcome Probability
-                        </h3>
-                      </div>
+                    {(() => {
+                      const rawOutcome = (result.predicted_outcome || result.outcome || (
+                        result.success_probability >= 65 ? 'Favorable' :
+                        result.success_probability <= 35 ? 'Unfavorable' :
+                        'Balanced / Discretionary'
+                      )).toUpperCase();
+                      const isFav = rawOutcome.includes('FAVORABLE') && !rawOutcome.includes('UNFAVORABLE');
+                      const isBal = rawOutcome.includes('BALANCED') || rawOutcome.includes('DISCRETIONARY');
 
-                      {/* Percentage Badge */}
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className={`font-display text-4xl sm:text-5xl font-bold ${
-                            result.success_probability >= 50 ? 'text-[#71877A]' : 'text-[#8A3545]'
-                          }`}>
-                            {result.success_probability}%
+                      return (
+                        <>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase ${
+                                  isFav
+                                    ? 'bg-[#71877A]/20 text-[#71877A] border border-[#71877A]/40'
+                                    : isBal
+                                    ? 'bg-[#B59A68]/20 text-[#B59A68] border border-[#B59A68]/40'
+                                    : 'bg-[#6E2634]/30 text-[#8A3545] border border-[#8A3545]/40'
+                                }`}>
+                                  {isFav ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  ) : isBal ? (
+                                    <Scale className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <XCircle className="w-3.5 h-3.5" />
+                                  )}
+                                  {rawOutcome}
+                                </span>
+                                <span className="text-xs font-mono uppercase tracking-wider px-2.5 py-1 rounded bg-[#242925] border border-[#3B3A33] text-stone">
+                                  Confidence: {result.confidence}
+                                </span>
+                              </div>
+                              <h3 className="font-display text-xl font-semibold text-[#F4EFE5]">
+                                Favorable Outcome Probability
+                              </h3>
+                            </div>
+
+                            {/* Percentage Badge */}
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className={`font-display text-4xl sm:text-5xl font-bold ${
+                                  isFav ? 'text-[#71877A]' : isBal ? 'text-[#B59A68]' : 'text-[#8A3545]'
+                                }`}>
+                                  {result.success_probability}%
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Progress Bar */}
-                    <div className="w-full bg-[#151716] h-2 rounded-full mt-5 overflow-hidden border border-[#3B3A33]">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${result.success_probability}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className={`h-full ${
-                          result.success_probability >= 50 ? 'bg-[#71877A]' : 'bg-[#8A3545]'
-                        }`}
-                      />
-                    </div>
+                          {/* Progress Bar */}
+                          <div className="w-full bg-[#151716] h-2.5 rounded-full mt-5 overflow-hidden border border-[#3B3A33]">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${result.success_probability}%` }}
+                              transition={{ duration: 0.8, ease: 'easeOut' }}
+                              className={`h-full ${
+                                isFav ? 'bg-[#71877A]' : isBal ? 'bg-[#B59A68]' : 'bg-[#8A3545]'
+                              }`}
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Grounded Plain-Language Takeaway */}
