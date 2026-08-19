@@ -244,12 +244,20 @@ class CaseUnderstandingEngine:
                 elif m and len(m.strip()) > 0:
                     sections.add(m.strip().upper())
 
-        # Clean noise (e.g. random numbers that aren't real sections)
+        # Clean noise (skip years like 1988, 2023, 1872 or long text phrases)
         cleaned = []
         for s in sorted(list(sections)):
-            if s.isdigit() and len(s) > 4:
-                continue  # skip years or case numbers
-            cleaned.append(s)
+            s_clean = s.strip()
+            # Skip 4-digit years
+            if s_clean.isdigit() and (1800 <= int(s_clean) <= 2030 or len(s_clean) > 4):
+                continue
+            # Must be a reasonable section length and not a full act name
+            if len(s_clean) > 12 or len(s_clean) == 0:
+                continue
+            # Skip common act words
+            if s_clean.lower() in {"act", "code", "bns", "bnss", "ipc", "crpc", "cpc", "order", "rule", "section", "article"}:
+                continue
+            cleaned.append(s_clean)
         return cleaned
 
     def detect_user_position(self, text: str, explicit_position: Optional[str] = None) -> str:
