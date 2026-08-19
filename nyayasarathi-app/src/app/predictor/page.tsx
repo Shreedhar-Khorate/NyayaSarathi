@@ -26,6 +26,8 @@ interface Precedent {
   outcome: string;
   citation: string;
   source_url: string;
+  verbatim_excerpt?: string;
+  excerpt?: string;
 }
 
 interface AnalyzeResponseData {
@@ -577,50 +579,67 @@ export default function PredictorPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {result.precedents.map((precedent, i) => (
-                        <div
-                          key={i}
-                          className="document-card rounded-lg p-4 transition-all hover:shadow-lg relative group"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                            <h5 className="font-display font-semibold text-sm text-[#151716] group-hover:text-[#6E2634] transition-colors">
-                              {precedent.case_name} ({precedent.year})
-                            </h5>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#151716] text-[#B59A68]">
-                                {Math.round(precedent.similarity * 100)}% Similarity
-                              </span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
-                                precedent.outcome === 'success'
-                                  ? 'bg-[#71877A]/20 text-[#242925]'
-                                  : 'bg-[#6E2634]/20 text-[#6E2634]'
-                              }`}>
-                                {precedent.outcome}
-                              </span>
+                      {result.precedents.map((precedent, i) => {
+                        const outcomeUpper = (precedent.outcome || '').toUpperCase();
+                        const isPrecAllowed = outcomeUpper.includes('ALLOWED') || outcomeUpper.includes('GRANTED') || outcomeUpper.includes('QUASHED') || outcomeUpper.includes('DECREED');
+                        const isPrecPartial = outcomeUpper.includes('PARTLY') || outcomeUpper.includes('PARTIAL') || outcomeUpper.includes('DISPOSED') || outcomeUpper.includes('WITHDRAWN');
+
+                        return (
+                          <div
+                            key={i}
+                            className="document-card rounded-lg p-4 transition-all hover:shadow-lg relative group"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                              <h5 className="font-display font-semibold text-sm text-[#151716] group-hover:text-[#6E2634] transition-colors">
+                                {precedent.case_name} ({precedent.year})
+                              </h5>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#151716] text-[#B59A68]">
+                                  {Math.round(precedent.similarity * 100)}% Similarity
+                                </span>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                                  isPrecAllowed
+                                    ? 'bg-[#71877A]/20 text-[#1E3A2F] border border-[#71877A]/40'
+                                    : isPrecPartial
+                                    ? 'bg-[#B59A68]/20 text-[#614E2E] border border-[#B59A68]/40'
+                                    : 'bg-[#6E2634]/20 text-[#6E2634] border border-[#8A3545]/40'
+                                }`}>
+                                  {precedent.outcome}
+                                </span>
+                              </div>
+                            </div>
+
+                            {(precedent.verbatim_excerpt || precedent.excerpt) && (
+                              <p className="text-[11px] text-[#151716]/75 italic line-clamp-2 my-1.5 pl-2 border-l-2 border-[#B59A68]/60">
+                                &ldquo;{precedent.verbatim_excerpt || precedent.excerpt}&rdquo;
+                              </p>
+                            )}
+
+                            <div className="flex items-center justify-between text-xs text-[#151716]/80 pt-2 border-t border-[#DED5C4]">
+                              <span className="font-medium">{precedent.court} &bull; <span className="font-mono">{precedent.citation}</span></span>
+                              <a
+                                href={precedent.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 font-semibold text-[#6E2634] hover:underline"
+                              >
+                                <span>View Source</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
                             </div>
                           </div>
-
-                          <div className="flex items-center justify-between text-xs text-[#151716]/80 pt-2 border-t border-[#DED5C4]">
-                            <span className="font-medium">{precedent.court} &bull; <span className="font-mono">{precedent.citation}</span></span>
-                            <a
-                              href={precedent.source_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 font-semibold text-[#6E2634] hover:underline"
-                            >
-                              <span>View Source</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* Advisory Disclaimer */}
                   <div className="p-4 rounded-lg bg-[#242925]/80 border border-[#3B3A33] flex items-start gap-3 text-xs text-stone/70">
                     <ShieldCheck className="w-4 h-4 text-[#B59A68] shrink-0 mt-0.5" />
-                    <span>{result.disclaimer}</span>
+                    <span>
+                      {result.disclaimer ||
+                        "This is an AI-generated advisory estimate based on historical Indian court judgments and is not a formal legal opinion or guarantee of future outcome."}
+                    </span>
                   </div>
                 </motion.div>
               )}
