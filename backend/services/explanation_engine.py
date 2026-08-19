@@ -64,7 +64,11 @@ class GroundedExplanationEngine:
         Deterministic, rule-grounded synthesis ensuring 100% factual accuracy.
         """
         case_type_display = structured_case.case_type.replace("_", " ").title()
-        user_pos = structured_case.user_position
+        user_pos = (
+            structured_case.user_position
+            if structured_case.user_position and structured_case.user_position != "unknown"
+            else "applicant / petitioner"
+        )
         total_p = len(precedents)
 
         fav_precedents = [p for p in precedents if p.favorable_to_user == "Favorable"]
