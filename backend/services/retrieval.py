@@ -63,10 +63,11 @@ class CandidateRetrievalEngine:
         try:
             # ── Priority 0: Live Remote Hugging Face Search if requested Court is not in Local DB ──
             court_in_db = True
+            is_specialized_tribunal = any(t in (profile.extracted_court or "").lower() for t in ["ncdrc", "nclt", "ngt", "cat", "rera", "itat", "consumer", "tribunal"])
             if profile.extracted_court:
                 court_in_db = bool(conn.execute("SELECT 1 FROM judgments WHERE parsed_court_name LIKE ? LIMIT 1", [f"%{profile.extracted_court}%"]).fetchone())
 
-            if profile.extracted_court and not court_in_db:
+            if profile.extracted_court and not court_in_db and not is_specialized_tribunal:
                 t0_remote = self._tier4_live_remote_fallback(
                     conn, profile, max_count=10, exclude_cnrs=collected_cnrs
                 )
@@ -77,7 +78,8 @@ class CandidateRetrievalEngine:
                 if t0_remote:
                     tiers_used.append("Tier 0 (Live Remote HuggingFace Search)")
 
-            # ── Tier 1: Exact Case Type / Related + Statutory Sections Overlap
+            # ── Tier 1: Exact Case Type / Related + Statutory Sections Overlap ──
+            t1_results = []
             if profile.detected_sections:
                 t1_results = self._tier1_statutory_retrieval(conn, profile, max_count=30)
                 for r in t1_results:
@@ -86,6 +88,22 @@ class CandidateRetrievalEngine:
                         candidates.append(r)
                 if t1_results:
                     tiers_used.append("Tier 1 (Exact Statutory & Case Type Match)")
+
+            # ── Level 3: DuckDuckGo Public Legal Authority Discovery ─────────
+            # Triggered for specialized tribunals (NCDRC, NCLT, etc.) or when exact section matches in local DB are low (< 3)
+            if is_specialized_tribunal or len(candidates) < 3 or (profile.case_type in {"consumer", "cyber_crime", "arbitration"} and len(candidates) < 5):
+                try:
+                    from services.duckduckgo_search import get_duckduckgo_search_engine
+                    ddg_engine = get_duckduckgo_search_engine()
+                    ddg_results = ddg_engine.search_public_judgments(profile, max_results=5)
+                    for r in ddg_results:
+                        if r.cnr not in collected_cnrs:
+                            collected_cnrs.add(r.cnr)
+                            candidates.append(r)
+                    if ddg_results:
+                        tiers_used.append("Level 3 (DuckDuckGo Public Legal Authority Discovery)")
+                except Exception as e:
+                    logger.debug(f"DuckDuckGo search notice: {e}")
 
             # ── Tier 2: Exact Case Type + Related Category Match ────────────
             if len(candidates) < max_candidates:
@@ -125,22 +143,6 @@ class CandidateRetrievalEngine:
                         candidates.append(r)
                 if t4_remote:
                     tiers_used.append("Tier 4 (Live Remote HuggingFace Search)")
-
-            # ── Level 3: DuckDuckGo Fallback Public Legal Authority Discovery ───
-            if len(candidates) < min_candidates:
-                try:
-                    from services.duckduckgo_search import get_duckduckgo_search_engine
-                    ddg_engine = get_duckduckgo_search_engine()
-                    remaining = min_candidates - len(candidates)
-                    ddg_results = ddg_engine.search_public_judgments(profile, max_results=remaining)
-                    for r in ddg_results:
-                        if r.cnr not in collected_cnrs:
-                            collected_cnrs.add(r.cnr)
-                            candidates.append(r)
-                    if ddg_results:
-                        tiers_used.append("Level 3 (DuckDuckGo Public Legal Authority Discovery)")
-                except Exception as e:
-                    logger.debug(f"DuckDuckGo search fallback notice: {e}")
 
             # ── Tier 5: Broad Domain Fallback ────────────────────────────────
             if len(candidates) < min_candidates:

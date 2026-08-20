@@ -118,13 +118,19 @@ class DuckDuckGoLegalSearchEngine:
             with urllib.request.urlopen(req, timeout=self.timeout) as response:
                 html = response.read().decode("utf-8", errors="ignore")
 
-                # Parse search links and snippets using regex
+                # Parse search links, headlines, and snippets using robust regex
                 link_matches = re.findall(
-                    r'<a class="result__url"[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?'
-                    r'<a class="result__snippet"[^>]*>(.*?)</a>',
+                    r'<h2 class="result__title">\s*<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?<a class="result__snippet"[^>]*>(.*?)</a>',
                     html,
-                    re.DOTALL,
+                    re.DOTALL | re.IGNORECASE,
                 )
+                if not link_matches:
+                    link_matches = re.findall(
+                        r'<a class="result__url"[^>]*href="([^"]+)"[^>]*>(.*?)</a>.*?'
+                        r'<a class="result__snippet"[^>]*>(.*?)</a>',
+                        html,
+                        re.DOTALL,
+                    )
 
                 for raw_url, raw_title, raw_snippet in link_matches:
                     # Clean up DuckDuckGo redirect URLs if present
@@ -136,6 +142,9 @@ class DuckDuckGoLegalSearchEngine:
 
                     clean_title = re.sub(r"<[^>]+>", "", raw_title).strip()
                     clean_snippet = re.sub(r"<[^>]+>", "", raw_snippet).strip()
+
+                    # Clean up search prefixes if present
+                    clean_title = re.sub(r"^(indiankanoon\.org/|https?://)", "", clean_title)
 
                     if actual_url.startswith("http"):
                         results.append({
