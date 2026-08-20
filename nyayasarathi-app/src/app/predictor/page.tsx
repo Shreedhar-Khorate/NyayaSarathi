@@ -457,13 +457,21 @@ export default function PredictorPage() {
                   {/* Probability & Confidence Card */}
                   <div className="ink-panel rounded-xl p-6 border border-[#3B3A33] relative overflow-hidden">
                     {(() => {
-                      const rawOutcome = (result.predicted_outcome || result.outcome || (
-                        result.success_probability >= 65 ? 'Favorable' :
-                        result.success_probability <= 35 ? 'Unfavorable' :
-                        'Balanced / Discretionary'
-                      )).toUpperCase();
-                      const isFav = rawOutcome.includes('FAVORABLE') && !rawOutcome.includes('UNFAVORABLE');
-                      const isBal = rawOutcome.includes('BALANCED') || rawOutcome.includes('DISCRETIONARY');
+                      const isInsufficient =
+                        result.status === 'insufficient_data' ||
+                        result.success_probability === null ||
+                        result.success_probability === undefined;
+
+                      const rawOutcome = isInsufficient
+                        ? 'INSUFFICIENT DATA / ABSTAINED'
+                        : (result.predicted_outcome || result.outcome || (
+                            result.success_probability >= 65 ? 'Favorable' :
+                            result.success_probability <= 35 ? 'Unfavorable' :
+                            'Balanced / Discretionary'
+                          )).toUpperCase();
+
+                      const isFav = !isInsufficient && rawOutcome.includes('FAVORABLE') && !rawOutcome.includes('UNFAVORABLE');
+                      const isBal = !isInsufficient && (rawOutcome.includes('BALANCED') || rawOutcome.includes('DISCRETIONARY'));
 
                       return (
                         <>
@@ -471,13 +479,17 @@ export default function PredictorPage() {
                             <div className="space-y-2">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase ${
-                                  isFav
+                                  isInsufficient
+                                    ? 'bg-[#B59A68]/20 text-[#B59A68] border border-[#B59A68]/40'
+                                    : isFav
                                     ? 'bg-[#71877A]/20 text-[#71877A] border border-[#71877A]/40'
                                     : isBal
                                     ? 'bg-[#B59A68]/20 text-[#B59A68] border border-[#B59A68]/40'
                                     : 'bg-[#6E2634]/30 text-[#8A3545] border border-[#8A3545]/40'
                                 }`}>
-                                  {isFav ? (
+                                  {isInsufficient ? (
+                                    <HelpCircle className="w-3.5 h-3.5" />
+                                  ) : isFav ? (
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                   ) : isBal ? (
                                     <Scale className="w-3.5 h-3.5" />
@@ -491,17 +503,23 @@ export default function PredictorPage() {
                                 </span>
                               </div>
                               <h3 className="font-display text-xl font-semibold text-[#F4EFE5]">
-                                Favorable Outcome Probability
+                                {isInsufficient ? 'Prediction Status' : 'Favorable Outcome Probability'}
                               </h3>
                             </div>
 
                             {/* Percentage Badge */}
                             <div className="flex items-center gap-3">
                               <div className="text-right">
-                                <div className={`font-display text-4xl sm:text-5xl font-bold ${
-                                  isFav ? 'text-[#71877A]' : isBal ? 'text-[#B59A68]' : 'text-[#8A3545]'
+                                <div className={`font-display font-bold ${
+                                  isInsufficient
+                                    ? 'text-xl sm:text-2xl text-[#B59A68]'
+                                    : isFav
+                                    ? 'text-4xl sm:text-5xl text-[#71877A]'
+                                    : isBal
+                                    ? 'text-4xl sm:text-5xl text-[#B59A68]'
+                                    : 'text-4xl sm:text-5xl text-[#8A3545]'
                                 }`}>
-                                  {result.success_probability}%
+                                  {isInsufficient ? 'N/A (Abstained)' : `${result.success_probability}%`}
                                 </div>
                               </div>
                             </div>
@@ -511,10 +529,10 @@ export default function PredictorPage() {
                           <div className="w-full bg-[#151716] h-2.5 rounded-full mt-5 overflow-hidden border border-[#3B3A33]">
                             <motion.div
                               initial={{ width: 0 }}
-                              animate={{ width: `${result.success_probability}%` }}
+                              animate={{ width: isInsufficient ? '0%' : `${result.success_probability}%` }}
                               transition={{ duration: 0.8, ease: 'easeOut' }}
                               className={`h-full ${
-                                isFav ? 'bg-[#71877A]' : isBal ? 'bg-[#B59A68]' : 'bg-[#8A3545]'
+                                isInsufficient ? 'bg-[#3B3A33]' : isFav ? 'bg-[#71877A]' : isBal ? 'bg-[#B59A68]' : 'bg-[#8A3545]'
                               }`}
                             />
                           </div>
@@ -535,39 +553,48 @@ export default function PredictorPage() {
                   </div>
 
                   {/* Supporting vs Opposing Factors */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Supporting Factors */}
-                    <div className="ink-panel rounded-xl p-5 border border-[#3B3A33] space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#71877A]">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Supporting Factors ({result.supporting_factors.length})
+                  {result.supporting_factors.length > 0 || result.opposing_factors.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Supporting Factors */}
+                      <div className="ink-panel rounded-xl p-5 border border-[#3B3A33] space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#71877A]">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Supporting Factors ({result.supporting_factors.length})
+                        </div>
+                        <ul className="space-y-2 text-xs text-stone/90">
+                          {result.supporting_factors.map((factor, i) => (
+                            <li key={i} className="flex items-start gap-2 bg-[#151716]/60 p-2.5 rounded border border-[#3B3A33]/50">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#71877A] mt-1.5 shrink-0" />
+                              <span>{factor}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="space-y-2 text-xs text-stone/90">
-                        {result.supporting_factors.map((factor, i) => (
-                          <li key={i} className="flex items-start gap-2 bg-[#151716]/60 p-2.5 rounded border border-[#3B3A33]/50">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#71877A] mt-1.5 shrink-0" />
-                            <span>{factor}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
 
-                    {/* Opposing Factors */}
-                    <div className="ink-panel rounded-xl p-5 border border-[#3B3A33] space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#8A3545]">
-                        <XCircle className="w-4 h-4" />
-                        Opposing Factors ({result.opposing_factors.length})
+                      {/* Opposing Factors */}
+                      <div className="ink-panel rounded-xl p-5 border border-[#3B3A33] space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#8A3545]">
+                          <XCircle className="w-4 h-4" />
+                          Opposing Factors ({result.opposing_factors.length})
+                        </div>
+                        <ul className="space-y-2 text-xs text-stone/90">
+                          {result.opposing_factors.map((factor, i) => (
+                            <li key={i} className="flex items-start gap-2 bg-[#151716]/60 p-2.5 rounded border border-[#3B3A33]/50">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#8A3545] mt-1.5 shrink-0" />
+                              <span>{factor}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="space-y-2 text-xs text-stone/90">
-                        {result.opposing_factors.map((factor, i) => (
-                          <li key={i} className="flex items-start gap-2 bg-[#151716]/60 p-2.5 rounded border border-[#3B3A33]/50">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#8A3545] mt-1.5 shrink-0" />
-                            <span>{factor}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="p-4 rounded-lg bg-[#242925]/60 border border-[#3B3A33] text-xs text-stone/80 flex items-start gap-2.5">
+                      <HelpCircle className="w-4 h-4 text-[#B59A68] shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Guidance for Prediction:</strong> To generate empirical factor attributions and historical outcome probabilities, please specify applicable statutory Acts (e.g. <em>Information Technology Act, 2000</em>, <em>IPC</em>) or Section numbers (e.g. <em>Section 43, 66, 66C</em>).
+                      </span>
+                    </div>
+                  )}
 
                   {/* Cited Historical Precedents */}
                   <div className="ink-panel rounded-xl p-6 border border-[#3B3A33] space-y-4">
