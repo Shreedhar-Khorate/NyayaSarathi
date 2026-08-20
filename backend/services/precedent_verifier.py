@@ -125,7 +125,7 @@ class PrecedentVerificationEngine:
             if p.source_url and p.source_url.startswith("http") and "huggingface.co/datasets/overthelex" not in p.source_url:
                 direct_url = p.source_url
             elif p.case_name and len(p.case_name) > 3:
-                clean_title = p.case_name.split(" of ")[-1] if " of " in p.case_name else p.case_name
+                clean_title = p.case_name.split(" of ", 1)[1] if " of " in p.case_name else p.case_name
                 direct_url = f"https://indiankanoon.org/search/?formInput={urllib.parse.quote(clean_title)}"
             else:
                 direct_url = f"https://indiankanoon.org/search/?formInput={urllib.parse.quote(p.cnr)}"
