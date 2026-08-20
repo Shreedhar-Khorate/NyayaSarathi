@@ -645,22 +645,19 @@ export default function PredictorPage() {
                             <div className="flex items-center justify-between text-xs text-[#151716]/80 pt-2 border-t border-[#DED5C4]">
                               <span className="font-medium">{precedent.court} &bull; <span className="font-mono">{precedent.citation}</span></span>
                               {(() => {
-                                const directLink = (precedent.source_url && !precedent.source_url.includes('huggingface.co/datasets/overthelex'))
-                                  ? precedent.source_url
-                                  : `https://indiankanoon.org/search/?formInput=${encodeURIComponent(
-                                      precedent.case_name?.includes(' of ')
-                                        ? precedent.case_name.split(' of ').slice(1).join(' of ')
-                                        : (precedent.case_name || precedent.cnr)
-                                    )}`;
+                                const isKanoon = precedent.source_url?.includes('indiankanoon.org') || precedent.cnr?.startsWith('WEB_');
+                                const label = isKanoon ? 'Indian Kanoon' : 'Hugging Face Dataset';
+                                const targetUrl = precedent.source_url || 'https://huggingface.co/datasets/overthelex/indian-court-decisions';
 
                                 return (
                                   <a
-                                    href={directLink}
+                                    href={targetUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 font-semibold text-[#6E2634] hover:underline"
+                                    title={`Open source on ${label}`}
                                   >
-                                    <span>View Source</span>
+                                    <span>{label}</span>
                                     <ExternalLink className="w-3 h-3" />
                                   </a>
                                 );

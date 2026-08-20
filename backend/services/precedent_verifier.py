@@ -122,13 +122,10 @@ class PrecedentVerificationEngine:
             excerpt = self._extract_verbatim_holding(full_text, p.matched_sections, p.case_name)
 
             # Construct direct judgment link
-            if p.source_url and p.source_url.startswith("http") and "huggingface.co/datasets/overthelex" not in p.source_url:
+            if p.cnr.startswith("WEB_") or (p.source_url and "indiankanoon.org/doc" in p.source_url):
                 direct_url = p.source_url
-            elif p.case_name and len(p.case_name) > 3:
-                clean_title = p.case_name.split(" of ", 1)[1] if " of " in p.case_name else p.case_name
-                direct_url = f"https://indiankanoon.org/search/?formInput={urllib.parse.quote(clean_title)}"
             else:
-                direct_url = f"https://indiankanoon.org/search/?formInput={urllib.parse.quote(p.cnr)}"
+                direct_url = "https://huggingface.co/datasets/overthelex/indian-court-decisions"
 
             verified_item = VerifiedPrecedent(
                 case_name=p.case_name,
