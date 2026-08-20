@@ -10,6 +10,7 @@ Guarantees:
 
 import sqlite3
 import re
+import urllib.parse
 from typing import List, Dict, Any, Optional, Tuple
 
 from services.ingest import get_db_connection
@@ -73,6 +74,7 @@ class PrecedentVerificationEngine:
                         user_position=user_position,
                         case_type=case_type,
                     )
+                    web_url = p.source_url if (p.source_url and p.source_url.startswith("http")) else f"https://indiankanoon.org/search/?formInput={urllib.parse.quote(p.case_name)}"
                     verified_item = VerifiedPrecedent(
                         case_name=p.case_name,
                         court=p.court,
@@ -85,7 +87,7 @@ class PrecedentVerificationEngine:
                         favorable_to_user=fav_label,
                         cnr=p.cnr,
                         citation=f"Public Authority Record [{p.year} {p.court}]",
-                        source_url=p.source_url or "https://indiankanoon.org",
+                        source_url=web_url,
                         matched_sections=p.matched_sections,
                         matched_acts=p.matched_acts,
                         verbatim_excerpt=p.excerpt or "Public court judgment record.",
@@ -119,6 +121,15 @@ class PrecedentVerificationEngine:
             # Extract authentic verbatim excerpt from judgment full text
             excerpt = self._extract_verbatim_holding(full_text, p.matched_sections, p.case_name)
 
+            # Construct direct judgment link
+            if p.source_url and p.source_url.startswith("http") and "huggingface.co/datasets/overthelex" not in p.source_url:
+                direct_url = p.source_url
+            elif p.case_name and len(p.case_name) > 3:
+                clean_title = p.case_name.split(" of ")[-1] if " of " in p.case_name else p.case_name
+                direct_url = f"https://indiankanoon.org/search/?formInput={urllib.parse.quote(clean_title)}"
+            else:
+                direct_url = f"https://indiankanoon.org/search/?formInput={urllib.parse.quote(p.cnr)}"
+
             verified_item = VerifiedPrecedent(
                 case_name=p.case_name,
                 court=court_name,
@@ -131,7 +142,7 @@ class PrecedentVerificationEngine:
                 favorable_to_user=fav_label,
                 cnr=p.cnr,
                 citation=citation_str,
-                source_url="https://huggingface.co/datasets/overthelex/indian-court-decisions",
+                source_url=direct_url,
                 matched_sections=p.matched_sections,
                 matched_acts=p.matched_acts,
                 verbatim_excerpt=excerpt,
