@@ -424,6 +424,72 @@ class CaseUnderstandingEngine:
 
         return remedy, tests
 
+    def extract_factual_scenario_and_conditions(self, text: str) -> Tuple[Optional[str], List[str]]:
+        """
+        Extracts the real-world factual context archetype and operative factual conditions.
+        Prevents conflating distinct factual scenarios sharing the same penal section numbers
+        (e.g., commercial vendor dispute vs large-scale public investment fraud under IPC 420).
+        """
+        text_lower = text.lower()
+        scenario = None
+        conditions = []
+
+        # 1. Factual Scenario Archetypes
+        scenario_map = {
+            "commercial_contractual_dispute": [
+                "vendor", "agreement", "business transaction", "invoice", "supply of goods",
+                "service level agreement", "failed delivery", "contractual breach", "commercial contract",
+                "trade dispute", "business partner", "partnership dispute", "software vendor"
+            ],
+            "matrimonial_inlaws_omnibus": [
+                "in-laws", "mother-in-law", "father-in-law", "sister-in-law", "brother-in-law",
+                "distant relative", "residing separately", "separate household", "omnibus allegation",
+                "general and vague allegations", "matrimonial discord", "dowry demand"
+            ],
+            "land_title_revenue_dispute": [
+                "sale deed", "property partition", "mutation", "revenue records", "civil title",
+                "encroachment", "khasra", "khatiyan", "boundary dispute", "title suit"
+            ],
+            "cyber_credential_and_data_theft": [
+                "email", "login records", "ip address", "screenshots", "unauthorized access",
+                "sim swap", "data exfiltration", "phishing", "password reset", "confidential data"
+            ],
+            "medical_negligence_protocol": [
+                "pre-operative", "cardiology test", "surgical complication", "hospital standard",
+                "medical negligence", "doctor negligence", "hypoxic cardiac arrest", "clinical protocol"
+            ],
+            "cheque_loan_security_misuse": [
+                "security cheque", "loan repayment", "bank statement", "preponderance of probability",
+                "blank signed cheque", "loan closure", "bank transfer receipt"
+            ],
+            "economic_syndicate_fraud": [
+                "ponzi", "chit fund", "multi-level marketing", "duped hundreds", "public deposits",
+                "fake company", "crypto scam", "diversion of public funds"
+            ]
+        }
+
+        for s_name, keywords in scenario_map.items():
+            if any(kw in text_lower for kw in keywords):
+                scenario = s_name
+                break
+
+        # 2. Operative Factual Conditions
+        condition_map = {
+            "fully_cooperated_with_police": ["cooperated", "cooperation", "appeared before", "investigation"],
+            "no_custodial_recovery_pending": ["no recovery", "recovery already made", "nothing to be seized"],
+            "civil_suit_already_pending": ["civil suit pending", "matter pending before civil court", "pending litigation"],
+            "clean_antecedents_no_past_fir": ["clean antecedent", "no criminal history", "no past record", "first offender"],
+            "parties_residing_in_different_cities": ["residing separately", "different city", "separate residence", "another state"],
+            "full_payment_receipts_on_record": ["receipt on record", "bank transfer receipt", "statement placed on record"],
+            "expert_committee_protocol_deviation": ["expert committee", "medical board", "standard protocol deviation"],
+        }
+
+        for c_name, keywords in condition_map.items():
+            if any(kw in text_lower for kw in keywords):
+                conditions.append(c_name)
+
+        return scenario, conditions
+
     def understand_case(
         self,
         description: str,
@@ -459,6 +525,9 @@ class CaseUnderstandingEngine:
         # Extract Procedural Remedy & Core Judicial Tests
         remedy, tests = self.extract_procedural_remedy_and_tests(description, classified_type)
 
+        # Extract Factual Context Archetype & Operative Conditions
+        scenario, conditions = self.extract_factual_scenario_and_conditions(description)
+
         # Detect User Position
         detected_position = self.detect_user_position(description, user_position)
 
@@ -480,6 +549,8 @@ class CaseUnderstandingEngine:
             extracted_court=extracted_court,
             procedural_remedy=remedy,
             judicial_tests=tests,
+            scenario_archetype=scenario,
+            operative_conditions=conditions,
         )
 
 

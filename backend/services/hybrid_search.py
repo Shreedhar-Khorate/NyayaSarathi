@@ -166,6 +166,42 @@ class HybridSearchEngine:
             procedural_boost += min(0.13, matched_tests_count * 0.065)
             procedural_boost = min(0.25, procedural_boost)
 
+            # ── Factual Scenario & Operative Conditions Alignment ───────────
+            scenario_boost = 0.0
+            scenario_cues = {
+                "commercial_contractual_dispute": ["vendor", "agreement", "invoice", "supply", "contractual", "commercial", "business"],
+                "matrimonial_inlaws_omnibus": ["in-laws", "mother-in-law", "father-in-law", "sister-in-law", "distant relative", "residing separately", "omnibus", "matrimonial"],
+                "land_title_revenue_dispute": ["sale deed", "partition", "mutation", "revenue", "title suit", "encroachment"],
+                "cyber_credential_and_data_theft": ["email", "login", "unauthorized access", "sim swap", "data", "ip address", "electronic"],
+                "medical_negligence_protocol": ["pre-operative", "cardiology", "medical negligence", "surgical", "hospital"],
+                "cheque_loan_security_misuse": ["security cheque", "loan", "repayment", "bank statement", "presumption"],
+                "economic_syndicate_fraud": ["ponzi", "chit fund", "public deposits", "fake company"],
+            }
+
+            if profile.scenario_archetype and profile.scenario_archetype in scenario_cues:
+                s_words = scenario_cues[profile.scenario_archetype]
+                if any(w in cand_ft_lower for w in s_words):
+                    scenario_boost += 0.10
+
+            condition_cues = {
+                "fully_cooperated_with_police": ["cooperated", "cooperation", "investigation"],
+                "no_custodial_recovery_pending": ["no recovery", "seized"],
+                "civil_suit_already_pending": ["civil suit", "civil court"],
+                "clean_antecedents_no_past_fir": ["clean antecedent", "criminal history", "past record"],
+                "parties_residing_in_different_cities": ["residing separately", "different city", "another state"],
+                "full_payment_receipts_on_record": ["receipt", "bank transfer", "statement"],
+                "expert_committee_protocol_deviation": ["expert committee", "medical board"],
+            }
+
+            cond_matches = 0
+            for cond in (profile.operative_conditions or []):
+                if cond in condition_cues:
+                    if any(w in cand_ft_lower for w in condition_cues[cond]):
+                        cond_matches += 1
+
+            scenario_boost += min(0.10, cond_matches * 0.05)
+            scenario_boost = min(0.20, scenario_boost)
+
             # Court Jurisdiction Boost
             court_boost = 0.0
             if profile.extracted_court and (
@@ -175,15 +211,15 @@ class HybridSearchEngine:
                 court_boost = 0.15
 
             # Combined Normalized Similarity Score [0.02 to 0.98]
-            # Blend RRF rank signal (scaled) with direct semantic and lexical scores
-            blended_sim = (v_score * 0.35) + (b_score * 0.30) + (rrf_score * self.rrf_k * 0.20) + sec_boost + procedural_boost + court_boost
+            # Blend RRF rank signal with direct semantic, lexical, procedural, and scenario scores
+            blended_sim = (v_score * 0.30) + (b_score * 0.25) + (rrf_score * self.rrf_k * 0.15) + sec_boost + procedural_boost + scenario_boost + court_boost
 
             # Category alignment baseline for valid recognized legal domains
             from services.retrieval import RELATED_CASE_TYPES
             related_types = RELATED_CASE_TYPES.get(profile.case_type, [profile.case_type])
             if profile.case_type != "other" and cand.case_type in related_types:
                 category_base = 0.48 if cand.case_type == profile.case_type else 0.40
-                blended_sim = max(blended_sim, category_base + (v_score * 0.25) + sec_boost + procedural_boost + court_boost)
+                blended_sim = max(blended_sim, category_base + (v_score * 0.20) + sec_boost + procedural_boost + scenario_boost + court_boost)
 
             final_score = round(min(0.98, max(0.02, blended_sim)), 4)
 
@@ -191,6 +227,7 @@ class HybridSearchEngine:
                 semantic_score=round(v_score, 4),
                 statutory_boost=round(sec_boost, 4),
                 procedural_boost=round(procedural_boost, 4),
+                scenario_match_boost=round(scenario_boost, 4),
                 court_match_boost=round(court_boost, 4),
                 final_similarity=final_score,
             )

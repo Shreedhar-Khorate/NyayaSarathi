@@ -59,6 +59,8 @@ class StructuredCaseProfile(BaseModel):
     extracted_court: Optional[str] = None
     procedural_remedy: Optional[str] = None
     judicial_tests: List[str] = Field(default_factory=list)
+    scenario_archetype: Optional[str] = None
+    operative_conditions: List[str] = Field(default_factory=list)
 
 
 class CandidateJudgment(BaseModel):
@@ -92,6 +94,7 @@ class SimilarityBreakdown(BaseModel):
     semantic_score: float
     statutory_boost: float
     procedural_boost: float = 0.0
+    scenario_match_boost: float = 0.0
     court_match_boost: float
     final_similarity: float
 
