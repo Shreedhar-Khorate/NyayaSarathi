@@ -26,6 +26,7 @@ interface Precedent {
   outcome: string;
   citation: string;
   source_url: string;
+  cnr?: string;
   verbatim_excerpt?: string;
   excerpt?: string;
 }
