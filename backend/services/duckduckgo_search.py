@@ -217,6 +217,7 @@ class DuckDuckGoLegalSearchEngine:
             matched_sections=matched_sections,
             text_snippet=snippet[:350],
             retrieval_tier="Level 3 (DuckDuckGo Public Legal Authority Discovery)",
+            source_url=url,
         )
 
 

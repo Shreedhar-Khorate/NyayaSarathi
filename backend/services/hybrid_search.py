@@ -176,7 +176,7 @@ class HybridSearchEngine:
                     matched_sections=sorted(list(set(matched_sections))),
                     matched_acts=sorted(list(set(matched_acts))),
                     excerpt=excerpt,
-                    source_url="https://huggingface.co/datasets/overthelex/indian-court-decisions",
+                    source_url=cand.source_url or "https://huggingface.co/datasets/overthelex/indian-court-decisions",
                 )
             )
 

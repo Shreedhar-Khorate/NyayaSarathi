@@ -73,6 +73,7 @@ class CandidateJudgment(BaseModel):
     matched_acts: List[str] = Field(default_factory=list)
     text_snippet: Optional[str] = None
     retrieval_tier: Optional[str] = "Tier 1"
+    source_url: Optional[str] = None
 
 
 class CandidateRetrievalResponse(BaseModel):
