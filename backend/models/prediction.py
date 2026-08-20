@@ -57,6 +57,8 @@ class StructuredCaseProfile(BaseModel):
     user_position: str
     classification_confidence: float
     extracted_court: Optional[str] = None
+    procedural_remedy: Optional[str] = None
+    judicial_tests: List[str] = Field(default_factory=list)
 
 
 class CandidateJudgment(BaseModel):
@@ -89,6 +91,7 @@ class SimilarityBreakdown(BaseModel):
     """Transparent similarity scoring attribution."""
     semantic_score: float
     statutory_boost: float
+    procedural_boost: float = 0.0
     court_match_boost: float
     final_similarity: float
 

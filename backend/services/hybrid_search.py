@@ -127,6 +127,45 @@ class HybridSearchEngine:
             if matched_acts:
                 sec_boost = min(0.25, sec_boost + 0.05)
 
+            # ── Procedural Remedy & Judicial Test Alignment ──────────────
+            procedural_boost = 0.0
+            remedy_cues = {
+                "anticipatory_bail": ["anticipatory bail", "438", "pre-arrest", "cr. misc", "crm", "bail in the event of arrest"],
+                "regular_bail": ["regular bail", "439", "bail application", "custody", "enlarged on bail"],
+                "quashing_482": ["482", "quash", "quashing", "criminal miscellaneous", "cr. misc"],
+                "criminal_revision": ["revision", "397", "401", "crr", "crl.r", "discharge"],
+                "writ_petition": ["writ", "article 226", "w.p", "cwjc", "certiorari", "mandamus"],
+                "temporary_injunction": ["injunction", "order 39", "restrain", "status quo"],
+                "cheque_dishonour_defense": ["138", "139", "cheque", "dishonour", "ni act", "negotiable instruments"],
+            }
+
+            # 1. Check Procedural Vehicle Alignment
+            if profile.procedural_remedy and profile.procedural_remedy in remedy_cues:
+                cues = remedy_cues[profile.procedural_remedy]
+                if any(cue in cand_ft_lower or cue in cand.case_type.lower() or cue in cand.title.lower() for cue in cues):
+                    procedural_boost += 0.12
+
+            # 2. Check Core Judicial Ratio Tests Alignment
+            test_cues = {
+                "custodial_interrogation_necessity": ["custodial interrogation", "cooperation", "no recovery", "investigation"],
+                "clean_antecedents": ["clean antecedent", "criminal antecedent", "no criminal history", "no past record"],
+                "parity_relief": ["parity", "co-accused"],
+                "delay_in_trial_or_fir": ["delay", "prolonged incarceration", "charge-sheet", "chargesheet"],
+                "civil_dispute_clothed_as_offense": ["civil in nature", "civil dispute", "breach of contract", "commercial transaction"],
+                "procedural_non_compliance_41a": ["41a", "arnesh kumar", "notice"],
+                "statutory_presumption_rebuttal": ["rebut", "presumption", "security cheque", "preponderance of probabilities"],
+                "prima_facie_and_balance_of_convenience": ["prima facie", "balance of convenience", "irreparable"],
+            }
+
+            matched_tests_count = 0
+            for test_name in (profile.judicial_tests or []):
+                if test_name in test_cues:
+                    if any(cue in cand_ft_lower for cue in test_cues[test_name]):
+                        matched_tests_count += 1
+
+            procedural_boost += min(0.13, matched_tests_count * 0.065)
+            procedural_boost = min(0.25, procedural_boost)
+
             # Court Jurisdiction Boost
             court_boost = 0.0
             if profile.extracted_court and (
@@ -137,20 +176,21 @@ class HybridSearchEngine:
 
             # Combined Normalized Similarity Score [0.02 to 0.98]
             # Blend RRF rank signal (scaled) with direct semantic and lexical scores
-            blended_sim = (v_score * 0.40) + (b_score * 0.35) + (rrf_score * self.rrf_k * 0.25) + sec_boost + court_boost
+            blended_sim = (v_score * 0.35) + (b_score * 0.30) + (rrf_score * self.rrf_k * 0.20) + sec_boost + procedural_boost + court_boost
 
             # Category alignment baseline for valid recognized legal domains
             from services.retrieval import RELATED_CASE_TYPES
             related_types = RELATED_CASE_TYPES.get(profile.case_type, [profile.case_type])
             if profile.case_type != "other" and cand.case_type in related_types:
                 category_base = 0.48 if cand.case_type == profile.case_type else 0.40
-                blended_sim = max(blended_sim, category_base + (v_score * 0.3) + sec_boost + court_boost)
+                blended_sim = max(blended_sim, category_base + (v_score * 0.25) + sec_boost + procedural_boost + court_boost)
 
             final_score = round(min(0.98, max(0.02, blended_sim)), 4)
 
             breakdown = SimilarityBreakdown(
                 semantic_score=round(v_score, 4),
                 statutory_boost=round(sec_boost, 4),
+                procedural_boost=round(procedural_boost, 4),
                 court_match_boost=round(court_boost, 4),
                 final_similarity=final_score,
             )

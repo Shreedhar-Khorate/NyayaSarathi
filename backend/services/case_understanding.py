@@ -375,6 +375,55 @@ class CaseUnderstandingEngine:
 
         return "High Court"
 
+    def extract_procedural_remedy_and_tests(self, text: str, case_type: str) -> Tuple[Optional[str], List[str]]:
+        """
+        Extracts the precise procedural vehicle/remedy sought and applicable judicial tests.
+        Prevents merely matching the same substantive penal sections (e.g. IPC 420)
+        by aligning with the core procedural issue evaluated by the court.
+        """
+        text_lower = text.lower()
+        remedy = None
+        tests = []
+
+        # 1. Procedural Remedies / Vehicles
+        if "438" in text_lower or "anticipatory bail" in text_lower or "pre-arrest" in text_lower:
+            remedy = "anticipatory_bail"
+        elif "439" in text_lower or "regular bail" in text_lower or "bail application" in text_lower:
+            remedy = "regular_bail"
+        elif "482" in text_lower or "quash" in text_lower or "quashing" in text_lower:
+            remedy = "quashing_482"
+        elif "397" in text_lower or "401" in text_lower or "revision" in text_lower:
+            remedy = "criminal_revision"
+        elif "article 226" in text_lower or "article 32" in text_lower or "writ" in text_lower:
+            remedy = "writ_petition"
+        elif "order 39" in text_lower or "temporary injunction" in text_lower or "interim injunction" in text_lower:
+            remedy = "temporary_injunction"
+        elif "section 138" in text_lower or "cheque" in text_lower or "139" in text_lower:
+            remedy = "cheque_dishonour_defense"
+        elif "appeal" in text_lower:
+            remedy = "appellate_review"
+        else:
+            remedy = case_type
+
+        # 2. Judicial Tests & Grounds
+        test_patterns = {
+            "custodial_interrogation_necessity": ["custodial interrogation", "custody not required", "no recovery", "cooperated with investigation", "cooperation"],
+            "clean_antecedents": ["clean antecedents", "no criminal antecedent", "no criminal history", "first offender", "first time"],
+            "parity_relief": ["parity", "co-accused", "enlarged on bail", "granted bail"],
+            "delay_in_trial_or_fir": ["delay in lodging", "delay in trial", "prolonged incarceration", "charge-sheet filed", "chargesheet submitted"],
+            "civil_dispute_clothed_as_offense": ["civil in nature", "civil dispute", "breach of contract", "commercial transaction", "monetary dispute", "business transaction"],
+            "procedural_non_compliance_41a": ["section 41a", "41a crpc", "arnesh kumar", "notice not served", "arrest guideline"],
+            "statutory_presumption_rebuttal": ["security cheque", "rebutted presumption", "preponderance of probability", "statutory notice", "blank cheque"],
+            "prima_facie_and_balance_of_convenience": ["prima facie", "balance of convenience", "irreparable injury", "irreparable loss", "triable issue"],
+            "statutory_bar_or_maintainability": ["maintainability", "statutory bar", "alternative remedy", "locus standi", "res judicata"],
+        }
+
+        for test_name, keywords in test_patterns.items():
+            if any(kw in text_lower for kw in keywords):
+                tests.append(test_name)
+
+        return remedy, tests
+
     def understand_case(
         self,
         description: str,
@@ -407,6 +456,9 @@ class CaseUnderstandingEngine:
         classified_type, confidence = self.classify_case_type(description, case_type)
         legal_domain = CASE_TYPE_TO_DOMAIN.get(classified_type, "General Legal Jurisdiction")
 
+        # Extract Procedural Remedy & Core Judicial Tests
+        remedy, tests = self.extract_procedural_remedy_and_tests(description, classified_type)
+
         # Detect User Position
         detected_position = self.detect_user_position(description, user_position)
 
@@ -426,6 +478,8 @@ class CaseUnderstandingEngine:
             user_position=detected_position,
             classification_confidence=confidence,
             extracted_court=extracted_court,
+            procedural_remedy=remedy,
+            judicial_tests=tests,
         )
 
 
