@@ -10,6 +10,7 @@ Combines:
 """
 
 import re
+import urllib.parse
 import numpy as np
 from typing import List, Dict, Any, Optional
 
@@ -162,6 +163,13 @@ class HybridSearchEngine:
                 or "disposed"
             ).replace("_", " ").upper()
 
+            clean_search_title = cand.title.split(" of ", 1)[1] if " of " in cand.title else cand.title
+            direct_source = (
+                cand.source_url
+                if (cand.source_url and cand.source_url.startswith("http") and "huggingface.co/datasets/overthelex" not in cand.source_url)
+                else f"https://indiankanoon.org/search/?formInput={urllib.parse.quote(clean_search_title)}"
+            )
+
             ranked.append(
                 RankedPrecedent(
                     cnr=cand.cnr,
@@ -176,7 +184,7 @@ class HybridSearchEngine:
                     matched_sections=sorted(list(set(matched_sections))),
                     matched_acts=sorted(list(set(matched_acts))),
                     excerpt=excerpt,
-                    source_url=cand.source_url or "https://huggingface.co/datasets/overthelex/indian-court-decisions",
+                    source_url=direct_source,
                 )
             )
 
