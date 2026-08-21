@@ -46,9 +46,13 @@ env/
 .env.production.local
 .env*.local
 
-# Database temporary WAL / SHM files
+# Database files & temporary SQLite WAL / SHM files
+*.db
+*.sqlite
+*.sqlite3
 *.db-wal
 *.db-shm
+backend/data/*.db
 
 # Editor & OS files
 .vscode/
