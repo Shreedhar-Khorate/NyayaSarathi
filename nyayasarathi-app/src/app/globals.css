@@ -235,3 +235,324 @@ h4,
   }
 }
 
+/* ────────────────────────────────────────────────────────────
+   3D Legal Case Book & Realistic Tome Physics
+   ──────────────────────────────────────────────────────────── */
+.perspective-book {
+  perspective: 2200px;
+  perspective-origin: center 45%;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Realistic Ground Drop Shadow for Raised / Descending Tome */
+.book-shadow-ambient {
+  box-shadow: 
+    0 45px 90px -20px rgba(0, 0, 0, 0.96),
+    0 22px 45px -15px rgba(0, 0, 0, 0.85),
+    0 0 140px -10px rgba(181, 154, 104, 0.14);
+}
+
+/* Realistic Hardcover Leather Case Overhang (extends past pages) */
+.book-hardcover-case {
+  background: 
+    radial-gradient(ellipse at 25% 20%, rgba(255, 230, 180, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 85%, rgba(0, 0, 0, 0.65) 0%, transparent 65%),
+    linear-gradient(145deg, #2A170E 0%, #1A0E08 45%, #100805 100%);
+  box-shadow: 
+    inset 0 0 45px rgba(0, 0, 0, 0.95),
+    inset 2px 2px 5px rgba(255, 240, 200, 0.15),
+    inset -2px -2px 8px rgba(0, 0, 0, 0.98),
+    0 35px 70px -15px rgba(0, 0, 0, 0.92);
+  border-radius: 8px;
+}
+
+/* Antique Leather Texture with Natural Grain */
+.book-cover-leather {
+  background: 
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(0, 0, 0, 0.6) 0%, transparent 65%),
+    linear-gradient(135deg, #2D180F 0%, #1B0E08 50%, #0F0804 100%);
+  box-shadow: 
+    inset 0 0 40px rgba(0, 0, 0, 0.9),
+    inset 2px 2px 5px rgba(255, 255, 255, 0.14),
+    inset -2px -2px 8px rgba(0, 0, 0, 0.98),
+    0 25px 50px -12px rgba(0, 0, 0, 0.9);
+}
+
+/* Aged Parchment Page Surface with Authentic Texture & Glow */
+.parchment-sheet {
+  background-color: #F8F1E4;
+  background-image: 
+    radial-gradient(ellipse at 50% 50%, #FCF8F0 0%, #F5EADB 65%, #E5D5B8 100%),
+    linear-gradient(to bottom, rgba(140, 100, 50, 0.025) 0%, transparent 100%);
+  box-shadow: 
+    inset 0 0 45px rgba(130, 95, 45, 0.15),
+    inset 0 0 12px rgba(90, 60, 25, 0.10),
+    inset 1px 1px 0px rgba(255, 255, 255, 0.75),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* Antique Dog-Eared Worn / Chipped Corner Cuts */
+.worn-corner-left {
+  clip-path: polygon(
+    14px 0%, 
+    100% 0%, 
+    100% 100%, 
+    12px 100%, 
+    0% calc(100% - 12px), 
+    0% 14px
+  );
+  border-radius: 0 2px 2px 0;
+}
+
+.worn-corner-right {
+  clip-path: polygon(
+    0% 0%, 
+    calc(100% - 14px) 0%, 
+    100% 14px, 
+    100% calc(100% - 12px), 
+    calc(100% - 12px) 100%, 
+    0% 100%
+  );
+  border-radius: 2px 0 0 2px;
+}
+
+/* Dog-Eared Corner Fold Crease */
+.dog-ear-left-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, rgba(80, 50, 20, 0.25) 0%, rgba(120, 80, 35, 0.1) 45%, transparent 50%);
+  pointer-events: none;
+}
+
+.dog-ear-right-top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(225deg, rgba(80, 50, 20, 0.25) 0%, rgba(120, 80, 35, 0.1) 45%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Realistic Antique Tea / Water Ring Stain */
+.tea-stain-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 1.5px solid rgba(135, 90, 40, 0.16);
+  background: radial-gradient(circle at center, transparent 70%, rgba(145, 98, 45, 0.08) 88%, rgba(120, 75, 30, 0.14) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(120, 75, 30, 0.10),
+    0 0 4px rgba(120, 75, 30, 0.08);
+  mix-blend-mode: multiply;
+  transform: rotate(-12deg);
+}
+
+/* Amorphous Water/Spill Bleed Stain */
+.water-spill-blot {
+  position: absolute;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 40% 60%, rgba(130, 85, 35, 0.13) 0%, rgba(145, 100, 48, 0.08) 55%, transparent 80%);
+  filter: blur(1.5px);
+  mix-blend-mode: multiply;
+  border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%;
+}
+
+/* Foxing Age Speckles */
+.foxing-speckles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: 
+    radial-gradient(circle at 15% 25%, rgba(120, 70, 25, 0.6) 0.5px, transparent 1.5px),
+    radial-gradient(circle at 78% 18%, rgba(110, 65, 20, 0.5) 1px, transparent 2px),
+    radial-gradient(circle at 35% 82%, rgba(130, 75, 30, 0.55) 0.8px, transparent 2px),
+    radial-gradient(circle at 88% 72%, rgba(115, 68, 22, 0.6) 1.2px, transparent 2.5px),
+    radial-gradient(circle at 22% 64%, rgba(125, 72, 28, 0.45) 0.6px, transparent 1.8px),
+    radial-gradient(circle at 62% 44%, rgba(120, 70, 25, 0.4) 0.7px, transparent 2px);
+}
+
+/* Red Archival Court Margin Ruling Line */
+.legal-margin-line-left {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 28px;
+  width: 1px;
+  background: rgba(180, 70, 80, 0.18);
+  pointer-events: none;
+}
+
+.legal-margin-line-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 28px;
+  width: 1px;
+  background: rgba(180, 70, 80, 0.18);
+  pointer-events: none;
+}
+
+/* Authentic Binding Gutter Stitches */
+.binding-stitches {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 18px,
+    #8C6F34 18px,
+    #8C6F34 22px
+  );
+  opacity: 0.45;
+}
+
+/* Concave Page Curve Lighting Gradients (Soft warm tone, no dark blackish shadows) */
+.page-curve-left {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.05) 8%,
+    transparent 20%,
+    transparent 80%,
+    rgba(100, 70, 35, 0.05) 94%,
+    rgba(80, 50, 20, 0.10) 100%
+  );
+}
+
+.page-curve-right {
+  background: linear-gradient(
+    270deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.05) 8%,
+    transparent 20%,
+    transparent 80%,
+    rgba(100, 70, 35, 0.05) 94%,
+    rgba(80, 50, 20, 0.10) 100%
+  );
+}
+
+/* Stacked Page Edges (Realistic Physical Paper Thickness & Foliation) */
+.book-edge-stack-left {
+  box-shadow: 
+    -1px 0 0 #F3E8D4,
+    -3px 0 0 #E8D8BD,
+    -5px 0 0 #DCC8A6,
+    -7px 0 0 #CFB890,
+    -9px 0 0 #C1A87C,
+    -11px 0 0 #B29769,
+    -14px 0 0 #A18558,
+    -18px 6px 24px rgba(0, 0, 0, 0.75);
+}
+
+.book-edge-stack-right {
+  box-shadow: 
+    1px 0 0 #F3E8D4,
+    3px 0 0 #E8D8BD,
+    5px 0 0 #DCC8A6,
+    7px 0 0 #CFB890,
+    9px 0 0 #C1A87C,
+    11px 0 0 #B29769,
+    14px 0 0 #A18558,
+    18px 6px 24px rgba(0, 0, 0, 0.75);
+}
+
+/* Top and Bottom Stacked Gilded Page Edges */
+.book-edge-stack-top {
+  box-shadow: 
+    0 -1px 0 #F2E4CB,
+    0 -3px 0 #E4D3B4,
+    0 -5px 0 #D5C29E,
+    0 -7px 0 #C5B089;
+}
+
+.book-edge-stack-bottom {
+  box-shadow: 
+    0 1px 0 #F2E4CB,
+    0 3px 0 #E4D3B4,
+    0 5px 0 #D5C29E,
+    0 7px 0 #C5B089,
+    0 14px 22px rgba(0, 0, 0, 0.65);
+}
+
+/* 3D Raised Leather Spine with Stitched Ribs */
+.spine-ridge {
+  box-shadow: 
+    0 1px 2px rgba(255, 255, 255, 0.18),
+    0 -1px 2px rgba(0, 0, 0, 0.65);
+}
+
+/* Realistic Satin Bookmark Ribbon */
+.ribbon-bookmark {
+  background: linear-gradient(135deg, #7A1D2E 0%, #A32A40 45%, #6A1826 100%);
+  box-shadow: 
+    2px 4px 12px rgba(0, 0, 0, 0.65),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+.ribbon-bookmark::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: inherit;
+  clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+}
+
+/* Archival Stamp Effects */
+.archival-stamp {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  user-select: none;
+  mix-blend-mode: multiply;
+  mask-image: radial-gradient(circle at center, black 70%, rgba(0,0,0,0.85) 100%);
+}
+
+.stamp-red {
+  color: #8A2D3C;
+  border-color: #8A2D3C;
+  background: rgba(138, 45, 60, 0.05);
+}
+
+.stamp-green {
+  color: #385E49;
+  border-color: #385E49;
+  background: rgba(56, 94, 73, 0.05);
+}
+
+.stamp-brass {
+  color: #8C6F34;
+  border-color: #8C6F34;
+  background: rgba(140, 111, 52, 0.06);
+}
+
+/* Legal yellow highlighter on parchment */
+.legal-highlight {
+  background: linear-gradient(104deg, rgba(235, 195, 65, 0) 0.9%, rgba(235, 195, 65, 0.28) 2.4%, rgba(235, 195, 65, 0.32) 96.5%, rgba(235, 195, 65, 0) 0.992);
+  border-radius: 2px;
+  padding: 0 4px;
+}
+
+
+
+
