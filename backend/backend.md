@@ -3,6 +3,32 @@
 > **NyayaSarathi** is an AI-Powered Judicial Case Intelligence & Decision Support System.
 > This document provides the comprehensive architectural specification of the backend engine, data models, probability formulas, confidence guardrails, and API endpoints.
 
+## 0. Canonical Runtime and Package Boundary
+
+The canonical backend is the root FastAPI application in `main.py`. Start it
+from the `backend/` directory with `python main.py`. It imports the root
+`routers/`, `models/`, and `services/` packages and serves the working
+prediction pipeline at `/api/analyze`, `/api/predict`, and
+`/api/precedent/{cnr}`.
+
+The `app/` directory is retained as an experimental v1 scaffold. Its
+`app/main.py` application exposes `/api/v1`, but its analysis service and most
+feature services are prototype implementations with different response
+contracts. It is not part of the canonical runtime and must not be mixed with
+the root application.
+
+### Canonical dependency flow
+
+```text
+main.py
+  -> routers/analyze.py
+    -> case understanding -> retrieval -> ranking
+    -> confidence/abstention -> precedent verification
+    -> explanation -> final validation
+  -> routers/dataset.py
+    -> remote dataset inspection/ingestion and local SQLite search
+```
+
 ---
 
 ## 📐 1. System Architecture
@@ -46,15 +72,15 @@
 
 ## ⚙️ 2. Core Dependencies & Runtime
 
-| Technology | Version | Purpose |
-|---|---|---|
-| **Python** | 3.10+ | Core language |
-| **FastAPI** | >=0.110.0 | High-performance async REST API framework |
-| **Uvicorn** | >=0.27.0 | Production ASGI web server |
-| **Pydantic** | >=2.6.0 | Strict schema validation & serialization |
-| **scikit-learn** | >=1.4.0 | TF-IDF vectorization and semantic cosine similarity |
-| **DuckDB** | >=0.10.0 | HTTP Range Queries over Hugging Face Parquet dataset |
-| **SQLite3** | Built-in | Fast local judgment database with B-tree indexing |
+| Technology       | Version   | Purpose                                              |
+| ---------------- | --------- | ---------------------------------------------------- |
+| **Python**       | 3.10+     | Core language                                        |
+| **FastAPI**      | >=0.110.0 | High-performance async REST API framework            |
+| **Uvicorn**      | >=0.27.0  | Production ASGI web server                           |
+| **Pydantic**     | >=2.6.0   | Strict schema validation & serialization             |
+| **scikit-learn** | >=1.4.0   | TF-IDF vectorization and semantic cosine similarity  |
+| **DuckDB**       | >=0.10.0  | HTTP Range Queries over Hugging Face Parquet dataset |
+| **SQLite3**      | Built-in  | Fast local judgment database with B-tree indexing    |
 
 ---
 
@@ -96,15 +122,29 @@ CREATE INDEX IF NOT EXISTS idx_judgments_disposal ON judgments(disposal_nature_n
 ## 🔬 4. 6-Stage Prediction Engine Mechanics
 
 ### Stage 1: Dataset Range Query Client (`dataset_client.py`)
+
 - Connects directly to `overthelex/indian-court-decisions` on Hugging Face using DuckDB's HTTP range request engine.
 - Bypasses the 100-row REST limit to selectively pull clean batches during administrative ingestion without downloading all 24.8 GB.
 
 ### Stage 2: Case Understanding & Retrieval (`case_understanding.py` & `retrieval.py`)
+
 - Multi-class regex and lexical classifier covering 16+ domains (`bail`, `criminal`, `contract`, `motor_accident`, `cheque_bounce`, `writ_civil`, `property`, `family`, `service`, `tax`, `arbitration`, etc.).
 - Extracts statutory entities (IPC/BNS, CrPC/BNSS, CPC, Contract Act, MVA, NI Act, etc.) and procedural standing.
-- 4-Tier Candidate Retrieval over indexed SQLite B-trees in $< 10$ms.
+- Multi-tier candidate retrieval starts with indexed SQLite and can fall back to
+  public/remote sources when local evidence is insufficient.
+
+The current retrieval order is:
+
+1. Tier 0: live Hugging Face lookup for requested courts missing locally.
+2. Tier 1: statutory section and related case-type match.
+3. Level 3: DuckDuckGo public legal-authority discovery for sparse/specialized queries.
+4. Tier 2: related category and court match.
+5. Tier 3: factual keyword match.
+6. Tier 4: live Hugging Face fallback.
+7. Tier 5: broad local precedent fallback.
 
 ### Stage 3: Hybrid Ranking & Dirichlet Probability (`ranking.py` & `outcome_engine.py`)
+
 - Hybrid Similarity formula:
   $$\text{Similarity} = \text{TF-IDF Cosine} + \text{Statutory Bonus} + \text{Forum Bonus}$$
 - Position-Aware Outcome Mapping:
@@ -115,6 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_judgments_disposal ON judgments(disposal_nature_n
   where $w_i = \text{sim}_i^2$, $\alpha = 0.15$, $P_0 = 50\%$, and $P \in [5\% - 95\%]$.
 
 ### Stage 4: Multi-Factor Confidence & Mandatory Abstention (`confidence_engine.py`)
+
 - Independent 4-factor confidence scoring:
   $$\text{Confidence} = 0.25 S_{\text{size}} + 0.45 S_{\text{sim}} + 0.15 S_{\text{stat}} + 0.15 S_{\text{agree}}$$
 - Mandatory Abstention triggers (`status: "insufficient_data"`, `success_probability: null`) if:
@@ -123,11 +164,13 @@ CREATE INDEX IF NOT EXISTS idx_judgments_disposal ON judgments(disposal_nature_n
   - Top precedent similarity $< 0.35$
 
 ### Stage 5: Precedent Verification & CNR Citations (`precedent_verifier.py`)
+
 - Validates that 100% of cited precedents exist in the local SQLite database.
 - Formats authentic citations: `CNR: BRHC010527092023_1_2023-07-28 [2023 Patna HC]`.
 - Extracts verbatim holding / order excerpts directly from judgment text.
 
 ### Stage 6: Grounded Explanation & Final Validator (`explanation_engine.py` & `validator.py`)
+
 - Synthesizes plain-language executive takeaway, statutory supporting factors, and prosecution/defense risk factors.
 - Programmatic post-generation validation audit guarantees zero math mutation and zero hallucinated claims.
 
@@ -138,6 +181,7 @@ CREATE INDEX IF NOT EXISTS idx_judgments_disposal ON judgments(disposal_nature_n
 ### `POST /api/analyze` (or `POST /api/predict`)
 
 #### Request Body (`CaseInputRequest`)
+
 ```json
 {
   "description": "The applicant is seeking anticipatory bail under Section 438 CrPC in an FIR registered under Section 420 and 120B IPC for alleged financial irregularities. The applicant has clean antecedents and has fully cooperated with the investigation.",
@@ -147,6 +191,7 @@ CREATE INDEX IF NOT EXISTS idx_judgments_disposal ON judgments(disposal_nature_n
 ```
 
 #### Success Response (`FinalPredictionResponse`)
+
 ```json
 {
   "status": "success",
@@ -192,7 +237,11 @@ CREATE INDEX IF NOT EXISTS idx_judgments_disposal ON judgments(disposal_nature_n
     "database_provenance": "NyayaSarathi Local SQLite Judgment Archive",
     "dataset_origin": "overthelex/indian-court-decisions (Hugging Face)",
     "zero_hallucination_guaranteed": true,
-    "verified_cnrs": ["BRHC010527092023_1_2023-07-28", "BRHC010977212025_1_2025-12-08", "WBCHCA0485002025_1_2025-11-14"]
+    "verified_cnrs": [
+      "BRHC010527092023_1_2023-07-28",
+      "BRHC010977212025_1_2025-12-08",
+      "WBCHCA0485002025_1_2025-11-14"
+    ]
   },
   "validation_report": {
     "is_valid": true,
@@ -208,9 +257,11 @@ CREATE INDEX IF NOT EXISTS idx_judgments_disposal ON judgments(disposal_nature_n
 ---
 
 ### `GET /api/precedent/{cnr}`
+
 Fetches the complete judgment text and judicial metadata for on-demand verification:
-* **Example**: `/api/precedent/BRHC010527092023_1_2023-07-28`
-* **Response**:
+
+- **Example**: `/api/precedent/BRHC010527092023_1_2023-07-28`
+- **Response**:
   ```json
   {
     "status": "success",

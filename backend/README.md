@@ -6,6 +6,17 @@ The system provides a **General Indian Judgment Success Predictor** that compute
 
 ---
 
+## ✅ Canonical Backend
+
+The supported runtime is the root application started with `python main.py`.
+It uses the root `routers/`, `models/`, and `services/` packages and exposes the
+working prediction and dataset APIs under `/api`.
+
+The `app/` directory is a separate v1 scaffold. It contains prototype routes
+and sample in-memory/static services and is not used by the documented startup
+command. Do not run `app/main.py` as a replacement for the canonical API until
+its response contracts and persistence layer are completed.
+
 ## 📁 Directory Structure
 
 ```
@@ -42,8 +53,9 @@ backend/
 ## 🔌 API Endpoints
 
 ### 1. Judgment Success Predictor
-* **Endpoint**: `POST /api/analyze` (or `POST /api/predict`)
-* **Request Schema**:
+
+- **Endpoint**: `POST /api/analyze` (or `POST /api/predict`)
+- **Request Schema**:
   ```json
   {
     "description": "The applicant seeks anticipatory bail under Section 438 CrPC in FIR under Section 420 IPC. Clean antecedents and fully cooperated.",
@@ -51,7 +63,7 @@ backend/
     "user_position": "applicant"
   }
   ```
-* **Success Response Schema**:
+- **Success Response Schema**:
   ```json
   {
     "status": "success",
@@ -83,7 +95,7 @@ backend/
     "disclaimer": "This is an AI-generated advisory estimate based on historical judgments and is not a guarantee or final legal opinion."
   }
   ```
-* **Mandatory Abstention Response** (when query is ungrounded or weak):
+- **Mandatory Abstention Response** (when query is ungrounded or weak):
   ```json
   {
     "status": "insufficient_data",
@@ -91,39 +103,45 @@ backend/
     "confidence": "low",
     "precedents": [],
     "takeaway": "Insufficient comparable historical Indian court judgments found. The case narrative does not match a recognized legal domain...",
-    "limitations": ["Please provide more detailed case facts or cited statutory section numbers."]
+    "limitations": [
+      "Please provide more detailed case facts or cited statutory section numbers."
+    ]
   }
   ```
 
 ---
 
 ### 2. Direct Precedent Detail Lookup
-* **Endpoint**: `GET /api/precedent/{cnr}`
-* **Example**: `GET /api/precedent/BRHC010527092023_1_2023-07-28`
-* **Response**: Returns the complete judgment record, full text, presiding judge, decision date, and bench metadata.
+
+- **Endpoint**: `GET /api/precedent/{cnr}`
+- **Example**: `GET /api/precedent/BRHC010527092023_1_2023-07-28`
+- **Response**: Returns the complete judgment record, full text, presiding judge, decision date, and bench metadata.
 
 ---
 
 ### 3. Local Dataset Analytics & Ingestion
-* **Database Stats**: `GET /api/dataset/local/stats`
-* **Seed Database**: `POST /api/dataset/ingest/seed`
-* **On-Demand Batch Ingest**: `POST /api/dataset/ingest`
+
+- **Database Stats**: `GET /api/dataset/local/stats`
+- **Seed Database**: `POST /api/dataset/ingest/seed`
+- **On-Demand Batch Ingest**: `POST /api/dataset/ingest`
 
 ---
 
 ## 🚀 Installation & Local Run
 
 ### 1. Prerequisites
+
 Ensure you have **Python 3.10+** installed.
 
 ### 2. Setup Virtual Environment
-* **Windows**:
+
+- **Windows**:
   ```bash
   cd backend
   python -m venv venv
   venv\Scripts\activate
   ```
-* **macOS/Linux**:
+- **macOS/Linux**:
   ```bash
   cd backend
   python3 -m venv venv
@@ -131,15 +149,18 @@ Ensure you have **Python 3.10+** installed.
   ```
 
 ### 3. Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 4. Run API Dev Server
+
 ```bash
 python main.py
 ```
-*The server will start at `http://localhost:8000` with interactive Swagger docs at `http://localhost:8000/docs`.*
+
+_The server will start at `http://localhost:8000` with interactive Swagger docs at `http://localhost:8000/docs`._
 
 ---
 
@@ -149,4 +170,29 @@ python main.py
 2. **Zero Fake Citations**: Every precedent has an authentic Indian CNR key validated in `nyayasarathi.db`.
 3. **Position Relativity**: Automatically recognizes whether the user is Petitioner/Applicant or Respondent/Defendant and inverts outcome valuations accordingly.
 4. **Mandatory Abstention**: Rejects ungrounded or weak queries (`status: "insufficient_data"`).
-5. **Instant Speed (< 50ms)**: B-tree indexed local SQLite database ensures sub-50ms query response times.
+5. **Local-first performance**: Indexed SQLite retrieval is used before remote fallbacks; actual latency depends on ranking work and network access.
+
+## 🧭 Runtime and API Boundary
+
+```text
+frontend
+  -> /api/analyze, /api/predict, /api/precedent/{cnr}, /api/dataset/*
+  -> backend/main.py
+  -> routers/analyze.py -> understanding -> retrieval -> ranking
+     -> confidence/abstention -> verification -> explanation -> validation
+  -> routers/dataset.py -> remote inspection/ingestion and local SQLite search
+```
+
+The root pipeline has one canonical response contract: `FinalPredictionResponse`
+from `models/prediction.py`. The prototype `app/api/v1/analyze.py` returns the
+older `CaseAnalysisResponse` contract and must not be mixed with the root API.
+
+## 📌 Feature Status
+
+| Area                                               | Status                   | Implementation                                                                                   |
+| -------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------ |
+| Judgment prediction                                | Implemented              | Root retrieval, ranking, outcome, confidence, verification, explanation, and validation services |
+| Dataset ingestion                                  | Implemented              | DuckDB remote Parquet queries with SQLite caching                                                |
+| Hybrid search                                      | Implemented in predictor | TF-IDF, BM25, RRF, and heuristic legal reranking                                                 |
+| War Room, contracts, drafting, Q&A, case dashboard | Prototype                | `app/` services currently return static or in-memory sample data                                 |
+| ML calibration training                            | Evaluation prototype     | Training script currently generates synthetic probabilities                                      |
