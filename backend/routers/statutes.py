@@ -1,8 +1,9 @@
 from fastapi import APIRouter
-from app.schemas.statutes import StatuteMapResponse
-from app.services.statutes_service import map_statute
+from schemas.statutes import StatuteMapResponse
+from services.statutes_service import map_statute
 
 router = APIRouter()
+
 
 @router.get("/map", response_model=StatuteMapResponse)
 def statute_map(section: str):

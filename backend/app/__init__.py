@@ -1,1 +1,0 @@
-# NyayaSarathi Backend Application Package

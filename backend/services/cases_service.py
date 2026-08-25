@@ -1,10 +1,11 @@
 """
-Case Management Service — Sample In-Memory Implementation
-TODO: Replace with PostgreSQL via SQLAlchemy.
+Case Management Service — In-Memory Implementation
+TODO: Replace with a real database (e.g. PostgreSQL via SQLAlchemy).
 """
 import uuid
-from typing import List
-from app.schemas.cases import Case, CreateCaseRequest, TimelineResponse, TimelineEvent
+from typing import List, Optional
+from schemas.cases import Case, CreateCaseRequest, TimelineResponse, TimelineEvent
+
 
 # In-memory store (replace with DB)
 _cases: dict[str, Case] = {}
@@ -24,7 +25,7 @@ def list_cases() -> List[Case]:
     return list(_cases.values())
 
 
-def get_case(case_id: str) -> Case | None:
+def get_case(case_id: str) -> Optional[Case]:
     return _cases.get(case_id)
 
 

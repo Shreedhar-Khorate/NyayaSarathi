@@ -7,6 +7,7 @@ class DraftRequest(BaseModel):
     case_facts: str
     target_language: Optional[str] = None  # e.g. "hi", "mr", "ta"
 
+
 class DraftResponse(BaseModel):
     draft_text: str
     translated_text: Optional[str] = None

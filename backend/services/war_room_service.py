@@ -1,8 +1,8 @@
 """
-War Room — Adversarial Argument Simulator — Sample Implementation
-TODO: Replace with LLM-driven adversarial simulation.
+War Room — Adversarial Argument Simulator
+TODO: Replace with LLM-driven multi-round adversarial simulation.
 """
-from app.schemas.war_room import WarRoomRequest, WarRoomResponse
+from schemas.war_room import WarRoomRequest, WarRoomResponse
 
 
 def simulate_war_room(request: WarRoomRequest) -> WarRoomResponse:

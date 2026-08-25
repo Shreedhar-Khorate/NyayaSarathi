@@ -1,47 +1,77 @@
-import os
-from pathlib import Path
-import time
-from fastapi import FastAPI
+"""
+NyayaSarathi Backend — Main Entry Point
+AI-Powered Judicial Case Intelligence & Decision Support API
+"""
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from routers import analyze, dataset
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi import Request
 
-# Automatically load environment variables from backend/.env if present
-env_file = Path(__file__).parent / ".env"
-if env_file.exists():
-    with open(env_file, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                os.environ[k.strip()] = v.strip().strip("'\"")
+from routers import analyze, cases, contracts, drafts, qa, search, statutes, war_room
 
+# ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="NyayaSarathi API",
-    description="Judicial Case Intelligence & Data-Driven Judgment Success Predictor API",
-    version="2.0.0"
+    description="AI-Powered Judicial Case Intelligence & Decision Support API",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
-# CORS Setup: Allow dev servers
+# ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # React + Vite default port
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",  # Next.js default port
+        "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include Routers
-app.include_router(analyze.router)
-app.include_router(dataset.router)
+# ── Exception Handlers ────────────────────────────────────────────────────────
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.detail, "path": str(request.url)},
+    )
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to NyayaSarathi API Server v2. Grounded Judgment Success Predictor active."}
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"error": "Validation error", "details": exc.errors()},
+    )
+
+# ── Routers ───────────────────────────────────────────────────────────────────
+app.include_router(analyze.router,   prefix="/api/analyze",    tags=["Judgment Predictor"])
+app.include_router(cases.router,     prefix="/api/cases",      tags=["Cases"])
+app.include_router(contracts.router, prefix="/api/contracts",  tags=["Contracts"])
+app.include_router(drafts.router,    prefix="/api/drafts",     tags=["Drafting"])
+app.include_router(qa.router,        prefix="/api/qa",         tags=["RAG Q&A"])
+app.include_router(search.router,    prefix="/api/search",     tags=["Hybrid Search"])
+app.include_router(statutes.router,  prefix="/api/statutes",   tags=["Statutory Mapping"])
+app.include_router(war_room.router,  prefix="/api/war-room",   tags=["War Room"])
+
+# ── Root & Health ─────────────────────────────────────────────────────────────
+@app.get("/", tags=["Health"])
+def root():
+    return {
+        "service": "NyayaSarathi API",
+        "version": "1.0.0",
+        "docs": "/docs",
+    }
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    return {"status": "ok", "service": "NyayaSarathi API", "version": "1.0.0"}
+
 
 if __name__ == "__main__":
     import uvicorn

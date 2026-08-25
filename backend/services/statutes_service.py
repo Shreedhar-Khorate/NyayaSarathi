@@ -1,11 +1,11 @@
 """
-Statutory Mapping Service — IPC ↔ BNS cross-reference (Sample)
-TODO: Replace with a full lookup table or DB-backed mapping.
+Statutory Mapping Service — IPC ↔ BNS cross-reference
+TODO: Replace with a full DB-backed lookup table (SCC Online / Manupatra).
 """
-from app.schemas.statutes import StatuteMapResponse
+from schemas.statutes import StatuteMapResponse
 
 # Sample IPC → BNS mapping table
-_IPC_TO_BNS = {
+_IPC_TO_BNS: dict[str, StatuteMapResponse] = {
     "302": StatuteMapResponse(
         input_section="IPC 302",
         mapped_section="BNS 101",

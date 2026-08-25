@@ -1,8 +1,8 @@
 """
 Legal Draft Generator — Sample Implementation
-TODO: Replace with LLM-based draft generation + translation API.
+TODO: Replace with LLM-based draft generation + IndicTrans2 translation API.
 """
-from app.schemas.drafts import DraftRequest, DraftResponse
+from schemas.drafts import DraftRequest, DraftResponse
 
 
 def generate_draft(request: DraftRequest) -> DraftResponse:
