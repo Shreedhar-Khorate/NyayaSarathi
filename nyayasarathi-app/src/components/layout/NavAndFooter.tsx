@@ -6,9 +6,10 @@ import { Scale, Menu, X, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
 const NAV_LINKS = [
-  { href: '#pipeline',     label: 'How It Works' },
-  { href: '#capabilities', label: 'Capabilities' },
-  { href: '#workspace',    label: 'Workspace'    },
+  { href: '/predictor',    label: 'Judgment Predictor' },
+  { href: '/#pipeline',     label: 'How It Works' },
+  { href: '/#capabilities', label: 'Capabilities' },
+  { href: '/#workspace',    label: 'Workspace'    },
 ];
 
 const EASE = [0.16, 1, 0.3, 1] as const;

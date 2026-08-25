@@ -1,431 +1,282 @@
-# ⚖️ NyayaSarathi — Backend Documentation
+# ⚖️ NyayaSarathi — Backend Architecture & Technical Specification
 
 > **NyayaSarathi** is an AI-Powered Judicial Case Intelligence & Decision Support System.
-> This document details the backend architecture, every feature it supports, and the API contract for each — covering what is **currently implemented (MVP)** and what is **designed/proposed** per the project's RAG architecture.
+> This document provides the comprehensive architectural specification of the backend engine, data models, probability formulas, confidence guardrails, and API endpoints.
 
-*Last updated: August 2026*
+## 0. Canonical Runtime and Package Boundary
+
+The canonical backend is the root FastAPI application in `main.py`. Start it
+from the `backend/` directory with `python main.py`. It imports the root
+`routers/`, `models/`, and `services/` packages and serves the working
+prediction pipeline at `/api/analyze`, `/api/predict`, and
+`/api/precedent/{cnr}`.
+
+The `app/` directory is retained as an experimental v1 scaffold. Its
+`app/main.py` application exposes `/api/v1`, but its analysis service and most
+feature services are prototype implementations with different response
+contracts. It is not part of the canonical runtime and must not be mixed with
+the root application.
+
+### Canonical dependency flow
+
+```text
+main.py
+  -> routers/analyze.py
+    -> case understanding -> retrieval -> ranking
+    -> confidence/abstention -> precedent verification
+    -> explanation -> final validation
+  -> routers/dataset.py
+    -> remote dataset inspection/ingestion and local SQLite search
+```
 
 ---
 
-## 📐 1. Architecture Overview
+## 📐 1. System Architecture
 
 ```
 ┌───────────────────────────────────────────────────────────┐
-│                    Frontend (Next.js)                      │
-│              nyayasarathi-app/  ·  Port 3000                │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ REST · HTTP/JSON
+│                    Frontend (Next.js)                     │
+│              nyayasarathi-app/  ·  Port 3000              │
+└───────────────────────────┬───────────────────────────────┘
+                            │ REST (HTTP/JSON)
                             ▼
 ┌───────────────────────────────────────────────────────────┐
-│                    Backend (FastAPI)                        │
-│                  backend/  ·  Port 8000                     │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────┐ │
-│  │ Ingestion &  │  │  Hybrid      │  │  Generative RAG /  │ │
-│  │ OCR Pipeline │→ │  Retrieval   │→ │  XAI Synthesis     │ │
-│  └─────────────┘  └──────────────┘  └────────────────────┘ │
-└───────────────────────────┬─────────────────────────────────┘
+│                    Backend (FastAPI)                      │
+│                  backend/  ·  Port 8000                   │
+│                                                           │
+│  ┌──────────────────────┐      ┌───────────────────────┐  │
+│  │ Case Understanding & │      │ 4-Tier Retrieval &    │  │
+│  │ Statutory Parser     │ ───► │ Hybrid Similarity     │  │
+│  └──────────────────────┘      └───────────┬───────────┘  │
+│                                            │              │
+│                                            ▼              │
+│  ┌──────────────────────┐      ┌───────────────────────┐  │
+│  │ Multi-Factor         │      │ Position-Aware        │  │
+│  │ Confidence & Guard   │ ◄─── │ Dirichlet Probability │  │
+│  └──────────┬───────────┘      └───────────────────────┘  │
+│             │                                             │
+│             ▼                                             │
+│  ┌──────────────────────┐      ┌───────────────────────┐  │
+│  │ Precedent Verifier   │      │ Grounded Explanation  │  │
+│  │ & CNR Citations      │ ───► │ & Final Validation    │  │
+│  └──────────────────────┘      └───────────────────────┘  │
+└───────────────────────────┬───────────────────────────────┘
                             ▼
-        ┌───────────────┬───────────────┬───────────────┐
-        │  PostgreSQL   │  Qdrant       │ Elasticsearch │
-        │  + Redis      │ (vector idx)  │ (lexical idx) │
-        └───────────────┴───────────────┴───────────────┘
-```
-
-**Status legend used throughout this doc:**
-
-| Badge | Meaning |
-|---|---|
-| ✅ **Live** | Implemented and running in `backend/main.py` today |
-| 🚧 **In Progress** | Partially scaffolded or actively being built |
-| 📋 **Planned** | Designed in the proposal, not yet in code |
-
----
-
-## ⚙️ 2. Core Framework & Runtime
-
-| Technology | Version | Purpose |
-|---|---|---|
-| **Python** | 3.8+ | Backend language |
-| **FastAPI** | >=0.100.0 | Async REST API framework |
-| **Uvicorn** | >=0.22.0 | ASGI server (hot-reload in dev) |
-| **Pydantic** | >=2.0.0 | Request/response validation & serialization |
-| **CORSMiddleware** | — | Allows `localhost:3000` (Next.js) and `localhost:5173` (Vite) origins |
-
-**Run locally:**
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate      # Windows
-pip install -r requirements.txt
-python main.py              # http://localhost:8000
+┌───────────────────────────────────────────────────────────┐
+│        Local Judgment Database (SQLite B-Tree Index)      │
+│                backend/data/nyayasarathi.db               │
+└───────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🧩 3. Feature-by-Feature Breakdown
+## ⚙️ 2. Core Dependencies & Runtime
 
-### 3.1 Judgment Success Predictor ✅ **Live**
+| Technology       | Version   | Purpose                                              |
+| ---------------- | --------- | ---------------------------------------------------- |
+| **Python**       | 3.10+     | Core language                                        |
+| **FastAPI**      | >=0.110.0 | High-performance async REST API framework            |
+| **Uvicorn**      | >=0.27.0  | Production ASGI web server                           |
+| **Pydantic**     | >=2.6.0   | Strict schema validation & serialization             |
+| **scikit-learn** | >=1.4.0   | TF-IDF vectorization and semantic cosine similarity  |
+| **DuckDB**       | >=0.10.0  | HTTP Range Queries over Hugging Face Parquet dataset |
+| **SQLite3**      | Built-in  | Fast local judgment database with B-tree indexing    |
 
-The current MVP endpoint. Given a case type and description, returns an estimated success probability, cited precedents, and a plain-language takeaway.
+---
 
-| | |
-|---|---|
-| **Endpoint** | `POST /api/analyze` |
-| **Purpose** | Judicial case analysis & decision support |
-| **Maps to (pitch deck)** | "Predictor" — AI engine calculates judgment success probabilities instantly |
+## 🗄️ 3. Database Schema (`backend/data/nyayasarathi.db`)
 
-**Request — `CaseAnalysisRequest`**
+The local archive stores verified Indian court decisions with multi-column B-tree indexes:
 
-| Field | Type | Description |
-|---|---|---|
-| `case_type` | `str` | Category of case (e.g. "Contract Dispute", "Criminal - IPC 420") |
-| `description` | `str` | Free-text summary of facts / issue |
+```sql
+CREATE TABLE IF NOT EXISTS judgments (
+    cnr TEXT PRIMARY KEY,                       -- Official 16-character Indian Case Number Record
+    source TEXT,                                -- "sc" (Supreme Court) or "hc" (High Court)
+    court_code TEXT,                            -- Court code
+    bench TEXT,                                 -- Bench or seat identifier
+    year INTEGER,                               -- Year of judgment
+    title TEXT,                                 -- Full case title and parties
+    judge TEXT,                                 -- Presiding Justice / Judge name
+    decision_date TEXT,                         -- Official disposal date (YYYY-MM-DD)
+    disposal_nature TEXT,                       -- Raw court disposition (e.g. BAIL GRANTED, DISMISSED)
+    disposal_nature_normalized TEXT,            -- Normalized outcome category
+    parsed_case_type TEXT,                      -- Indexed case type (bail, contract, mact, writ, etc.)
+    parsed_petitioner TEXT,                     -- Extracted petitioner/appellant party name
+    parsed_respondent TEXT,                     -- Extracted respondent/defendant party name
+    parsed_court_name TEXT,                     -- Clean forum name (e.g. Patna High Court)
+    full_text TEXT,                             -- Verbatim original judgment text
+    dataset_config TEXT,                        -- Hugging Face configuration name
+    dataset_split TEXT,                         -- Hugging Face split (train/test)
+    ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-**Response — `CaseAnalysisResponse`**
+-- Fast B-Tree Indexes
+CREATE INDEX IF NOT EXISTS idx_judgments_case_type ON judgments(parsed_case_type);
+CREATE INDEX IF NOT EXISTS idx_judgments_court ON judgments(parsed_court_name);
+CREATE INDEX IF NOT EXISTS idx_judgments_year ON judgments(year);
+CREATE INDEX IF NOT EXISTS idx_judgments_disposal ON judgments(disposal_nature_normalized);
+```
 
-| Field | Type | Description |
-|---|---|---|
-| `probability` | `str` | Estimated likelihood of a favorable outcome |
-| `legalPrecedents` | `List[str]` | Related case citations supporting the estimate |
-| `keyTakeaway` | `str` | One-line plain-English summary of the analysis |
-| `confidence` | `str` | Model's confidence level in the estimate (e.g. "High", "Moderate") |
+---
 
-**Example**
+## 🔬 4. 6-Stage Prediction Engine Mechanics
+
+### Stage 1: Dataset Range Query Client (`dataset_client.py`)
+
+- Connects directly to `overthelex/indian-court-decisions` on Hugging Face using DuckDB's HTTP range request engine.
+- Bypasses the 100-row REST limit to selectively pull clean batches during administrative ingestion without downloading all 24.8 GB.
+
+### Stage 2: Case Understanding & Retrieval (`case_understanding.py` & `retrieval.py`)
+
+- Multi-class regex and lexical classifier covering 16+ domains (`bail`, `criminal`, `contract`, `motor_accident`, `cheque_bounce`, `writ_civil`, `property`, `family`, `service`, `tax`, `arbitration`, etc.).
+- Extracts statutory entities (IPC/BNS, CrPC/BNSS, CPC, Contract Act, MVA, NI Act, etc.) and procedural standing.
+- Multi-tier candidate retrieval starts with indexed SQLite and can fall back to
+  public/remote sources when local evidence is insufficient.
+
+The current retrieval order is:
+
+1. Tier 0: live Hugging Face lookup for requested courts missing locally.
+2. Tier 1: statutory section and related case-type match.
+3. Level 3: DuckDuckGo public legal-authority discovery for sparse/specialized queries.
+4. Tier 2: related category and court match.
+5. Tier 3: factual keyword match.
+6. Tier 4: live Hugging Face fallback.
+7. Tier 5: broad local precedent fallback.
+
+### Stage 3: Hybrid Ranking & Dirichlet Probability (`ranking.py` & `outcome_engine.py`)
+
+- Hybrid Similarity formula:
+  $$\text{Similarity} = \text{TF-IDF Cosine} + \text{Statutory Bonus} + \text{Forum Bonus}$$
+- Position-Aware Outcome Mapping:
+  - Petitioner: `ALLOWED` $\rightarrow 1.0$, `DISMISSED` $\rightarrow 0.0$, `PARTLY ALLOWED` $\rightarrow 0.6$.
+  - Respondent: `DISMISSED` $\rightarrow 1.0$, `ALLOWED` $\rightarrow 0.0$, `PARTLY ALLOWED` $\rightarrow 0.4$.
+- Dirichlet Similarity-Weighted Probability Formula:
+  $$P(\text{Favorable}) = \left[ \frac{\sum (w_i \cdot \text{OutcomeVal}_i) + (\alpha \cdot P_0)}{\sum w_i + \alpha} \right] \times 100$$
+  where $w_i = \text{sim}_i^2$, $\alpha = 0.15$, $P_0 = 50\%$, and $P \in [5\% - 95\%]$.
+
+### Stage 4: Multi-Factor Confidence & Mandatory Abstention (`confidence_engine.py`)
+
+- Independent 4-factor confidence scoring:
+  $$\text{Confidence} = 0.25 S_{\text{size}} + 0.45 S_{\text{sim}} + 0.15 S_{\text{stat}} + 0.15 S_{\text{agree}}$$
+- Mandatory Abstention triggers (`status: "insufficient_data"`, `success_probability: null`) if:
+  - Input is ungrounded / unrecognized domain without statutory sections
+  - Number of precedents $N < 2$
+  - Top precedent similarity $< 0.35$
+
+### Stage 5: Precedent Verification & CNR Citations (`precedent_verifier.py`)
+
+- Validates that 100% of cited precedents exist in the local SQLite database.
+- Formats authentic citations: `CNR: BRHC010527092023_1_2023-07-28 [2023 Patna HC]`.
+- Extracts verbatim holding / order excerpts directly from judgment text.
+
+### Stage 6: Grounded Explanation & Final Validator (`explanation_engine.py` & `validator.py`)
+
+- Synthesizes plain-language executive takeaway, statutory supporting factors, and prosecution/defense risk factors.
+- Programmatic post-generation validation audit guarantees zero math mutation and zero hallucinated claims.
+
+---
+
+## 🔌 5. Master API Specifications
+
+### `POST /api/analyze` (or `POST /api/predict`)
+
+#### Request Body (`CaseInputRequest`)
+
 ```json
-// Request
 {
-  "case_type": "Contract Dispute",
-  "description": "Vendor failed to deliver goods per Section 73 of the Indian Contract Act..."
-}
-
-// Response
-{
-  "probability": "68%",
-  "legalPrecedents": ["Hadley v. Baxendale (as applied in Indian courts)", "M/s. Saraswati Industrial Syndicate v. CIT"],
-  "keyTakeaway": "Breach is well-supported by documentation; damages claim is likely to succeed.",
-  "confidence": "Moderate"
+  "description": "The applicant is seeking anticipatory bail under Section 438 CrPC in an FIR registered under Section 420 and 120B IPC for alleged financial irregularities. The applicant has clean antecedents and has fully cooperated with the investigation.",
+  "court": "Patna High Court",
+  "user_position": "applicant"
 }
 ```
 
----
-
-### 3.2 Root Health Check ✅ **Live**
-
-| | |
-|---|---|
-| **Endpoint** | `GET /` |
-| **Purpose** | Handshake / uptime check for the API |
-| **Response** | Static JSON confirming the service is running |
-
----
-
-### 3.3 Ingestion & OCR Pipeline 📋 **Planned**
-
-Accepts uploaded case documents and normalizes them into machine-readable text, including scanned/legacy High Court orders.
-
-| | |
-|---|---|
-| **Proposed endpoint** | `POST /api/documents/upload` |
-| **Accepted formats** | PDF, DOCX, scanned image-PDF |
-| **Pipeline** | Tesseract OCR + OpenCV deskewing → raw text extraction → hand-off to Structural Chunking |
-| **Maps to (proposal)** | §4.1 Ingestion & Preprocessing |
-
-**Proposed request** — multipart file upload with `case_id` (optional, to attach to an existing case).
-
-**Proposed response**
-| Field | Type | Description |
-|---|---|---|
-| `document_id` | `str` | Unique ID for the ingested document |
-| `page_count` | `int` | Number of pages processed |
-| `ocr_applied` | `bool` | Whether OCR was needed (scanned doc) |
-| `status` | `str` | `queued` \| `processing` \| `ready` |
-
----
-
-### 3.4 Structural Chunking 📋 **Planned**
-
-Segments an ingested document along its legal anatomy (facts / arguments / final order) rather than arbitrary character windows, so the model never mistakes an advocate's argument for settled law.
-
-| | |
-|---|---|
-| **Proposed endpoint** | Internal pipeline stage (triggered post-ingestion), optionally exposed via `GET /api/documents/{document_id}/chunks` |
-| **Output** | List of typed chunks: `{ chunk_id, section_type: "facts" \| "argument" \| "ratio" \| "order", text, page_ref }` |
-| **Maps to (proposal)** | §4.2 Structural Chunking |
-
----
-
-### 3.5 Hybrid Semantic + Lexical Search 📋 **Planned**
-
-Powers the "War Room" and legal-research features by combining dense vector retrieval (conceptual matches) with sparse lexical retrieval (exact statute/section numbers), merged via Reciprocal Rank Fusion (RRF).
-
-| | |
-|---|---|
-| **Proposed endpoint** | `POST /api/search` |
-| **Vector index** | Qdrant / FAISS, embeddings via Legal-BERT |
-| **Lexical index** | Elasticsearch, BM25 ranking |
-| **Fusion** | Reciprocal Rank Fusion (RRF) merges both result sets |
-| **Maps to (proposal)** | §4.3 Hybrid Indexing, §4.4 RRF |
-
-**Proposed request**
-| Field | Type | Description |
-|---|---|---|
-| `query` | `str` | Natural-language or statute-specific query |
-| `top_k` | `int` | Number of results to return |
-| `filters` | `object` | Optional: court, date range, act/section |
-
-**Proposed response**
-| Field | Type | Description |
-|---|---|---|
-| `results` | `List[SearchResult]` | Ranked, fused results |
-| `SearchResult.source_document` | `str` | Originating case/document title |
-| `SearchResult.excerpt` | `str` | Matched passage |
-| `SearchResult.score` | `float` | Fused relevance score |
-| `SearchResult.citation` | `str` | Exact section/paragraph reference |
-
----
-
-### 3.6 War Room — Adversarial Argument Simulator 🚧 **In Progress**
-
-Simulates opposing counsel's likely arguments against a given case position, so users can pressure-test and strengthen their own arguments before filing.
-
-| | |
-|---|---|
-| **Proposed endpoint** | `POST /api/war-room/simulate` |
-| **Maps to (pitch deck)** | "War Room" — simulates ruthless opposition to build bulletproof arguments |
-
-**Proposed request**
-| Field | Type | Description |
-|---|---|---|
-| `case_id` | `str` | Case being argued |
-| `position` | `str` | The user's argument / claim |
-| `rounds` | `int` | Number of adversarial back-and-forth rounds to simulate |
-
-**Proposed response**
-| Field | Type | Description |
-|---|---|---|
-| `counter_arguments` | `List[str]` | Opposition's likely rebuttals |
-| `weaknesses_identified` | `List[str]` | Gaps in the user's position |
-| `suggested_reinforcements` | `List[str]` | Citations/facts to shore up weak points |
-
----
-
-### 3.7 Contract Red-Flag Analyzer 🚧 **In Progress**
-
-Scans uploaded contracts for biased clauses, hidden liabilities, and non-standard terms.
-
-| | |
-|---|---|
-| **Proposed endpoint** | `POST /api/contracts/analyze` |
-| **Maps to (pitch deck)** | "Contracts" — auto-detects hidden risks and biased red-flags |
-
-**Proposed request** — multipart file upload (PDF/DOCX contract).
-
-**Proposed response**
-| Field | Type | Description |
-|---|---|---|
-| `red_flags` | `List[RedFlag]` | Detected risk clauses |
-| `RedFlag.clause_text` | `str` | The flagged clause, verbatim |
-| `RedFlag.risk_level` | `str` | `low` \| `medium` \| `high` |
-| `RedFlag.explanation` | `str` | Why the clause is risky |
-| `RedFlag.page_ref` | `int` | Location in the source document |
-| `overall_risk_score` | `str` | Aggregate risk rating for the contract |
-
----
-
-### 3.8 Legal Drafting & Regional-Language Translation 📋 **Planned**
-
-Generates first-draft legal documents (notices, petitions, replies) and translates them into regional Indian languages.
-
-| | |
-|---|---|
-| **Proposed endpoint** | `POST /api/drafts/generate` |
-| **Maps to (pitch deck)** | "Drafting" — generates legal drafts and translates into regional languages |
-
-**Proposed request**
-| Field | Type | Description |
-|---|---|---|
-| `draft_type` | `str` | e.g. "Legal Notice", "Bail Application" |
-| `case_facts` | `str` | Facts to incorporate |
-| `target_language` | `str` | Optional — e.g. `"hi"`, `"mr"`, `"ta"` |
-
-**Proposed response**
-| Field | Type | Description |
-|---|---|---|
-| `draft_text` | `str` | Generated draft (English) |
-| `translated_text` | `str \| null` | Translated version, if requested |
-| `citations_used` | `List[str]` | Statutes/precedents referenced in the draft |
-
----
-
-### 3.9 Entity & Timeline Extraction 📋 **Planned**
-
-Automatically builds a chronological event timeline from case documents and indexes key entities (judges, courts, acts, sections).
-
-| | |
-|---|---|
-| **Proposed endpoint** | `GET /api/cases/{case_id}/timeline` |
-| **Maps to (proposal)** | §3 Core Objectives — Entity & Timeline Extraction |
-
-**Proposed response**
-| Field | Type | Description |
-|---|---|---|
-| `events` | `List[TimelineEvent]` | Chronologically ordered case events |
-| `TimelineEvent.date` | `str` | Event date |
-| `TimelineEvent.description` | `str` | What happened |
-| `TimelineEvent.source_doc` | `str` | Supporting document reference |
-| `entities.judges` | `List[str]` | Extracted judge names |
-| `entities.courts` | `List[str]` | Extracted courts |
-| `entities.acts_sections` | `List[str]` | Extracted acts/sections cited |
-
----
-
-### 3.10 Statutory Mapping (IPC ↔ BNS) 📋 **Planned**
-
-Cross-references legacy statute sections (e.g. Indian Penal Code) with their modern equivalents (Bharatiya Nyaya Sanhita).
-
-| | |
-|---|---|
-| **Proposed endpoint** | `GET /api/statutes/map?section={ipc_or_bns_section}` |
-| **Maps to (proposal)** | §3 Core Objectives — Statutory Mapping |
-
-**Proposed response**
-| Field | Type | Description |
-|---|---|---|
-| `input_section` | `str` | The queried section |
-| `mapped_section` | `str` | Equivalent section under the other framework |
-| `notes` | `str` | Material differences between the old and new provision, if any |
-
----
-
-### 3.11 Generative Synthesis (RAG) & Explainable Citations 📋 **Planned**
-
-The core answer-generation layer: retrieved context is injected into a locally hosted LLM, which must answer solely from the provided context and return exact-paragraph citations — powering the frontend's split-screen "highlighted source" view.
-
-| | |
-|---|---|
-| **Proposed endpoint** | `POST /api/qa/ask` |
-| **LLM** | Locally hosted Llama 3 (8B/70B) or Mistral — no third-party API calls, for data sovereignty |
-| **Maps to (proposal)** | §4.5 Generative Synthesis, §4.6 XAI Output Interface |
-
-**Proposed request**
-| Field | Type | Description |
-|---|---|---|
-| `question` | `str` | User's legal research question |
-| `case_id` | `str \| null` | Optional — scope the answer to one case's documents |
-
-**Proposed response**
-| Field | Type | Description |
-|---|---|---|
-| `answer` | `str` | Synthesized answer, grounded only in retrieved context |
-| `citations` | `List[Citation]` | Exact-paragraph sources backing the answer |
-| `Citation.document` | `str` | Source document title |
-| `Citation.page` | `int` | Page number |
-| `Citation.excerpt` | `str` | Highlighted paragraph used to generate the answer |
-
----
-
-### 3.12 Case Dashboard & Collaboration 📋 **Planned**
-
-Centralized workspace for tracking active cases, deadlines, and team collaboration.
-
-| | |
-|---|---|
-| **Proposed endpoints** | `GET /api/cases` · `POST /api/cases` · `GET /api/cases/{case_id}` · `POST /api/cases/{case_id}/team` |
-| **Maps to (pitch deck)** | "Dashboard" (smart tracker) and "Collaboration" (centralized team case management) |
-
-**Proposed `Case` model**
-| Field | Type | Description |
-|---|---|---|
-| `case_id` | `str` | Unique case identifier |
-| `title` | `str` | Case name/title |
-| `status` | `str` | `active` \| `pending` \| `closed` |
-| `deadlines` | `List[Deadline]` | Upcoming filing/hearing dates |
-| `team_members` | `List[str]` | Collaborators with access |
-| `linked_documents` | `List[str]` | Document IDs attached to the case |
-
----
-
-## 🗄️ 4. Data Layer (Planned)
-
-| Store | Purpose | Status |
-|---|---|---|
-| **PostgreSQL** | Persistent storage — users, case metadata, drafts, timelines | 📋 Planned |
-| **Redis** | Session caching, rate limiting | 📋 Planned |
-| **Qdrant** | Vector index for semantic search (Legal-BERT embeddings) | 📋 Planned |
-| **Elasticsearch** | Lexical/BM25 index for exact statute & keyword search | 📋 Planned |
-
----
-
-## 🔌 5. Communication Protocol
-
-- **Transport**: HTTP/REST
-- **Data format**: JSON (multipart for file uploads)
-- **CORS**: Enabled for `localhost:3000` (Next.js) and `localhost:5173` (Vite)
-- **API contract**: Defined via Pydantic v2 models — validated at runtime on every request/response
-
----
-
-## 🛡️ 6. Ethics & Compliance Hooks (Design Requirements)
-
-These aren't standalone endpoints but constraints every feature above must satisfy per the project proposal:
-
-| Requirement | Implementation approach |
-|---|---|
-| **Data Sovereignty** | All LLM inference runs on locally hosted open-weight models (Llama 3 / Mistral) — no case data is sent to third-party APIs |
-| **Zero-Hallucination / Explainability** | RAG answers (§3.11) must always return `citations` grounded in retrieved source text; ungrounded claims should be rejected before returning to the user |
-| **Human-in-the-Loop** | All predictor/drafting outputs (§3.1, §3.8) are advisory — no endpoint issues a final legal opinion |
-
----
-
-## 📦 7. Project Structure Reference
-
-```
-backend/
-├── main.py                 # API entrypoint, routes & case logic (✅ live routes here)
-├── requirements.txt        # Python dependencies
-└── README.md                # Backend setup guide
-```
-
-As planned features (3.3–3.12) are implemented, expect this to expand into modules, e.g.:
-
-```
-backend/
-├── main.py                     # FastAPI app, route registration
-├── routers/
-│   ├── analyze.py              # 3.1 Predictor
-│   ├── documents.py            # 3.3 Ingestion/OCR
-│   ├── search.py               # 3.5 Hybrid search
-│   ├── war_room.py             # 3.6 War Room
-│   ├── contracts.py            # 3.7 Contract analyzer
-│   ├── drafts.py                # 3.8 Drafting & translation
-│   ├── cases.py                 # 3.9, 3.12 Timeline, dashboard
-│   ├── statutes.py              # 3.10 Statutory mapping
-│   └── qa.py                    # 3.11 RAG Q&A
-├── services/
-│   ├── ocr.py                   # Tesseract + OpenCV pipeline
-│   ├── chunking.py              # Structural chunking logic
-│   ├── retrieval.py             # Qdrant + Elasticsearch + RRF
-│   └── llm.py                   # Local Llama 3 / Mistral inference
-├── models/                      # Pydantic schemas
-└── requirements.txt
+#### Success Response (`FinalPredictionResponse`)
+
+```json
+{
+  "status": "success",
+  "case_type": "bail",
+  "success_probability": 85,
+  "confidence": "high",
+  "predicted_outcome": "favorable",
+  "takeaway": "Based on historical outcome analysis across 3 similar High Court rulings, the case presents a strong favorable posture (85% estimated success probability) for the applicant...",
+  "supporting_factors": [
+    "Statutory alignment: Case is grounded in recognized provisions under Section 120B, Section 420, Section 438.",
+    "Precedent grant: In CR. MISC./37820/2023 of MAHESH RAJAK Vs The State of Bihar (Patna High Court, 2023), the court ruled BAIL GRANTED under comparable facts.",
+    "Factual posture: Cooperation with proceedings and absence of adverse criminal history are established factors supporting discretionary relief."
+  ],
+  "opposing_factors": [
+    "Prosecution objections: The State/prosecution may oppose relief citing prima facie evidence, gravity of charges, or necessity of custodial investigation."
+  ],
+  "precedents": [
+    {
+      "case_name": "CR. MISC./37820/2023 of MAHESH RAJAK Vs The State of Bihar",
+      "court": "Patna High Court",
+      "bench": "patnahcucisdb94",
+      "judge": "MR. JUSTICE HARISH KUMAR",
+      "year": 2023,
+      "decision_date": "2023-07-28",
+      "similarity": 0.7152,
+      "outcome": "BAIL GRANTED",
+      "favorable_to_user": "Favorable",
+      "cnr": "BRHC010527092023_1_2023-07-28",
+      "citation": "CNR: BRHC010527092023_1_2023-07-28 [2023 Patna HC]",
+      "source_url": "https://huggingface.co/datasets/overthelex/indian-court-decisions",
+      "matched_sections": ["420", "438"],
+      "matched_acts": ["Indian Penal Code", "Code of Criminal Procedure"],
+      "verbatim_excerpt": "IN THE HIGH COURT OF JUDICATURE AT PATNA CRIMINAL MISCELLANEOUS No.37820 of 2023... petitioner is directed to be released on anticipatory bail on furnishing bail bonds...",
+      "is_verified": true
+    }
+  ],
+  "limitations": [
+    "This prediction is an AI-generated advisory estimate based on historical court data and is not a guarantee of future judicial outcome.",
+    "Judicial outcomes depend heavily on the specific bench constitution, oral arguments, and factual appreciation at trial."
+  ],
+  "provenance_report": {
+    "total_precedents_verified": 3,
+    "database_provenance": "NyayaSarathi Local SQLite Judgment Archive",
+    "dataset_origin": "overthelex/indian-court-decisions (Hugging Face)",
+    "zero_hallucination_guaranteed": true,
+    "verified_cnrs": [
+      "BRHC010527092023_1_2023-07-28",
+      "BRHC010977212025_1_2025-12-08",
+      "WBCHCA0485002025_1_2025-11-14"
+    ]
+  },
+  "validation_report": {
+    "is_valid": true,
+    "precedent_checks_passed": true,
+    "citation_checks_passed": true,
+    "math_integrity_passed": true,
+    "claims_grounded": true
+  },
+  "disclaimer": "This is an AI-generated advisory estimate based on historical judgments and is not a guarantee or final legal opinion."
+}
 ```
 
 ---
 
-## 📝 8. Summary Table — All Endpoints
+### `GET /api/precedent/{cnr}`
 
-| Feature | Endpoint | Status |
-|---|---|---|
-| Judgment Success Predictor | `POST /api/analyze` | ✅ Live |
-| Health check | `GET /` | ✅ Live |
-| Document ingestion & OCR | `POST /api/documents/upload` | 📋 Planned |
-| Structural chunk retrieval | `GET /api/documents/{id}/chunks` | 📋 Planned |
-| Hybrid search (RRF) | `POST /api/search` | 📋 Planned |
-| War Room simulation | `POST /api/war-room/simulate` | 🚧 In Progress |
-| Contract red-flag analysis | `POST /api/contracts/analyze` | 🚧 In Progress |
-| Draft generation & translation | `POST /api/drafts/generate` | 📋 Planned |
-| Timeline & entity extraction | `GET /api/cases/{id}/timeline` | 📋 Planned |
-| Statutory mapping (IPC↔BNS) | `GET /api/statutes/map` | 📋 Planned |
-| RAG Q&A with citations | `POST /api/qa/ask` | 📋 Planned |
-| Case dashboard/CRUD | `GET/POST /api/cases` | 📋 Planned |
-| Team collaboration | `POST /api/cases/{id}/team` | 📋 Planned |
+Fetches the complete judgment text and judicial metadata for on-demand verification:
+
+- **Example**: `/api/precedent/BRHC010527092023_1_2023-07-28`
+- **Response**:
+  ```json
+  {
+    "status": "success",
+    "cnr": "BRHC010527092023_1_2023-07-28",
+    "judgment": {
+      "cnr": "BRHC010527092023_1_2023-07-28",
+      "title": "CR. MISC./37820/2023 of MAHESH RAJAK Vs The State of Bihar",
+      "parsed_court_name": "Patna High Court",
+      "year": 2023,
+      "decision_date": "2023-07-28",
+      "judge": "MR. JUSTICE HARISH KUMAR",
+      "disposal_nature": "BAIL GRANTED",
+      "full_text": "...",
+      "citation": "CNR: BRHC010527092023_1_2023-07-28 [2023 Patna HC]",
+      "source_url": "https://huggingface.co/datasets/overthelex/indian-court-decisions"
+    }
+  }
+  ```

@@ -8,18 +8,25 @@
 ## 📐 Architecture Overview
 
 ```
-┌─────────────────────────────────────────────┐
-│              Frontend (Next.js)             │
-│   nyayasarathi-app/  ·  Port: 3000          │
-│   TypeScript · React 19 · Tailwind CSS      │
-└────────────────────┬────────────────────────┘
-                     │  REST API (HTTP/JSON)
-                     ▼
-┌─────────────────────────────────────────────┐
-│              Backend (FastAPI)              │
-│   backend/  ·  Port: 8000                   │
-│   Python · FastAPI · Uvicorn · Pydantic     │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      Frontend (Next.js)                     │
+│   nyayasarathi-app/  ·  Port: 3000                          │
+│   TypeScript · React 19 · Next.js 16 · Tailwind CSS         │
+└──────────────────────────────┬──────────────────────────────┘
+                               │  REST API (HTTP/JSON)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Backend (FastAPI)                      │
+│   backend/  ·  Port: 8000                                   │
+│   Python 3.10+ · FastAPI · scikit-learn · DuckDB · Gemini   │
+└──────────────────────────────┬──────────────────────────────┘
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│             3-Level Precedent Retrieval Engine              │
+│   Level 1: Local SQLite (nyayasarathi.db, 730+ Judgments)   │
+│   Level 2: Hugging Face Parquet (overthelex via DuckDB)     │
+│   Level 3: DuckDuckGo Legal Web Search + Domain Validation  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -51,9 +58,9 @@ A **Neo-Classical Legal Palette** is defined in `tailwind.config.ts`:
 | `ink` | `#151716` | Main background |
 | `charcoal` | `#1D211F` | Secondary background |
 | `olive` | `#242925` | Cards & panel surfaces |
-| `oxblood` | `#6E2634` | Primary accent / CTA |
-| `verdigris` | `#71877A` | Verified / success states |
-| `brass` | `#B59A68` | Citations & decorative accents |
+| `oxblood` | `#6E2634` | Primary accent / Unfavorable outcomes |
+| `verdigris` | `#71877A` | Verified / Favorable outcomes |
+| `brass` | `#B59A68` | Citations, Balanced outcomes & accents |
 | `vellum` | `#F2EBDD` | Document viewer surface |
 | `ivory` | `#F4EFE5` | Primary text on dark |
 | `stone` | `#A9A49A` | Secondary text & descriptions |
@@ -74,58 +81,41 @@ A **Neo-Classical Legal Palette** is defined in `tailwind.config.ts`:
 | **Lenis** | ^1.3.25 | Smooth scroll library |
 | **Lucide React** | ^1.28.0 | Icon set |
 
-### Dev Tooling
-
-| Tool | Version | Purpose |
-|---|---|---|
-| **ESLint** | ^9 | JavaScript/TypeScript linting |
-| **eslint-config-next** | 16.2.12 | Next.js specific ESLint rules |
-| **@types/node** | ^20 | Node.js TypeScript type definitions |
-| **@types/react** | ^19 | React TypeScript type definitions |
-| **@types/react-dom** | ^19 | React DOM TypeScript type definitions |
-
-### Project Configuration
-
-| File | Purpose |
-|---|---|
-| `tsconfig.json` | TypeScript compiler config (target: ES2017, strict mode) |
-| `next.config.ts` | Next.js configuration (Webpack mode) |
-| `tailwind.config.ts` | Custom design tokens, fonts & Tailwind theme |
-| `postcss.config.mjs` | PostCSS pipeline config |
-| `eslint.config.mjs` | ESLint flat config |
-
 ---
 
 ## ⚙️ Backend
 
-### Core Framework & Language
+### Core Framework & Machine Learning
 
 | Technology | Version | Purpose |
 |---|---|---|
-| **Python** | 3.8+ | Backend programming language |
-| **FastAPI** | >=0.100.0 | High-performance async REST API framework |
-| **Uvicorn** | >=0.22.0 | ASGI server to run FastAPI (with hot-reload) |
-| **Pydantic** | >=2.0.0 | Data validation & serialization for API schemas |
+| **Python** | 3.10+ | Core language |
+| **FastAPI** | >=0.110.0 | High-performance async REST API framework |
+| **Uvicorn** | >=0.27.0 | ASGI server with hot-reload |
+| **Pydantic** | >=2.6.0 | Strict request/response validation & serialization |
+| **scikit-learn** | >=1.4.0 | TF-IDF, Platt Sigmoid calibration, and Brier Score evaluation |
+| **DuckDB** | >=0.10.0 | HTTP Range Queries over Hugging Face Parquet dataset |
+| **SQLite3** | Built-in | Fast local judgment database with B-tree indexing in WAL mode |
+| **Google Gemini 1.5 Flash** | REST API | Grounded natural language legal explanation synthesis |
 
-### API Endpoints
+### Backend Service Architecture
 
-| Method | Endpoint | Description |
+| Service | File | Purpose |
 |---|---|---|
-| `GET` | `/` | Root handshake / health check |
-| `POST` | `/api/analyze` | Judicial case analysis & decision support |
-
-### Middleware
-
-| Middleware | Purpose |
-|---|---|
-| **CORSMiddleware** | Allows cross-origin requests from `localhost:3000` (Next.js) and `localhost:5173` (Vite/React) |
-
-### Data Models (Pydantic Schemas)
-
-| Model | Fields |
-|---|---|
-| `CaseAnalysisRequest` | `case_type: str`, `description: str` |
-| `CaseAnalysisResponse` | `probability: str`, `legalPrecedents: List[str]`, `keyTakeaway: str`, `confidence: str` |
+| **Case Understanding** | `services/case_understanding.py` | Multi-class Indian legal domain classifier & statutory extractor |
+| **Candidate Retriever** | `services/retrieval.py` | 3-Level waterfall candidate retrieval (SQLite, Hugging Face, DuckDuckGo) |
+| **Vector Search** | `services/vector_search.py` | Dense semantic embedding & cosine similarity matrix |
+| **BM25 Search** | `services/bm25_search.py` | Okapi BM25 probabilistic lexical keyword scoring |
+| **Hybrid Ranker** | `services/hybrid_search.py` | Reciprocal Rank Fusion (RRF, $k=60$) combining Vector + BM25 |
+| **Outcome Engine** | `services/outcome_engine.py` | Position-aware outcome mapping & Bayesian Dirichlet probability |
+| **Calibration Engine** | `services/calibration.py` | Platt Sigmoid scaling, Brier Score ($0.0738$) & ECE evaluation |
+| **Confidence Engine** | `services/confidence_engine.py` | Multi-dimensional reliability scoring & mandatory abstention |
+| **Precedent Verifier** | `services/precedent_verifier.py` | Precedent existence check, CNR citation format & verbatim quote extraction |
+| **Explanation Engine** | `services/explanation_engine.py` | Grounded Gemini 1.5 Flash legal takeaways, supporting & opposing factors |
+| **Validator** | `services/validator.py` | Zero-mutation math integrity, citation authenticity & grounded claims audit |
+| **DuckDuckGo Search** | `services/duckduckgo_search.py` | Level 3 public web legal discovery with domain filtering |
+| **Ingestion Engine** | `services/ingest.py` | Database creation, seeding & B-tree indexing |
+| **Dataset Client** | `services/dataset_client.py` | DuckDB Parquet connector to `overthelex/indian-court-decisions` |
 
 ---
 
@@ -133,69 +123,52 @@ A **Neo-Classical Legal Palette** is defined in `tailwind.config.ts`:
 
 ```
 NyayaSarathi/
-├── backend/                    # Python FastAPI backend
-│   ├── main.py                 # API entrypoint, routes & case logic
-│   ├── requirements.txt        # Python dependencies
-│   └── README.md               # Backend setup guide
+├── backend/
+│   ├── data/
+│   │   └── nyayasarathi.db           # Local SQLite database (730+ indexed judgments)
+│   ├── models/
+│   │   ├── __init__.py               # Model package exports
+│   │   └── prediction.py             # Unified Pydantic schemas (Request, Response, Precedents, Explanations, Audit)
+│   ├── routers/
+│   │   ├── __init__.py               # Router exports
+│   │   ├── analyze.py                # Master Prediction API (/api/analyze, /api/predict, /api/precedent/{cnr})
+│   │   └── dataset.py                # Dataset Ingestion & Analytics API (/api/dataset)
+│   ├── scripts/
+│   │   ├── verify_all.py             # Master 19-phase verification test suite
+│   │   ├── benchmark_pipeline.py     # End-to-end latency & scalability benchmarks
+│   │   └── train_eval_calibrator.py  # ML calibration & Brier score evaluation
+│   ├── services/
+│   │   ├── __init__.py               # Service engine exports
+│   │   ├── case_understanding.py     # Indian case classifier & entity extractor
+│   │   ├── confidence_engine.py      # Reliability & abstention guardrail
+│   │   ├── dataset_client.py         # Hugging Face Parquet client
+│   │   ├── duckduckgo_search.py      # DuckDuckGo Level 3 legal search engine
+│   │   ├── explanation_engine.py     # Grounded legal explanation synthesizer (Gemini 1.5 Flash)
+│   │   ├── hybrid_search.py          # Reciprocal Rank Fusion (RRF) hybrid ranker
+│   │   ├── ingest.py                 # SQLite batch ingestion engine
+│   │   ├── outcome_engine.py         # Position-aware Dirichlet formula engine
+│   │   ├── precedent_verifier.py     # Precedent verifier & verbatim quote extractor
+│   │   ├── ranking.py                # Ranker delegator interface
+│   │   ├── retrieval.py              # 3-level waterfall candidate retriever
+│   │   ├── validator.py              # Math & citation validation audit
+│   │   └── vector_search.py          # Dense semantic vector cosine similarity
+│   ├── main.py                       # FastAPI application entrypoint
+│   ├── requirements.txt              # Python dependencies
+│   ├── README.md                     # Backend setup guide
+│   └── backend.md                    # Detailed backend architectural documentation
 │
-├── nyayasarathi-app/           # Next.js frontend app
+├── nyayasarathi-app/                 # Next.js frontend web application
 │   ├── src/
-│   │   ├── app/                # Next.js App Router pages & layout
-│   │   │   ├── layout.tsx      # Root layout (fonts, metadata)
-│   │   │   ├── page.tsx        # Home page
-│   │   │   ├── loading.tsx     # Loading UI
-│   │   │   └── globals.css     # Global CSS styles
-│   │   └── components/
-│   │       ├── layout/         # Layout components (e.g. SmoothScroll)
-│   │       ├── sections/       # Page section components
-│   │       └── ui/             # Reusable UI components
-│   ├── tailwind.config.ts      # Tailwind custom theme
-│   ├── tsconfig.json           # TypeScript config
-│   └── package.json            # npm dependencies & scripts
+│   │   ├── app/                      # Next.js App Router pages
+│   │   │   ├── predictor/page.tsx    # Interactive General Judgment Success Predictor UI
+│   │   │   └── page.tsx              # Landing homepage
+│   │   └── components/               # React UI components
+│   ├── tailwind.config.ts            # Neo-classical legal design tokens
+│   ├── package.json                  # Frontend dependencies
+│   ├── README.md                     # Frontend setup guide
+│   └── frontend.md                   # Frontend architecture documentation
 │
-├── frontend/                   # (Legacy / dist output)
-├── README.md                   # Root project README
-├── tech.md                     # This document
-└── LICENSE                     # Project license
+├── README.md                         # Project overview & architectural guide
+├── tech.md                           # Technology stack & service reference
+└── LICENSE                           # MIT License
 ```
-
----
-
-## 🔌 Communication Protocol
-
-- **Transport**: HTTP/REST
-- **Data Format**: JSON
-- **CORS**: Enabled — frontend on `localhost:3000` communicates with backend on `localhost:8000`
-- **API Contract**: Defined via Pydantic models on the backend, consumed as typed fetch calls on the frontend
-
----
-
-## 🚀 Dev Server Commands
-
-### Frontend
-```bash
-cd nyayasarathi-app
-npm install
-npm run dev        # Starts Next.js at http://localhost:3000
-```
-
-### Backend
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate      # Windows
-pip install -r requirements.txt
-python main.py              # Starts FastAPI at http://localhost:8000
-```
-
----
-
-## 🛡️ Code Quality & Type Safety
-
-- TypeScript **strict mode** enabled across the entire frontend codebase
-- Pydantic **v2** enforces runtime validation of all API request/response payloads
-- ESLint with **Next.js recommended** rules for consistent code style
-
----
-
-*Last updated: August 2026*
