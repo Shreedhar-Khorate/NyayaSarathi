@@ -3,6 +3,7 @@ NyayaSarathi — Structured Logging Configuration
 Industry-standard colored terminal logs with request timing and pipeline tracing.
 """
 
+import io
 import logging
 import sys
 from datetime import datetime
@@ -76,7 +77,7 @@ class NyayaFormatter(logging.Formatter):
         msg = record.getMessage()
 
         # Separator
-        sep = f"{GRAY}│{RESET}"
+        sep = f"{GRAY}|{RESET}"
 
         return (
             f"  {GRAY}{now}{RESET}  {level_badge} {sep} {comp_str} {sep} {msg}"
@@ -98,7 +99,9 @@ def setup_logging() -> None:
     Configure the root logger and uvicorn loggers with the NyayaFormatter.
     Call this once at application startup in main.py.
     """
-    handler = logging.StreamHandler(sys.stdout)
+    # Force UTF-8 on Windows to support colored output correctly
+    stdout_utf8 = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    handler = logging.StreamHandler(stdout_utf8)
     handler.setFormatter(NyayaFormatter())
 
     # Root application logger
