@@ -19,6 +19,7 @@ class CaseInputRequest(BaseModel):
     acts: Optional[Union[List[str], str]] = Field(default_factory=list, description="Applicable Indian Acts")
     sections: Optional[Union[List[str], str]] = Field(default_factory=list, description="Applicable statutory sections")
     user_position: Optional[str] = Field(None, description="applicant, petitioner, appellant, respondent, defendant")
+    target_language: Optional[str] = Field(None, description="Target language code for output (e.g. hi, mr, en)")
 
     @field_validator("sections", mode="before")
     @classmethod

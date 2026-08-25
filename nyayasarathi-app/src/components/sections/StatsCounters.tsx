@@ -34,19 +34,29 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
   );
 }
 
+import { useLanguage } from '@/context/LanguageContext';
+
 export default function StatsCounters() {
+  const { t } = useLanguage();
+
+  const dynamicStats = [
+    { value: 85,  suffix: '%', label: t('stats.stat1') },
+    { value: 100, suffix: '%', label: t('stats.stat2') },
+    { value: 2,   suffix: '',  label: t('stats.stat3'), isText: true },
+  ];
+
   return (
     <section className="relative border-y border-[#3B3A33] py-24 bg-[#151716]">
       <div className="relative mx-auto max-w-6xl px-6">
         {/* Section label */}
         <div className="mb-14">
-          <span className="section-label">By the Numbers</span>
+          <span className="section-label">{t('stats.label')}</span>
         </div>
 
         <div className="grid grid-cols-1 gap-0 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#3B3A33]">
-          {STATS.map((stat, i) => (
+          {dynamicStats.map((stat, i) => (
             <motion.div
-              key={stat.label}
+              key={i}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}

@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from routers import analyze, cases, contracts, drafts, qa, search, statutes, war_room
+from routers import analyze, cases, contracts, drafts, qa, search, statutes, translate, war_room
 
 log = get_logger("nyayasarathi")
 
@@ -176,6 +176,7 @@ app.include_router(drafts.router,    prefix="/api/drafts",     tags=["Drafting"]
 app.include_router(qa.router,        prefix="/api/qa",         tags=["RAG Q&A"])
 app.include_router(search.router,    prefix="/api/search",     tags=["Hybrid Search"])
 app.include_router(statutes.router,  prefix="/api/statutes",   tags=["Statutory Mapping"])
+app.include_router(translate.router, prefix="/api/translate",  tags=["Translation"])
 app.include_router(war_room.router,  prefix="/api/war-room",   tags=["War Room"])
 
 

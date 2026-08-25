@@ -161,7 +161,7 @@ def predict_case_outcome(request: CaseInputRequest) -> FinalPredictionResponse:
           f"engine={_CYAN}{engine_name}{_R}{_GRAY}  "
           f"factors={len(explanation.supporting_factors)}+ supporting  {ms6:.0f}ms")
 
-    # ── Step 7: Map Predicted Outcome ─────────────────────────────────────────
+    # ── Step 7: Map Predicted Outcome & Translate if target_language specified ───
     prob = conf_result.success_probability
     if prob >= 65:
         predicted_outcome = "favorable"
@@ -170,6 +170,32 @@ def predict_case_outcome(request: CaseInputRequest) -> FinalPredictionResponse:
     else:
         predicted_outcome = "balanced / discretionary"
 
+    takeaway_text = explanation.takeaway
+    sup_factors = explanation.supporting_factors
+    opp_factors = explanation.opposing_factors
+
+    if request.target_language and request.target_language.lower() != "en":
+        from services.translate_service import translate_legal_text
+        from schemas.translate import TranslationRequest
+
+        target_lang = request.target_language.lower()
+        
+        # Translate takeaway
+        tr_takeaway = translate_legal_text(TranslationRequest(text=takeaway_text, target_language=target_lang))
+        takeaway_text = tr_takeaway.translated_text
+
+        # Translate supporting factors
+        sup_factors = [
+            translate_legal_text(TranslationRequest(text=sf, target_language=target_lang)).translated_text
+            for sf in sup_factors
+        ]
+
+        # Translate opposing factors
+        opp_factors = [
+            translate_legal_text(TranslationRequest(text=of, target_language=target_lang)).translated_text
+            for of in opp_factors
+        ]
+
     # ── Build Final Response ──────────────────────────────────────────────────
     final_response = FinalPredictionResponse(
         status="success",
@@ -177,10 +203,10 @@ def predict_case_outcome(request: CaseInputRequest) -> FinalPredictionResponse:
         confidence=conf_result.confidence,
         case_type=profile.case_type,
         predicted_outcome=predicted_outcome,
-        supporting_factors=explanation.supporting_factors,
-        opposing_factors=explanation.opposing_factors,
+        supporting_factors=sup_factors,
+        opposing_factors=opp_factors,
         precedents=verified_precedents,
-        takeaway=explanation.takeaway,
+        takeaway=takeaway_text,
         limitations=explanation.limitations,
         provenance_report=provenance_report,
         structured_case=profile,
@@ -189,7 +215,7 @@ def predict_case_outcome(request: CaseInputRequest) -> FinalPredictionResponse:
             f"{p.case_name} ({p.court}, {p.year}) - {p.outcome}"
             for p in verified_precedents
         ],
-        keyTakeaway=explanation.takeaway,
+        keyTakeaway=takeaway_text,
     )
 
     # ── Step 8: Final Anti-Hallucination Validation ───────────────────────────

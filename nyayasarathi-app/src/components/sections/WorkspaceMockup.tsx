@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, CheckCircle2, Search, ShieldCheck } from 'lucide-react';
 
+import { useLanguage } from '@/context/LanguageContext';
+
 const FILTER_TAGS = ['#BNS', '#IPC', '#SupremeCourt', '#Section420'];
 
 const CITATIONS = [
@@ -22,6 +24,7 @@ const ANSWER_LINES = [
 export default function WorkspaceMockup() {
   const [activeCite, setActiveCite] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>(['#Section420']);
+  const { t } = useLanguage();
 
   const toggleFilter = (tag: string) => {
     setActiveFilters((prev) =>
@@ -38,14 +41,13 @@ export default function WorkspaceMockup() {
         {/* Section header */}
         <div className="mb-14 max-w-2xl">
           <div className="mb-5">
-            <span className="section-label">The NyayaSarathi Workspace</span>
+            <span className="section-label">{t('workspace.label')}</span>
           </div>
           <h2 className="font-display text-4xl font-semibold leading-tight text-ivory md:text-5xl">
-            Read the judgment. Verify the answer. Same screen.
+            {t('workspace.title')}
           </h2>
           <p className="mt-5 font-sans text-base leading-relaxed text-stone">
-            Click any highlighted citation in the Research Note to jump straight to
-            its source paragraph in the document pane.
+            {t('workspace.desc')}
           </p>
         </div>
 
@@ -55,11 +57,11 @@ export default function WorkspaceMockup() {
             <Search className="h-4 w-4 shrink-0 text-[#B59A68]" strokeWidth={1.5} />
             <input
               readOnly
-              value="What did the Court hold about delay in FIR filing under Section 420?"
+              value={t('workspace.searchPlaceholder')}
               className="w-full bg-transparent font-sans text-sm text-ivory outline-none placeholder:text-stone"
             />
             <span className="shrink-0 font-mono text-[10px] tracking-widest text-[#6E2634] font-semibold whitespace-nowrap">
-              HYBRID SEARCH →
+              {t('workspace.hybridSearch')}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -185,12 +187,12 @@ export default function WorkspaceMockup() {
               <div className="flex items-center gap-2.5">
                 <BookOpen className="h-4 w-4 text-[#B59A68]" strokeWidth={1.4} />
                 <p className="font-sans text-xs font-semibold tracking-[0.2em] uppercase text-stone">
-                  Research Note
+                  {t('workspace.researchNote')}
                 </p>
               </div>
               <span className="verdigris-badge flex items-center gap-1.5 rounded-sm px-2.5 py-1 font-sans text-[10px] font-semibold">
                 <CheckCircle2 className="h-3 w-3" strokeWidth={2} />
-                2 sources verified
+                {t('workspace.verifiedSources')}
               </span>
             </div>
 
@@ -225,16 +227,16 @@ export default function WorkspaceMockup() {
               {/* Basis of Answer */}
               <div className="mb-5">
                 <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-stone mb-3">
-                  Basis of Answer
+                  {t('workspace.basisTitle')}
                 </p>
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2 font-sans text-xs text-stone">
                     <span className="h-1 w-1 rounded-full bg-[#71877A]" />
-                    3 passages retrieved
+                    {t('workspace.passagesRetrieved')}
                   </div>
                   <div className="flex items-center gap-2 font-sans text-xs text-stone">
                     <span className="h-1 w-1 rounded-full bg-[#71877A]" />
-                    2 judgments referenced
+                    {t('workspace.judgmentsReferenced')}
                   </div>
                   <div className="flex items-center gap-2 font-sans text-xs text-stone">
                     <span className="h-1 w-1 rounded-full bg-[#B59A68]" />
@@ -278,7 +280,7 @@ export default function WorkspaceMockup() {
               <div className="flex items-center gap-3 rounded-sm border border-[#3B3A33] bg-[#1D211F] px-4 py-3">
                 <input
                   readOnly
-                  placeholder="Ask a follow-up question…"
+                  placeholder={t('workspace.askFollowUp')}
                   className="w-full bg-transparent font-sans text-sm text-stone outline-none placeholder:text-stone/50"
                 />
               </div>

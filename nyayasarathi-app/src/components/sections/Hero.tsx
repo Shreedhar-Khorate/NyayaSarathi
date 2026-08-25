@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { ArrowUpRight, Upload, Scale } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useLanguage } from '@/context/LanguageContext';
 
 // AmbientCanvas removed per design spec (no animated blobs/particles)
 const BackgroundVideo = dynamic(() => import('@/components/ui/BackgroundVideo'), { ssr: false });
@@ -26,13 +27,18 @@ const HEADLINE_WORDS = [
   'Case',
   'Intelligence',
   '&',
-  'Decision',
-  'Support',
-  'System',
 ];
 
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
+  const { t } = useLanguage();
+
+  const headlineRaw = t('hero.headline');
+  const headlineWords = Array.isArray(headlineRaw)
+    ? headlineRaw
+    : typeof headlineRaw === 'string'
+    ? headlineRaw.split(' ')
+    : HEADLINE_WORDS;
 
   return (
     <section
@@ -49,18 +55,18 @@ export default function Hero() {
           <motion.div variants={item} className="mb-8">
             <span className="section-label">
               <Scale className="h-3 w-3 text-[#B59A68]" strokeWidth={1.5} />
-              Your Guide Through the Court of Evidence
+              {t('hero.eyebrow')}
             </span>
           </motion.div>
 
           {/* Headline — Cormorant Garamond */}
           <h1 className="font-display flex flex-wrap gap-x-3 gap-y-1 text-5xl font-semibold leading-[1.1] text-ivory sm:text-6xl md:text-7xl">
-            {HEADLINE_WORDS.map((word, i) => (
+            {headlineWords.map((word: string, i: number) => (
               <motion.span
                 key={i}
                 variants={item}
                 className={
-                  word === 'Judicial' || word === 'Intelligence'
+                  i === 1 || i === 3 || word === 'Judicial' || word === 'Intelligence' || word === 'न्यायालयीन' || word === 'न्यायिक'
                     ? 'text-[#B59A68]'
                     : ''
                 }
@@ -75,29 +81,27 @@ export default function Hero() {
             variants={item}
             className="mt-7 max-w-xl font-sans text-base leading-relaxed text-stone"
           >
-            NyayaSarathi reads, indexes, and cross-verifies case law at the speed
-            of a query &mdash; every generated answer traced back to the paragraph
-            that supports it.
+            {t('hero.subtext')}
           </motion.p>
 
           {/* CTAs */}
           <motion.div variants={item} className="mt-10 flex flex-col gap-4 sm:flex-row">
             <button className="btn-oxblood group flex items-center justify-center gap-2 rounded px-7 py-3.5 font-sans text-sm font-semibold tracking-wide">
-              Launch Research Hub
+              {t('hero.launchHub')}
               <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </button>
             <button className="group flex items-center justify-center gap-2 rounded border border-[#3B3A33] bg-transparent px-7 py-3.5 font-sans text-sm font-semibold text-ivory transition-colors duration-300 hover:border-[#8A3545]/50 hover:bg-[#6E2634]/8">
               <Upload className="h-4 w-4 text-stone transition-colors group-hover:text-ivory" />
-              Upload Document
+              {t('hero.uploadDoc')}
             </button>
           </motion.div>
 
           {/* Stats row */}
           <motion.div variants={item} className="mt-16 flex flex-wrap items-stretch gap-0">
             {[
-              ['12,400+', 'Judgments indexed'],
-              ['85%',     'Research time saved'],
-              ['100%',    'Citation-verifiable'],
+              [t('hero.stat1Value'), t('hero.stat1Label')],
+              [t('hero.stat2Value'), t('hero.stat2Label')],
+              [t('hero.stat3Value'), t('hero.stat3Label')],
             ].map(([value, label], i) => (
               <div
                 key={label}

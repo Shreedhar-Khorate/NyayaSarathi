@@ -273,9 +273,57 @@ function StageCard({
 /* ══════════════════════════════════════════════════════════════
    MAIN SECTION
    ══════════════════════════════════════════════════════════════ */
+import { useLanguage } from '@/context/LanguageContext';
+
 export default function VerificationThread() {
   const isReduced = useReducedMotion() ?? false;
   const sectionRef = useRef<HTMLElement>(null);
+  const { t } = useLanguage();
+
+  const dynamicStages: Stage[] = [
+    {
+      icon: FileUp,
+      step: 'STAGE 01',
+      title: t('pipeline.stage1Title'),
+      description: t('pipeline.stage1Desc'),
+      badge: 'MULTI-FORMAT INGEST',
+    },
+    {
+      icon: ScanText,
+      step: 'STAGE 02',
+      title: t('pipeline.stage2Title'),
+      description: t('pipeline.stage2Desc'),
+      badge: 'LAYOUT RECONSTRUCTION',
+    },
+    {
+      icon: Scissors,
+      step: 'STAGE 03',
+      title: t('pipeline.stage3Title'),
+      description: t('pipeline.stage3Desc'),
+      badge: 'PARAGRAPH TAGGING',
+    },
+    {
+      icon: Network,
+      step: 'STAGE 04',
+      title: t('pipeline.stage4Title'),
+      description: t('pipeline.stage4Desc'),
+      badge: 'VECTOR + BM25',
+    },
+    {
+      icon: BookOpen,
+      step: 'STAGE 05',
+      title: t('pipeline.stage5Title'),
+      description: t('pipeline.stage5Desc'),
+      badge: 'GROUNDED RESPONSE',
+    },
+    {
+      icon: ShieldCheck,
+      step: 'STAGE 06',
+      title: t('pipeline.stage6Title'),
+      description: t('pipeline.stage6Desc'),
+      badge: 'PARAGRAPH TRACE',
+    },
+  ];
 
   /* Scroll progress for ambient glow + center line */
   const { scrollYProgress } = useScroll({
@@ -317,7 +365,7 @@ export default function VerificationThread() {
         {/* Section header */}
         <div className="mb-20 text-center">
           <div className="mb-5 flex justify-center">
-            <span className="section-label">The Pipeline Architecture</span>
+            <span className="section-label">{t('pipeline.label')}</span>
           </div>
           <motion.h2
             initial={isReduced ? {} : { opacity: 0, y: 18 }}
@@ -326,7 +374,7 @@ export default function VerificationThread() {
             viewport={{ once: true }}
             className="font-display text-4xl font-semibold tracking-tight text-ivory md:text-5xl"
           >
-            The Verification Thread
+            {t('pipeline.title')}
           </motion.h2>
           <motion.p
             initial={isReduced ? {} : { opacity: 0, y: 18 }}
@@ -335,8 +383,7 @@ export default function VerificationThread() {
             viewport={{ once: true }}
             className="mt-5 mx-auto max-w-2xl font-sans text-base leading-relaxed text-stone"
           >
-            Every answer is tethered to its source, start to finish. Raw filings
-            become verifiable legal intelligence through six stages.
+            {t('pipeline.desc')}
           </motion.p>
         </div>
 
@@ -377,7 +424,7 @@ export default function VerificationThread() {
 
           {/* ── Stage rows ─────────────────────────────────────────── */}
           <div className="flex flex-col gap-10">
-            {stages.map((stage, index) => {
+            {dynamicStages.map((stage, index) => {
               const isLeft = index % 2 === 0; // even → left, odd → right
 
               return (

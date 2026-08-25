@@ -2,21 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scale, Menu, X, ArrowUpRight } from 'lucide-react';
+import { Scale, Menu, X, ArrowUpRight, Globe, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-
-const NAV_LINKS = [
-  { href: '/predictor',    label: 'Judgment Predictor' },
-  { href: '/#pipeline',     label: 'How It Works' },
-  { href: '/#capabilities', label: 'Capabilities' },
-  { href: '/#workspace',    label: 'Workspace'    },
-];
+import { useLanguage } from '@/context/LanguageContext';
+import { SUPPORTED_LANGUAGES } from '@/i18n/config';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function Navbar() {
   const [scrolled, setScrolled]     = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const { language, setLanguage, currentLanguageObj, t } = useLanguage();
+
+  const NAV_LINKS = [
+    { href: '/predictor',    label: t('nav.predictor') },
+    { href: '/#pipeline',     label: t('nav.howItWorks') },
+    { href: '/#capabilities', label: t('nav.capabilities') },
+    { href: '/#workspace',    label: t('nav.workspace')    },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -71,19 +75,70 @@ export function Navbar() {
             ))}
           </nav>
 
-          {/* Auth buttons */}
-          <div className="hidden items-center gap-4 md:flex shrink-0">
+          {/* Language Selector + Auth buttons */}
+          <div className="hidden items-center gap-3 md:flex shrink-0">
+            
+            {/* Language Selector Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLangMenuOpen((v) => !v)}
+                className="flex items-center gap-1.5 rounded border border-[#3B3A33] bg-[#1D211F]/80 px-3 py-1.5 font-sans text-xs font-semibold text-stone hover:text-ivory hover:border-[#B59A68]/50 transition-colors"
+                title="Change Application Language"
+              >
+                <Globe className="h-3.5 w-3.5 text-[#B59A68]" />
+                <span>{currentLanguageObj.nativeName}</span>
+                <ChevronDown className="h-3 w-3 text-stone/70" />
+              </button>
+
+              <AnimatePresence>
+                {langMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-44 rounded border border-[#3B3A33] bg-[#151716] shadow-xl py-1 z-50 max-h-60 overflow-y-auto doc-scroll"
+                  >
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          setLangMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2 text-left font-sans text-xs transition-colors ${
+                          language === lang.code
+                            ? 'bg-[#6E2634]/20 text-[#B59A68] font-bold'
+                            : 'text-stone hover:bg-[#242925] hover:text-ivory'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{lang.flag}</span>
+                          <span>{lang.nativeName}</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-stone/40 uppercase">
+                          {lang.code}
+                        </span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <button
               id="nav-signin-btn"
-              className="font-sans text-sm font-medium text-stone/75 transition-colors duration-200 hover:text-ivory"
+              className="font-sans text-sm font-medium text-stone/75 transition-colors duration-200 hover:text-ivory px-2"
             >
-              Sign In
+              {t('nav.signIn')}
             </button>
             <button
               id="nav-getstarted-btn"
               className="btn-oxblood group flex items-center gap-1.5 rounded px-4 py-2 font-sans text-sm font-semibold tracking-wide"
             >
-              Get Started
+              {t('nav.getStarted')}
               <ArrowUpRight
                 className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                 strokeWidth={2}
@@ -91,37 +146,48 @@ export function Navbar() {
             </button>
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            id="nav-mobile-toggle"
-            onClick={() => setMobileOpen(v => !v)}
-            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            className="flex h-8 w-8 items-center justify-center text-stone/75 hover:text-ivory transition-colors md:hidden"
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              {mobileOpen ? (
-                <motion.span
-                  key="x"
-                  initial={{ rotate: -45, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 45, opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <X className="h-5 w-5" strokeWidth={1.8} />
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="m"
-                  initial={{ rotate: 45, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -45, opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <Menu className="h-5 w-5" strokeWidth={1.8} />
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </button>
+          {/* Mobile hamburger & Language Trigger */}
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileOpen((v) => !v)}
+              className="flex items-center gap-1 rounded border border-[#3B3A33] px-2 py-1 text-xs text-stone"
+            >
+              <Globe className="h-3.5 w-3.5 text-[#B59A68]" />
+              <span className="uppercase font-mono font-bold text-[10px]">{language}</span>
+            </button>
+
+            <button
+              id="nav-mobile-toggle"
+              onClick={() => setMobileOpen(v => !v)}
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              className="flex h-8 w-8 items-center justify-center text-stone/75 hover:text-ivory transition-colors"
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {mobileOpen ? (
+                  <motion.span
+                    key="x"
+                    initial={{ rotate: -45, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: 45, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <X className="h-5 w-5" strokeWidth={1.8} />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="m"
+                    initial={{ rotate: 45, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: -45, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <Menu className="h-5 w-5" strokeWidth={1.8} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+          </div>
         </div>
       </motion.header>
 
@@ -137,6 +203,26 @@ export function Navbar() {
           >
             <div className="h-px bg-[#3B3A33]" />
             <div className="mx-auto max-w-7xl px-6 pt-5 pb-7 space-y-0.5">
+
+              {/* Language Selector Bar Mobile */}
+              <div className="pb-3 mb-2 border-b border-[#3B3A33] flex items-center justify-between">
+                <span className="text-xs text-stone/70 font-medium">Select Language:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => setLanguage(lang.code)}
+                      className={`px-2.5 py-1 rounded text-xs font-sans font-medium border ${
+                        language === lang.code
+                          ? 'border-[#B59A68] bg-[#6E2634]/30 text-[#B59A68]'
+                          : 'border-[#3B3A33] text-stone'
+                      }`}
+                    >
+                      {lang.nativeName}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {NAV_LINKS.map(({ href, label }, i) => (
                 <motion.a
@@ -166,13 +252,13 @@ export function Navbar() {
                   id="nav-mobile-signin"
                   className="w-full rounded border border-[#3B3A33] px-5 py-2.5 font-sans text-sm font-medium text-ivory/80 transition-colors hover:text-ivory hover:border-[#8A3545]/60"
                 >
-                  Sign In
+                  {t('nav.signIn')}
                 </button>
                 <button
                   id="nav-mobile-getstarted"
                   className="btn-oxblood group flex w-full items-center justify-center gap-2 rounded px-5 py-2.5 font-sans text-sm font-semibold tracking-wide"
                 >
-                  Get Started
+                  {t('nav.getStarted')}
                   <ArrowUpRight
                     className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                     strokeWidth={2}
@@ -188,6 +274,8 @@ export function Navbar() {
 }
 
 export function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="relative border-t border-[#3B3A33] py-16 bg-[#151716]">
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-10 px-6 md:flex-row md:items-center">
@@ -197,14 +285,12 @@ export function Footer() {
             <span className="font-display text-lg font-semibold text-ivory">NyayaSarathi</span>
           </div>
           <p className="font-legal italic text-sm text-stone/70 mt-1">
-            &ldquo;Fiat justitia ruat caelum.&rdquo;
+            &ldquo;{t('footer.motto')}&rdquo;
           </p>
         </div>
 
         <p className="max-w-sm font-sans text-xs leading-relaxed text-stone">
-          Built for legal researchers, judicial clerks, and chambers who need
-          answers that hold up under cross-examination. Every citation is
-          verifiable, every source is shown.
+          {t('footer.description')}
         </p>
 
         <p className="font-sans text-xs text-stone/50">

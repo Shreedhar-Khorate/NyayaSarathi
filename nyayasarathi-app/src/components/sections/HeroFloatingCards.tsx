@@ -629,9 +629,12 @@ function PageVerifiedAnswer() {
 }
 
 /* ── Main Scroll-Linked Realistic 3D Case Book Component ── */
+import { useLanguage } from '@/context/LanguageContext';
+
 export default function HeroFloatingCards() {
   const containerRef = useRef<HTMLDivElement>(null);
   const bookStageRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   // Track scroll through the section
   const { scrollYProgress } = useScroll({
@@ -773,15 +776,15 @@ export default function HeroFloatingCards() {
           <div className="mb-1.5 flex justify-center">
             <span className="section-label">
               <Scale className="h-3 w-3 text-[#B59A68]" strokeWidth={1.5} />
-              Judicial Evidence Ledger &amp; Decision Pipeline
+              {t('book.sectionLabel')}
             </span>
           </div>
 
           <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-semibold leading-tight text-ivory">
-            Visualizing the Evidence Stack
+            {t('book.sectionTitle')}
           </h2>
           <p className="mx-auto mt-1 max-w-xl font-sans text-xs sm:text-sm text-stone leading-relaxed">
-            Scroll down to open the antique case file and trace how raw exhibits, precedents, and statutes synthesize into a verified verdict.
+            {t('book.sectionDesc')}
           </p>
 
           {/* Active Folio Pill Indicator with Jump Controls */}

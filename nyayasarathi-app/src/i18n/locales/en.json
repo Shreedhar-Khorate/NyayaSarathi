@@ -1,0 +1,105 @@
+{
+  "nav": {
+    "predictor": "Judgment Predictor",
+    "howItWorks": "How It Works",
+    "capabilities": "Capabilities",
+    "workspace": "Workspace",
+    "signIn": "Sign In",
+    "getStarted": "Get Started"
+  },
+  "hero": {
+    "eyebrow": "Your Guide Through the Court of Evidence",
+    "headline": ["AI-Powered", "Judicial", "Case", "Intelligence", "&", "Decision", "Support", "System"],
+    "subtext": "NyayaSarathi reads, indexes, and cross-verifies case law at the speed of a query — every generated answer traced back to the paragraph that supports it.",
+    "launchHub": "Launch Research Hub",
+    "uploadDoc": "Upload Document",
+    "stat1Value": "12,400+",
+    "stat1Label": "Judgments indexed",
+    "stat2Value": "85%",
+    "stat2Label": "Research time saved",
+    "stat3Value": "100%",
+    "stat3Label": "Citation-verifiable"
+  },
+  "book": {
+    "sectionLabel": "Judicial Evidence Ledger & Decision Pipeline",
+    "sectionTitle": "Visualizing the Evidence Stack",
+    "sectionDesc": "Scroll down to open the antique case file and trace how raw exhibits, precedents, and statutes synthesize into a verified verdict."
+  },
+  "pipeline": {
+    "label": "The Pipeline Architecture",
+    "title": "The Verification Thread",
+    "desc": "Every answer is tethered to its source, start to finish. Raw filings become verifiable legal intelligence through six stages.",
+    "stage1Title": "Document Upload",
+    "stage1Desc": "Judgments, orders, and case files ingested as PDF, DOCX, or scanned image — no reformatting required.",
+    "stage2Title": "OCR & Text Extraction",
+    "stage2Desc": "Layout-aware OCR reconstructs paragraphs, tables, and cause-title structure from scanned court records.",
+    "stage3Title": "Text Chunking & NER",
+    "stage3Desc": "Passages are split at legal boundaries and tagged for judges, sections, acts, and dates.",
+    "stage4Title": "Hybrid Indexing",
+    "stage4Desc": "Vector embeddings and lexical (BM25) indexes are built side by side for meaning and exact statute matches.",
+    "stage5Title": "RAG AI Generation",
+    "stage5Desc": "Retrieved passages ground every generated answer — the model argues from your corpus, not memory.",
+    "stage6Title": "Citation Verification",
+    "stage6Desc": "Each claim is traced back to its source paragraph before it ever reaches the researcher."
+  },
+  "stats": {
+    "label": "By the Numbers",
+    "stat1": "Research time saved per case brief",
+    "stat2": "Citation verifiability — every claim traceable",
+    "stat3": "Hybrid RAG engine — vector + lexical, fused"
+  },
+  "capabilities": {
+    "label": "System Capabilities",
+    "title": "Built for how legal research actually happens.",
+    "card1Title": "Semantic Case Search",
+    "card1Desc": "Ask in plain language — \"cases where anticipatory bail was denied under Section 438\" — and retrieve ranked judgments by meaning, not just keyword.",
+    "card2Title": "Judgment Summarizer",
+    "card2Desc": "Multi-page orders condensed into facts, issues, holding, and ratio — each line traceable to its paragraph.",
+    "card3Title": "Legal Entity Extraction",
+    "card3Desc": "Judges, counsel, acts, sections, and dates auto-tagged across every document you upload.",
+    "card4Title": "BNS ⇄ IPC Code Mapping",
+    "card4Desc": "Cross-reference old Penal Code sections against the Bharatiya Nyaya Sanhita instantly, with mapping confidence shown inline."
+  },
+  "workspace": {
+    "label": "The NyayaSarathi Workspace",
+    "title": "Read the judgment. Verify the answer. Same screen.",
+    "desc": "Click any highlighted citation in the Research Note to jump straight to its source paragraph in the document pane.",
+    "searchPlaceholder": "What did the Court hold about delay in FIR filing under Section 420?",
+    "hybridSearch": "HYBRID SEARCH →",
+    "researchNote": "Research Note",
+    "verifiedSources": "2 sources verified",
+    "basisTitle": "Basis of Answer",
+    "passagesRetrieved": "3 passages retrieved",
+    "judgmentsReferenced": "2 judgments referenced",
+    "askFollowUp": "Ask a follow-up question…"
+  },
+  "predictor": {
+    "badge": "DATA-DRIVEN DECISION SUPPORT",
+    "title": "Judgment Success Predictor",
+    "subtitle": "Calculate data-driven favorable outcome probabilities based strictly on authentic, verified Indian judicial precedents and similarity-weighted case outcomes.",
+    "formTitle": "Case Brief & Parameters",
+    "quickSamples": "Quick Test Samples",
+    "categoryLabel": "Case Category / Filing Type",
+    "courtLabel": "Target Court (Optional)",
+    "sectionsLabel": "Relevant Acts / Sections (Optional)",
+    "factsLabel": "Case Facts & Brief",
+    "resetBtn": "Reset",
+    "computeBtn": "Compute Success Prediction",
+    "analyzingBtn": "Analyzing Historical Precedents...",
+    "awaitingTitle": "Awaiting Case Brief Input",
+    "awaitingDesc": "Select a quick test sample on the left or enter custom case details to view similarity-weighted success probabilities and cited precedents.",
+    "favorableProbability": "Favorable Outcome Probability",
+    "confidence": "Confidence",
+    "takeawayTitle": "Executive Grounded Takeaway",
+    "supportingFactors": "Supporting Factors",
+    "opposingFactors": "Opposing Factors",
+    "matchedPrecedents": "Matched Historical Precedents",
+    "similarity": "Similarity",
+    "disclaimer": "This is an AI-generated advisory estimate based on historical Indian court judgments and is not a formal legal opinion or guarantee of future outcome.",
+    "translateTakeaway": "Translate Output"
+  },
+  "footer": {
+    "motto": "Fiat justitia ruat caelum.",
+    "description": "Built for legal researchers, judicial clerks, and chambers who need answers that hold up under cross-examination. Every citation is verifiable, every source is shown."
+  }
+}

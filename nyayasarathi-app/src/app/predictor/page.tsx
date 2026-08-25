@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scale,
@@ -16,6 +16,7 @@ import {
   FileText,
   RotateCcw
 } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 
 interface Precedent {
@@ -70,6 +71,7 @@ const SAMPLE_CASES = [
 ];
 
 export default function PredictorPage() {
+  const { language, t } = useLanguage();
   const [caseType, setCaseType] = useState('Bail');
   const [court, setCourt] = useState('');
   const [sections, setSections] = useState('');
@@ -88,7 +90,6 @@ export default function PredictorPage() {
 
     setLoading(true);
     setError(null);
-    setResult(null);
 
     try {
       const parsedSections = sections.trim()
@@ -105,6 +106,7 @@ export default function PredictorPage() {
           description: description.trim(),
           court: court.trim() || undefined,
           sections: parsedSections,
+          target_language: language,
         }),
       });
 
@@ -128,6 +130,13 @@ export default function PredictorPage() {
       setLoading(false);
     }
   };
+
+  // Automatically re-fetch prediction in selected target language when user toggles language
+  useEffect(() => {
+    if (result && description.trim() && !loading) {
+      handleAnalyze();
+    }
+  }, [language]);
 
   const loadSample = (sample: typeof SAMPLE_CASES[0]) => {
     setCaseType(sample.type);
@@ -162,13 +171,13 @@ export default function PredictorPage() {
         >
           <div className="section-label mx-auto mb-3">
             <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
-            DATA-DRIVEN DECISION SUPPORT
+            {t('predictor.badge')}
           </div>
           <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#F4EFE5] mb-4">
-            Judgment Success Predictor
+            {t('predictor.title')}
           </h1>
           <p className="text-stone/80 text-sm sm:text-base leading-relaxed">
-            Calculate data-driven favorable outcome probabilities based strictly on authentic, verified Indian judicial precedents and similarity-weighted case outcomes.
+            {t('predictor.subtitle')}
           </p>
         </motion.div>
 
@@ -184,23 +193,23 @@ export default function PredictorPage() {
             <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#3B3A33]">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-[#B59A68]" />
-                <h2 className="font-display text-lg font-semibold text-[#F4EFE5]">Case Brief & Parameters</h2>
+                <h2 className="font-display text-lg font-semibold text-[#F4EFE5]">{t('predictor.formTitle')}</h2>
               </div>
               <button
                 type="button"
                 onClick={resetForm}
                 className="flex items-center gap-1 text-xs text-stone/70 hover:text-[#B59A68] transition-colors"
-                title="Reset Form"
+                title={t('predictor.resetBtn')}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Reset
+                {t('predictor.resetBtn')}
               </button>
             </div>
 
             {/* Quick Sample Selector */}
             <div className="mb-6">
               <label className="block text-xs font-semibold uppercase tracking-wider text-stone/70 mb-2">
-                Quick Test Samples
+                {t('predictor.quickSamples')}
               </label>
               <div className="flex flex-col gap-2">
                 {SAMPLE_CASES.map((sample, idx) => (
@@ -221,7 +230,7 @@ export default function PredictorPage() {
               {/* Case Type */}
               <div>
                 <label htmlFor="case_type" className="block text-xs font-medium text-stone/90 mb-1">
-                  Case Category / Filing Type <span className="text-[#8A3545]">*</span>
+                  {t('predictor.categoryLabel')} <span className="text-[#8A3545]">*</span>
                 </label>
                 <select
                   id="case_type"
@@ -342,7 +351,7 @@ export default function PredictorPage() {
               {/* Court (Optional) */}
               <div>
                 <label htmlFor="court" className="block text-xs font-medium text-stone/90 mb-1">
-                  Target Court <span className="text-stone/50">(Optional)</span>
+                  {t('predictor.courtLabel')}
                 </label>
                 <input
                   id="court"
@@ -357,7 +366,7 @@ export default function PredictorPage() {
               {/* Relevant Sections (Optional) */}
               <div>
                 <label htmlFor="sections" className="block text-xs font-medium text-stone/90 mb-1">
-                  Relevant Acts / Sections <span className="text-stone/50">(Optional)</span>
+                  {t('predictor.sectionsLabel')}
                 </label>
                 <input
                   id="sections"
@@ -372,7 +381,7 @@ export default function PredictorPage() {
               {/* Description */}
               <div>
                 <label htmlFor="description" className="block text-xs font-medium text-stone/90 mb-1">
-                  Case Facts & Brief <span className="text-[#8A3545]">*</span>
+                  {t('predictor.factsLabel')} <span className="text-[#8A3545]">*</span>
                 </label>
                 <textarea
                   id="description"
@@ -400,11 +409,11 @@ export default function PredictorPage() {
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-ivory/30 border-t-ivory rounded-full animate-spin" />
-                    <span>Analyzing Historical Precedents...</span>
+                    <span>{t('predictor.analyzingBtn')}</span>
                   </>
                 ) : (
                   <>
-                    <span>Compute Success Prediction</span>
+                    <span>{t('predictor.computeBtn')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -426,8 +435,7 @@ export default function PredictorPage() {
                   <Scale className="w-6 h-6 text-[#B59A68] absolute inset-0 m-auto" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="font-display text-lg font-semibold text-[#F4EFE5]">Evaluating Judgment Dataset</h3>
-                  <p className="text-xs text-stone/70">Scanning similarity metrics across historical Indian Supreme Court bail decisions...</p>
+                  <h3 className="font-display text-lg font-semibold text-[#F4EFE5]">{t('predictor.analyzingBtn')}</h3>
                 </div>
               </div>
             )}
@@ -438,9 +446,9 @@ export default function PredictorPage() {
                   <BookOpen className="w-7 h-7" />
                 </div>
                 <div className="max-w-md space-y-2">
-                  <h3 className="font-display text-xl font-semibold text-[#F4EFE5]">Awaiting Case Brief Input</h3>
+                  <h3 className="font-display text-xl font-semibold text-[#F4EFE5]">{t('predictor.awaitingTitle')}</h3>
                   <p className="text-xs text-stone/70 leading-relaxed">
-                    Select a quick test sample on the left or enter custom case details to view similarity-weighted success probabilities and cited precedents.
+                    {t('predictor.awaitingDesc')}
                   </p>
                 </div>
               </div>
@@ -474,6 +482,20 @@ export default function PredictorPage() {
                       const isFav = !isInsufficient && rawOutcome.includes('FAVORABLE') && !rawOutcome.includes('UNFAVORABLE');
                       const isBal = !isInsufficient && (rawOutcome.includes('BALANCED') || rawOutcome.includes('DISCRETIONARY'));
 
+                      const displayOutcome = isInsufficient
+                        ? 'INSUFFICIENT DATA / ABSTAINED'
+                        : language === 'mr'
+                        ? (isFav ? 'अनुकूल (FAVORABLE)' : isBal ? 'संतुलित (BALANCED)' : 'प्रतिकूल (UNFAVORABLE)')
+                        : language === 'hi'
+                        ? (isFav ? 'अनुकूल (FAVORABLE)' : isBal ? 'संतुलित (BALANCED)' : 'प्रतिकूल (UNFAVORABLE)')
+                        : rawOutcome;
+
+                      const displayConfidence = language === 'mr'
+                        ? (result.confidence?.toLowerCase() === 'high' ? 'उच्च (HIGH)' : result.confidence?.toLowerCase() === 'medium' ? 'मध्यम (MEDIUM)' : 'कमी (LOW)')
+                        : language === 'hi'
+                        ? (result.confidence?.toLowerCase() === 'high' ? 'उच्च (HIGH)' : result.confidence?.toLowerCase() === 'medium' ? 'मध्यम (MEDIUM)' : 'निम्न (LOW)')
+                        : result.confidence;
+
                       return (
                         <>
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -497,14 +519,14 @@ export default function PredictorPage() {
                                   ) : (
                                     <XCircle className="w-3.5 h-3.5" />
                                   )}
-                                  {rawOutcome}
+                                  {displayOutcome}
                                 </span>
                                 <span className="text-xs font-mono uppercase tracking-wider px-2.5 py-1 rounded bg-[#242925] border border-[#3B3A33] text-stone">
-                                  Confidence: {result.confidence}
+                                  {t('predictor.confidence')}: {displayConfidence}
                                 </span>
                               </div>
                               <h3 className="font-display text-xl font-semibold text-[#F4EFE5]">
-                                {isInsufficient ? 'Prediction Status' : 'Favorable Outcome Probability'}
+                                {isInsufficient ? 'Prediction Status' : t('predictor.favorableProbability')}
                               </h3>
                             </div>
 
@@ -546,7 +568,7 @@ export default function PredictorPage() {
                   <div className="ink-raised rounded-xl p-5 border border-[#3B3A33] space-y-2">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#B59A68]">
                       <Sparkles className="w-4 h-4" />
-                      Executive Grounded Takeaway
+                      {t('predictor.takeawayTitle')}
                     </div>
                     <p className="text-xs sm:text-sm text-[#F4EFE5]/90 leading-relaxed font-legal italic">
                       &ldquo;{result.takeaway}&rdquo;
@@ -560,7 +582,7 @@ export default function PredictorPage() {
                       <div className="ink-panel rounded-xl p-5 border border-[#3B3A33] space-y-3">
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#71877A]">
                           <CheckCircle2 className="w-4 h-4" />
-                          Supporting Factors ({result.supporting_factors.length})
+                          {t('predictor.supportingFactors')} ({result.supporting_factors.length})
                         </div>
                         <ul className="space-y-2 text-xs text-stone/90">
                           {result.supporting_factors.map((factor, i) => (
@@ -576,7 +598,7 @@ export default function PredictorPage() {
                       <div className="ink-panel rounded-xl p-5 border border-[#3B3A33] space-y-3">
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#8A3545]">
                           <XCircle className="w-4 h-4" />
-                          Opposing Factors ({result.opposing_factors.length})
+                          {t('predictor.opposingFactors')} ({result.opposing_factors.length})
                         </div>
                         <ul className="space-y-2 text-xs text-stone/90">
                           {result.opposing_factors.map((factor, i) => (
@@ -602,7 +624,7 @@ export default function PredictorPage() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-display text-base font-semibold text-[#F4EFE5] flex items-center gap-2">
                         <BookOpen className="w-4 h-4 text-[#B59A68]" />
-                        Matched Historical Precedents ({result.precedents.length})
+                        {t('predictor.matchedPrecedents')} ({result.precedents.length})
                       </h4>
                     </div>
 
@@ -623,7 +645,7 @@ export default function PredictorPage() {
                               </h5>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#151716] text-[#B59A68]">
-                                  {Math.round(precedent.similarity * 100)}% Similarity
+                                  {Math.round(precedent.similarity * 100)}% {t('predictor.similarity')}
                                 </span>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
                                   isPrecAllowed
@@ -674,8 +696,7 @@ export default function PredictorPage() {
                   <div className="p-4 rounded-lg bg-[#242925]/80 border border-[#3B3A33] flex items-start gap-3 text-xs text-stone/70">
                     <ShieldCheck className="w-4 h-4 text-[#B59A68] shrink-0 mt-0.5" />
                     <span>
-                      {result.disclaimer ||
-                        "This is an AI-generated advisory estimate based on historical Indian court judgments and is not a formal legal opinion or guarantee of future outcome."}
+                      {result.disclaimer || t('predictor.disclaimer')}
                     </span>
                   </div>
                 </motion.div>
