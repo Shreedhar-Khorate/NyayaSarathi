@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, Manrope, Source_Serif_4 } from 'next/font/google';
+import { Cormorant_Garamond, Manrope, Source_Serif_4, Noto_Sans_Devanagari } from 'next/font/google';
 import './globals.css';
 
 // ── Cormorant Garamond — display / editorial headings ─────────────────────
@@ -28,6 +28,14 @@ const sourceSerif = Source_Serif_4({
   display: 'swap',
 });
 
+// ── Noto Sans Devanagari — Hindi & Marathi script ─────────────────────────
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ['devanagari'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-devanagari',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: 'NyayaSarathi — AI-Powered Judicial Case Intelligence',
   description:
@@ -42,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${cormorant.variable} ${manrope.variable} ${sourceSerif.variable}`}
+      className={`${cormorant.variable} ${manrope.variable} ${sourceSerif.variable} ${notoDevanagari.variable}`}
     >
       <body className="bg-ink text-ivory antialiased">
         <LanguageProvider>

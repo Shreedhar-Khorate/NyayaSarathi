@@ -255,7 +255,7 @@ function StageCard({
             />
             <div className="flex items-center justify-between pt-3 text-[10px]">
               <span className="font-mono text-stone/40 tracking-widest">
-                STAGE {String(index + 1).padStart(2, '0')} OF 06
+                STAGE {String(index + 1).padStart(2, '0')} {stage.step.split(' ')[0]}
               </span>
               <motion.span
                 className="h-1.5 w-1.5 rounded-full"
@@ -286,42 +286,42 @@ export default function VerificationThread() {
       step: 'STAGE 01',
       title: t('pipeline.stage1Title'),
       description: t('pipeline.stage1Desc'),
-      badge: 'MULTI-FORMAT INGEST',
+      badge: t('pipeline.stage1Badge'),
     },
     {
       icon: ScanText,
       step: 'STAGE 02',
       title: t('pipeline.stage2Title'),
       description: t('pipeline.stage2Desc'),
-      badge: 'LAYOUT RECONSTRUCTION',
+      badge: t('pipeline.stage2Badge'),
     },
     {
       icon: Scissors,
       step: 'STAGE 03',
       title: t('pipeline.stage3Title'),
       description: t('pipeline.stage3Desc'),
-      badge: 'PARAGRAPH TAGGING',
+      badge: t('pipeline.stage3Badge'),
     },
     {
       icon: Network,
       step: 'STAGE 04',
       title: t('pipeline.stage4Title'),
       description: t('pipeline.stage4Desc'),
-      badge: 'VECTOR + BM25',
+      badge: t('pipeline.stage4Badge'),
     },
     {
       icon: BookOpen,
       step: 'STAGE 05',
       title: t('pipeline.stage5Title'),
       description: t('pipeline.stage5Desc'),
-      badge: 'GROUNDED RESPONSE',
+      badge: t('pipeline.stage5Badge'),
     },
     {
       icon: ShieldCheck,
       step: 'STAGE 06',
       title: t('pipeline.stage6Title'),
       description: t('pipeline.stage6Desc'),
-      badge: 'PARAGRAPH TRACE',
+      badge: t('pipeline.stage6Badge'),
     },
   ];
 

@@ -16,17 +16,28 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<string>(DEFAULT_LANGUAGE);
 
+  const DEVANAGARI_CODES = ['hi', 'mr'];
+
+  const applyScriptAttribute = (code: string) => {
+    if (typeof document !== 'undefined') {
+      const isDevanagari = DEVANAGARI_CODES.includes(code);
+      document.documentElement.setAttribute('data-script', isDevanagari ? 'devanagari' : 'latin');
+      document.documentElement.setAttribute('lang', code);
+    }
+  };
+
   useEffect(() => {
     const saved = localStorage.getItem('nyayasarathi_lang');
-    if (saved && SUPPORTED_LANGUAGES.some((l) => l.code === saved)) {
-      setLanguageState(saved);
-    }
+    const activeCode = saved && SUPPORTED_LANGUAGES.some((l) => l.code === saved) ? saved : DEFAULT_LANGUAGE;
+    setLanguageState(activeCode);
+    applyScriptAttribute(activeCode);
   }, []);
 
   const setLanguage = (code: string) => {
     if (SUPPORTED_LANGUAGES.some((l) => l.code === code)) {
       setLanguageState(code);
       localStorage.setItem('nyayasarathi_lang', code);
+      applyScriptAttribute(code);
     }
   };
 

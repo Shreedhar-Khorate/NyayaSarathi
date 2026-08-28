@@ -13,18 +13,25 @@ const CITATIONS = [
   { id: 'c2', label: 'Para 21', page: 'Page 21' },
 ];
 
-const ANSWER_LINES = [
-  { text: 'The Court held that mere delay in lodging an FIR, by itself,', citeId: null },
-  { text: 'does not vitiate the prosecution\u2019s case ', citeId: 'c1' },
-  { text: 'where the delay stands satisfactorily explained on record.', citeId: null },
-  { text: 'This finds direct support in the reasoning applied by the bench ', citeId: 'c2' },
-  { text: 'in its interpretation of Section 154, CrPC.', citeId: null },
+const ANSWER_LINES_KEYS = [
+  { textKey: 'workspace.docPara14Part1', citeId: null },
+  { textKey: 'workspace.docPara14Part2', citeId: 'c1' },
+  { textKey: 'workspace.docPara21Part1', citeId: 'c2' },
 ];
 
 export default function WorkspaceMockup() {
   const [activeCite, setActiveCite] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>(['#Section420']);
   const { t } = useLanguage();
+
+  // Build answer lines dynamically from translations
+  const ANSWER_LINES = [
+    { text: t('workspace.answerLine1'), citeId: null },
+    { text: t('workspace.answerLine2'), citeId: 'c1' },
+    { text: t('workspace.answerLine3'), citeId: null },
+    { text: t('workspace.answerLine4'), citeId: 'c2' },
+    { text: t('workspace.answerLine5'), citeId: null },
+  ];
 
   const toggleFilter = (tag: string) => {
     setActiveFilters((prev) =>
@@ -93,15 +100,15 @@ export default function WorkspaceMockup() {
             <div className="flex items-center justify-between border-b border-[#DED5C4]/50 px-5 py-4 bg-[#DED5C4]">
               <div>
                 <p className="font-display text-sm font-semibold text-[#151716]">
-                  State v. Sharma, 2019
+                  {t('workspace.docCaseName')}
                 </p>
                 <p className="font-sans text-xs text-[#5A554C] mt-0.5">
-                  Supreme Court of India · Criminal Appeal 1142/2019
+                  {t('workspace.docCourt')}
                 </p>
               </div>
               <span className="verdigris-badge flex items-center gap-1.5 rounded-sm px-2.5 py-1 font-sans text-[10px] font-semibold tracking-wide">
                 <ShieldCheck className="h-3 w-3" strokeWidth={2} />
-                OCR Verified
+                {t('workspace.docOcrBadge')}
               </span>
             </div>
 
@@ -110,21 +117,17 @@ export default function WorkspaceMockup() {
               {/* Document label */}
               <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#DED5C4]">
                 <span className="font-mono text-[9px] tracking-[0.2em] text-[#A9A49A] uppercase">
-                  Judgment · Criminal Appeal
+                  {t('workspace.docLabel')}
                 </span>
                 <span className="font-mono text-[9px] tracking-[0.2em] text-[#A9A49A]">
-                  Page 14–24
+                  {t('workspace.docPages')}
                 </span>
               </div>
 
               <div className="font-legal text-sm leading-8 text-[#1D211F]">
                 <p className="mb-5">
                   <span className="float-right ml-3 font-mono text-[10px] text-[#B59A68] tracking-wide">14.</span>
-                  In the matter of{' '}
-                  <span className="entity-underline entity-section">Section 420</span>, this Court has
-                  consistently held that mere delay in lodging the First Information Report does not, by
-                  itself, vitiate the prosecution&rsquo;s case, provided the delay is satisfactorily
-                  explained by the complainant on record.
+                  {t('workspace.docPara14')}
                 </p>
 
                 <motion.p
@@ -134,18 +137,12 @@ export default function WorkspaceMockup() {
                   }}
                 >
                   <span className="float-right ml-3 font-mono text-[10px] text-[#B59A68] tracking-wide">15.</span>
-                  Justice{' '}
-                  <span className="entity-underline entity-judge">A.K. Rao</span>, delivering the
-                  opinion of the bench, observed that the trial court correctly appreciated the testimony
-                  of PW-3 in light of the surrounding circumstances dated{' '}
-                  <span className="entity-underline entity-date">14 March 2018</span>.
+                  {t('workspace.docPara15')}
                 </motion.p>
 
                 <p className="mb-5">
                   <span className="float-right ml-3 font-mono text-[10px] text-[#B59A68] tracking-wide">18.</span>
-                  The appellant&rsquo;s counsel contended that the delay of eleven days was fatal to
-                  the case, relying on precedent under the{' '}
-                  <span className="entity-underline entity-act">Bharatiya Nyaya Sanhita, 2023</span>.
+                  {t('workspace.docPara18')}
                 </p>
 
                 <motion.p
@@ -155,26 +152,22 @@ export default function WorkspaceMockup() {
                   }}
                 >
                   <span className="float-right ml-3 font-mono text-[10px] text-[#B59A68] tracking-wide">21.</span>
-                  This Court, relying on the settled position under{' '}
-                  <span className="entity-underline entity-section">Section 154, CrPC</span>, finds that
-                  the explanation tendered was consistent and credible, and accordingly affirms the
-                  conviction recorded by the courts below.
+                  {t('workspace.docPara21')}
                 </motion.p>
 
                 <p>
                   <span className="float-right ml-3 font-mono text-[10px] text-[#B59A68] tracking-wide">24.</span>
-                  For the foregoing reasons, the appeal fails and is dismissed, with the sentence
-                  awarded by the Trial Court, as affirmed by the High Court, standing undisturbed.
+                  {t('workspace.docPara24')}
                 </p>
               </div>
 
               {/* Document footer */}
               <div className="mt-8 pt-4 border-t border-[#DED5C4] flex items-center justify-between">
                 <span className="font-mono text-[9px] tracking-[0.15em] text-[#A9A49A] uppercase">
-                  Source Verified
+                  {t('workspace.docSourceVerified')}
                 </span>
                 <span className="font-mono text-[9px] tracking-[0.15em] text-[#A9A49A]">
-                  Judgment No. 1142/2019
+                  {t('workspace.docJudgmentNo')}
                 </span>
               </div>
             </div>
@@ -240,7 +233,7 @@ export default function WorkspaceMockup() {
                   </div>
                   <div className="flex items-center gap-2 font-sans text-xs text-stone">
                     <span className="h-1 w-1 rounded-full bg-[#B59A68]" />
-                    Page 14 · Page 21
+                    {t('workspace.docPageRefs')}
                   </div>
                 </div>
               </div>
@@ -257,17 +250,17 @@ export default function WorkspaceMockup() {
                     <div className="border border-[#3B3A33] bg-[#1D211F] rounded-sm p-4">
                       <div className="border-b border-[#3B3A33] pb-3 mb-3">
                         <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-stone mb-1">
-                          Source
+                          {t('workspace.sourceLabel')}
                         </p>
                         <p className="font-display text-sm font-semibold text-[#B59A68]">
-                          Judgment No. 1142/2019 · {CITATIONS.find((c) => c.id === activeCite)?.page}
+                          {t('workspace.docJudgmentNo')} · {CITATIONS.find((c) => c.id === activeCite)?.page}
                         </p>
                         <p className="font-sans text-xs text-stone mt-0.5">
-                          {CITATIONS.find((c) => c.id === activeCite)?.label} — highlighted in document pane
+                          {CITATIONS.find((c) => c.id === activeCite)?.label} — {t('workspace.sourceHighlighted')}
                         </p>
                       </div>
                       <button className="font-sans text-[11px] font-semibold text-[#6E2634] hover:text-[#8A3545] tracking-wide transition-colors">
-                        [ View Source ]
+                        {t('workspace.viewSource')}
                       </button>
                     </div>
                   </motion.div>
