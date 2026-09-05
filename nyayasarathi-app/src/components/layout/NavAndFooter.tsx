@@ -128,13 +128,15 @@ export function Navbar() {
               </AnimatePresence>
             </div>
 
-            <button
+            <Link
+              href="/login"
               id="nav-signin-btn"
               className="font-sans text-sm font-medium text-stone/75 transition-colors duration-200 hover:text-ivory px-2"
             >
               {t('nav.signIn')}
-            </button>
-            <button
+            </Link>
+            <Link
+              href="/signup"
               id="nav-getstarted-btn"
               className="btn-oxblood group flex items-center gap-1.5 rounded px-4 py-2 font-sans text-sm font-semibold tracking-wide"
             >
@@ -143,7 +145,7 @@ export function Navbar() {
                 className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                 strokeWidth={2}
               />
-            </button>
+            </Link>
           </div>
 
           {/* Mobile hamburger & Language Trigger */}
@@ -248,14 +250,18 @@ export function Navbar() {
                 }}
                 className="flex flex-col gap-2.5 pt-5 mt-2 border-t border-[#3B3A33]"
               >
-                <button
+                <Link
+                  href="/login"
                   id="nav-mobile-signin"
-                  className="w-full rounded border border-[#3B3A33] px-5 py-2.5 font-sans text-sm font-medium text-ivory/80 transition-colors hover:text-ivory hover:border-[#8A3545]/60"
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full text-center rounded border border-[#3B3A33] px-5 py-2.5 font-sans text-sm font-medium text-ivory/80 transition-colors hover:text-ivory hover:border-[#8A3545]/60"
                 >
                   {t('nav.signIn')}
-                </button>
-                <button
+                </Link>
+                <Link
+                  href="/signup"
                   id="nav-mobile-getstarted"
+                  onClick={() => setMobileOpen(false)}
                   className="btn-oxblood group flex w-full items-center justify-center gap-2 rounded px-5 py-2.5 font-sans text-sm font-semibold tracking-wide"
                 >
                   {t('nav.getStarted')}
@@ -263,7 +269,7 @@ export function Navbar() {
                     className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                     strokeWidth={2}
                   />
-                </button>
+                </Link>
               </motion.div>
             </div>
           </motion.div>

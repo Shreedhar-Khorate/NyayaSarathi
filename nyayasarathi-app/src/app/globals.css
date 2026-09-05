@@ -120,6 +120,34 @@ h4,
   color: var(--verdigris);
 }
 
+/* ── Editorial Animated Underline Link ──────────────────── */
+.editorial-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.editorial-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0%;
+  height: 1px;
+  background-color: var(--oxblood);
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.editorial-link:hover::after {
+  width: 100%;
+}
+
+.editorial-link-brass::after {
+  background-color: var(--brass);
+}
+
 /* ── Oxblood primary button ──────────────────────────────── */
 .btn-oxblood {
   position: relative;
