@@ -16,7 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from routers import analyze, cases, contracts, drafts, qa, search, statutes, translate, war_room
+from routers import analyze, auth, cases, contracts, drafts, qa, search, statutes, translate, war_room
+from services.user_repository import init_user_table
 
 log = get_logger("nyayasarathi")
 
@@ -169,6 +170,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 # ── Routers ───────────────────────────────────────────────────────────────────
+app.include_router(auth.router,      prefix="/api/auth",       tags=["Authentication"])
 app.include_router(analyze.router,   prefix="/api/analyze",    tags=["Judgment Predictor"])
 app.include_router(cases.router,     prefix="/api/cases",      tags=["Cases"])
 app.include_router(contracts.router, prefix="/api/contracts",  tags=["Contracts"])
@@ -194,13 +196,19 @@ def health_check():
 # ── Startup / Shutdown Events ─────────────────────────────────────────────────
 @app.on_event("startup")
 async def on_startup():
+    # Initialize user database table
+    try:
+        init_user_table()
+    except Exception as e:
+        log.error(f"Failed to initialize user database table: {e}", extra={"component": "STARTUP"})
+
     log.info(
         f"\033[1m\033[92m⚖  NyayaSarathi API\033[0m  "
         f"\033[90mv1.0.0 · http://0.0.0.0:8000 · docs → /docs\033[0m",
         extra={"component": "STARTUP"},
     )
     log.info(
-        "Routes: /api/analyze  /api/cases  /api/contracts  /api/drafts  "
+        "Routes: /api/auth  /api/analyze  /api/cases  /api/contracts  /api/drafts  "
         "/api/qa  /api/search  /api/statutes  /api/war-room",
         extra={"component": "STARTUP"},
     )

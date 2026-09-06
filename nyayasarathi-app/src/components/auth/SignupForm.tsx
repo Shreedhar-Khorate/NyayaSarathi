@@ -2,15 +2,18 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import AuthInput from './AuthInput';
 import PasswordInput from './PasswordInput';
 import AuthButton from './AuthButton';
 import TrustIndicator from './TrustIndicator';
+import { signupUser } from '@/lib/auth';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function SignupForm() {
+  const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -65,10 +68,10 @@ export function SignupForm() {
     setIsLoading(true);
 
     try {
-      // Connect to signup workflow (real logic, no fake mock response)
-      await new Promise((resolve) => setTimeout(resolve, 800));
-    } catch {
-      setErrors({ general: 'Unable to complete registration. Please try again.' });
+      await signupUser(email, password, fullName);
+      router.push('/predictor');
+    } catch (err: any) {
+      setErrors({ general: err.message || 'Unable to complete registration. Please try again.' });
     } finally {
       setIsLoading(false);
     }

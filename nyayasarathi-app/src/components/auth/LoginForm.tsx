@@ -2,15 +2,18 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import AuthInput from './AuthInput';
 import PasswordInput from './PasswordInput';
 import AuthButton from './AuthButton';
 import TrustIndicator from './TrustIndicator';
+import { loginUser } from '@/lib/auth';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -41,12 +44,10 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      // Connect to auth handler (real workflow without fake mock responses)
-      // Future backend / session handler integrates here
-      // For now, simulating realistic submission cycle
-      await new Promise((resolve) => setTimeout(resolve, 800));
-    } catch {
-      setErrors({ general: 'Authentication failed. Please verify your credentials and try again.' });
+      await loginUser(email, password);
+      router.push('/predictor');
+    } catch (err: any) {
+      setErrors({ general: err.message || 'Authentication failed. Please verify your credentials and try again.' });
     } finally {
       setIsLoading(false);
     }
