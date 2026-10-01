@@ -7,6 +7,9 @@ AI-Powered Judicial Case Intelligence & Decision Support API
 from logger import setup_logging, get_logger
 setup_logging()
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import time
 import uuid
 import logging
@@ -39,6 +42,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -105,26 +109,32 @@ async def logging_middleware(request: Request, call_next):
 
     method_col = _method_color(method)
 
-    log.info(
-        f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
-        f"{_WHITE}{path}{query}{_R}  "
-        f"{_GRAY}← {client_ip}{_R}",
-        extra={"component": "REQUEST"},
-    )
+    try:
+        log.info(
+            f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
+            f"{_WHITE}{path}{query}{_R}  "
+            f"{_GRAY}← {client_ip}{_R}",
+            extra={"component": "REQUEST"},
+        )
+    except Exception:
+        pass
 
     # Process request
     try:
         response = await call_next(request)
     except Exception as exc:
         elapsed_ms = (time.perf_counter() - start) * 1000
-        log.error(
-            f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
-            f"{_WHITE}{path}{_R}  "
-            f"{_BOLD}{_RED}500 INTERNAL ERROR{_R}  "
-            f"{_RED}{elapsed_ms:.0f}ms{_R}  "
-            f"{_GRAY}{exc}{_R}",
-            extra={"component": "RESPONSE"},
-        )
+        try:
+            log.error(
+                f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
+                f"{_WHITE}{path}{_R}  "
+                f"{_BOLD}{_RED}500 INTERNAL ERROR{_R}  "
+                f"{_RED}{elapsed_ms:.0f}ms{_R}  "
+                f"{_GRAY}{exc}{_R}",
+                extra={"component": "RESPONSE"},
+            )
+        except Exception:
+            pass
         raise
 
     elapsed_ms = (time.perf_counter() - start) * 1000
@@ -132,13 +142,16 @@ async def logging_middleware(request: Request, call_next):
     status_col = _status_color(status)
     dur_col = _duration_color(elapsed_ms)
 
-    log.info(
-        f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
-        f"{_WHITE}{path}{query}{_R}  "
-        f"{status_col}{status}{_R}  "
-        f"{dur_col}{elapsed_ms:.0f}ms{_R}",
-        extra={"component": "RESPONSE"},
-    )
+    try:
+        log.info(
+            f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
+            f"{_WHITE}{path}{query}{_R}  "
+            f"{status_col}{status}{_R}  "
+            f"{dur_col}{elapsed_ms:.0f}ms{_R}",
+            extra={"component": "RESPONSE"},
+        )
+    except Exception:
+        pass
 
     return response
 
