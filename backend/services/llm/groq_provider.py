@@ -43,47 +43,82 @@ class GroqProvider(BaseLLMProvider):
         if not active_key:
             raise ValueError("Groq API key is not configured.")
 
-        active_model = os.environ.get("GROQ_MODEL", self.model).strip()
+        preferred_model = os.environ.get("GROQ_MODEL", self.model).strip()
+        candidate_models = [
+            preferred_model,
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+        ]
+        # De-duplicate while preserving order
+        unique_models = []
+        for m in candidate_models:
+            if m and m not in unique_models:
+                unique_models.append(m)
+
+        last_err = None
 
         # Try using groq Python SDK
         try:
             from groq import Groq
             client = Groq(api_key=active_key)
-            response = client.chat.completions.create(
-                model=active_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0.1,
-                max_tokens=1000,
-            )
-            raw_content = response.choices[0].message.content or ""
-            return self._parse_response(raw_content)
+            for m in unique_models:
+                try:
+                    response = client.chat.completions.create(
+                        model=m,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        temperature=0.1,
+                        max_tokens=1000,
+                    )
+                    raw_content = response.choices[0].message.content or ""
+                    return self._parse_response(raw_content, m)
+                except Exception as ex:
+                    last_err = ex
+                    logger.warning(f"Groq model {m} failed: {ex}. Trying next candidate...")
+                    continue
+            if last_err:
+                raise last_err
         except ImportError:
             import httpx
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
             }
-            payload = {
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.1,
-                "max_tokens": 1000,
-            }
-            with httpx.Client(timeout=timeout_seconds) as client:
-                res = client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
-                res.raise_for_status()
-                data = res.json()
-                raw_content = data["choices"][0]["message"]["content"]
-                return self._parse_response(raw_content)
+            for m in unique_models:
+                try:
+                    payload = {
+                        "model": m,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        "temperature": 0.1,
+                        "max_tokens": 1000,
+                    }
+                    with httpx.Client(timeout=timeout_seconds) as client:
+                        res = client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+                        res.raise_for_status()
+                        data = res.json()
+                        raw_content = data["choices"][0]["message"]["content"]
+                        return self._parse_response(raw_content, m)
+                except Exception as ex:
+                    last_err = ex
+                    continue
+            if last_err:
+                raise last_err
 
-    def _parse_response(self, raw_content: str) -> LLMAnswerResult:
-        citations = list(set(re.findall(r"\[(S\d+)\]", raw_content)))
+        raise ValueError("No viable Groq model succeeded.")
+
+    def _parse_response(self, raw_content: str, used_model: str) -> LLMAnswerResult:
+        # Normalize full-width/unicode brackets like 【S1】 -> [S1]
+        normalized_content = raw_content.replace("【", "[").replace("】", "]")
+        citations = list(set(re.findall(r"\[(S\d+)\]", normalized_content, re.IGNORECASE)))
+        citations = [c.upper() for c in citations]
         citations.sort(key=lambda x: int(x[1:]) if x[1:].isdigit() else 999)
 
         insufficient = False
@@ -101,6 +136,6 @@ class GroqProvider(BaseLLMProvider):
             citation_ids=citations,
             insufficient_evidence=insufficient,
             provider="groq",
-            model=self.model,
+            model=used_model,
             raw_response=raw_content,
         )

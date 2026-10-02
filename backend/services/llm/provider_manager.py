@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from services.llm.base import BaseLLMProvider, LLMAnswerResult
-from services.llm.cerebras_provider import CerebrasProvider
 from services.llm.groq_provider import GroqProvider
+from services.llm.cerebras_provider import CerebrasProvider
 from services.llm.ollama_provider import OllamaProvider
 
 logger = logging.getLogger("nyayasarathi.llm.manager")
@@ -67,13 +67,13 @@ class LLMProviderManager:
     """Coordinates multi-provider execution with circuit breaker and fallback."""
 
     def __init__(self):
-        self.primary_name = os.environ.get("LLM_PRIMARY", "cerebras").lower()
-        self.fallback_name = os.environ.get("LLM_FALLBACK", "groq").lower()
+        self.primary_name = os.environ.get("LLM_PRIMARY", "groq").lower()
+        self.fallback_name = os.environ.get("LLM_FALLBACK", "cerebras").lower()
         self.timeout_seconds = float(os.environ.get("LLM_TIMEOUT_SECONDS", "25.0"))
 
         self.providers: Dict[str, BaseLLMProvider] = {
-            "cerebras": CerebrasProvider(),
             "groq": GroqProvider(),
+            "cerebras": CerebrasProvider(),
             "ollama": OllamaProvider(),
         }
         self.circuit_breakers: Dict[str, CircuitBreaker] = {
@@ -86,7 +86,7 @@ class LLMProviderManager:
         evidence_chunks: List[Dict[str, Any]],
     ) -> LLMAnswerResult:
         """
-        Executes grounded legal Q&A with automatic fallback from primary to secondary.
+        Executes grounded legal Q&A with Groq (with optional Cerebras fallback).
         """
         if not evidence_chunks:
             return LLMAnswerResult(
@@ -102,20 +102,13 @@ class LLMProviderManager:
 
         # Dynamic reload of .env
         load_dotenv(override=True)
-        primary = os.environ.get("LLM_PRIMARY")
-        if not primary:
-            if os.environ.get("GROQ_API_KEY") or not os.environ.get("CEREBRAS_API_KEY"):
-                primary = "groq"
-            else:
-                primary = "cerebras"
-        primary = primary.lower()
-
-        fallback = os.environ.get("LLM_FALLBACK", "cerebras" if primary == "groq" else "groq").lower()
+        primary = os.environ.get("LLM_PRIMARY", "groq").lower()
+        fallback = os.environ.get("LLM_FALLBACK", "cerebras").lower()
         timeout = float(os.environ.get("LLM_TIMEOUT_SECONDS", str(self.timeout_seconds)))
 
-        # Determine provider sequence
+        # Determine provider sequence (Groq first)
         candidate_sequence = [primary, fallback]
-        for p in self.providers:
+        for p in ["groq", "cerebras", "ollama"]:
             if p not in candidate_sequence:
                 candidate_sequence.append(p)
 
@@ -208,13 +201,35 @@ class LLMProviderManager:
             para = chunk.get("paragraph_number", 1)
             sec = f" (Section: {chunk['section_title']})" if chunk.get("section_title") else ""
 
-            sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", chunk["text"]) if len(s.strip()) > 15]
-            if not sentences:
-                sentences = [chunk["text"].strip()]
+            raw_sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n{2,}", chunk["text"])]
+            clean_candidates = []
+            for s in raw_sentences:
+                cleaned = re.sub(r"\s+", " ", s).strip()
+                if len(cleaned) < 20 or len(cleaned) > 350:
+                    continue
+                # Exclude ASCII flowchart and diagram artifacts
+                if any(diag in cleaned for diag in ["|", "/ \\", "\\ /", "-->", "+-", "- ->", " v ", "---"]):
+                    continue
+                symbols = sum(1 for c in cleaned if c in "|\\/+-<>=_{}[]")
+                if symbols / max(len(cleaned), 1) > 0.05:
+                    continue
+                alpha = sum(1 for c in cleaned if c.isalpha())
+                if alpha / max(len(cleaned), 1) < 0.6:
+                    continue
+                clean_candidates.append(cleaned)
+
+            if not clean_candidates:
+                first_lines = [
+                    re.sub(r"\s+", " ", l.strip())
+                    for l in chunk["text"].split("\n")
+                    if len(l.strip()) > 20 and not any(d in l for d in ["|", "/ \\", "\\ /", "-->", "+-", "- ->", " v ", "---"])
+                ]
+                if first_lines:
+                    clean_candidates = [first_lines[0]]
 
             # Find sentences with query keyword hits
             scored_sentences = []
-            for s in sentences:
+            for s in clean_candidates:
                 s_lower = s.lower()
                 hits = sum(1 for kw in q_words if kw in s_lower)
                 scored_sentences.append((hits, s))
@@ -235,25 +250,21 @@ class LLMProviderManager:
             )
 
         citation_ids = [item[0] for item in matching_items]
-        response_lines = [
-            f"Based on the retrieved excerpts from your legal records directly addressing '{question}':",
-            ""
-        ]
-
+        
+        # Formulate a clean, professional legal synthesis citing [S1], [S2]
+        # Redundant document titles and page/para metadata are delivered cleanly in the citations schema
+        findings = []
         for s_id, title, page, para, sec, s_text in matching_items:
-            response_lines.append(
-                f"• In **{title}** (Page {page}, Para {para}{sec}), the record specifically states: "
-                f"\"{s_text}\" [{s_id}]"
-            )
+            clean_stmt = s_text.strip().rstrip(".").strip()
+            findings.append(f"{clean_stmt} [{s_id}].")
 
-        response_lines.append("")
-        response_lines.append(
-            "Note: The citations above correspond directly to verified verbatim excerpts from your uploaded document. "
-            "Click any citation marker to inspect the exact source page and paragraph."
+        answer_text = (
+            f"Based on the analyzed legal records addressing the inquiry:\n\n"
+            f"{' '.join(findings)}"
         )
 
         return LLMAnswerResult(
-            answer="\n".join(response_lines),
+            answer=answer_text,
             citation_ids=citation_ids,
             insufficient_evidence=False,
             provider="deterministic_fallback",

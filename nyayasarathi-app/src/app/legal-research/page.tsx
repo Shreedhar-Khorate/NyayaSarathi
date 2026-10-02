@@ -82,6 +82,7 @@ export default function LegalResearchPage() {
   const [activeTab, setActiveTab] = useState<'answer' | 'document'>('answer'); // Mobile switch
   const [viewMode, setViewMode] = useState<'excerpt' | 'pdf'>('excerpt');
   const [copied, setCopied] = useState(false);
+  const [copiedExcerptId, setCopiedExcerptId] = useState<string | null>(null);
 
   // Upload modal state
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -250,33 +251,164 @@ export default function LegalResearchPage() {
     setActiveTab('document'); // Jump to viewer on mobile
   };
 
-  // Render clickable citation markers inside the answer text
-  const renderAnswerText = (text: string, citations: CitationItem[]) => {
-    const parts = text.split(/(\[S\d+\])/g);
-    return parts.map((part, index) => {
-      const match = part.match(/\[(S\d+)\]/);
-      if (match) {
-        const sourceId = match[1];
-        const cit = citations.find(c => c.source_id.toUpperCase() === sourceId.toUpperCase());
-        const isSelected = activeCitation?.source_id.toUpperCase() === sourceId.toUpperCase();
+  const handleCopyExcerpt = (text: string, id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopiedExcerptId(id);
+    setTimeout(() => setCopiedExcerptId(null), 2000);
+  };
 
+  // Scroll to a specific source passage card when a citation pill is clicked
+  const scrollToSourcePassage = (sourceId: string) => {
+    const el = document.getElementById(`source-passage-${sourceId.toLowerCase()}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  // Render clickable citation markers and bold styling with proper text baseline alignment
+  const renderInlineWithCitations = (line: string, citations: CitationItem[]) => {
+    // Normalize full-width/unicode brackets like 【S1】 -> [S1]
+    const normalizedLine = line.replace(/【/g, '[').replace(/】/g, ']');
+
+    // Matches **bold**, *italic*, and [S1] / [S1, S2] / [S1][S2] style citations
+    const tokenRegex = /(\*\*[^*]+\*\*|\*[^*]+\*|\[S\d+(?:,\s*S\d+)*\]|\[S\d+\])/g;
+    const parts = normalizedLine.split(tokenRegex);
+
+    return parts.map((part, idx) => {
+      if (!part) return null;
+
+      // Bold formatting
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
         return (
-          <button
-            key={index}
-            type="button"
-            onClick={() => cit && selectCitation(cit)}
-            className={`inline-flex items-center gap-1 mx-1 px-1.5 py-0.5 rounded text-xs font-semibold tracking-wider transition-all duration-200 ${
-              isSelected
-                ? 'bg-[#B59A68] text-[#151716] shadow-[0_0_12px_rgba(181,154,104,0.5)] scale-105'
-                : 'bg-[#B59A68]/20 text-[#B59A68] border border-[#B59A68]/40 hover:bg-[#B59A68]/35 hover:scale-105'
-            }`}
-            title={cit ? `${cit.document_title} (Page ${cit.page_number})` : 'Citation marker'}
-          >
-            <span>[{sourceId}]</span>
-          </button>
+          <strong key={idx} className="font-semibold text-[#F4EFE5]">
+            {part.slice(2, -2)}
+          </strong>
         );
       }
-      return <span key={index}>{part}</span>;
+
+      // Italic formatting
+      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+        return (
+          <em key={idx} className="italic text-[#E2DACB]">
+            {part.slice(1, -1)}
+          </em>
+        );
+      }
+
+      // Citation matching (handles [S1], [S1, S2], etc.)
+      const citeMatches = part.match(/\[(S\d+(?:,\s*S\d+)*)\]/i);
+      if (citeMatches) {
+        const sids = citeMatches[1].split(',').map(s => s.trim().toUpperCase());
+        return (
+          <span key={idx} className="inline-flex items-center gap-1 mx-1 align-baseline">
+            {sids.map((sourceId) => {
+              const cit = citations.find(c => c.source_id.toUpperCase() === sourceId);
+              const isSelected = activeCitation?.source_id.toUpperCase() === sourceId;
+
+              return (
+                <button
+                  key={sourceId}
+                  type="button"
+                  onClick={() => {
+                    if (cit) {
+                      selectCitation(cit);
+                      scrollToSourcePassage(sourceId);
+                    }
+                  }}
+                  className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[11px] font-mono font-bold tracking-tight transition-all duration-200 cursor-pointer select-none leading-none ${
+                    isSelected
+                      ? 'bg-[#B59A68] text-[#151716] shadow-[0_0_12px_rgba(181,154,104,0.6)] ring-2 ring-[#B59A68] scale-105'
+                      : 'bg-[#B59A68]/15 text-[#B59A68] border border-[#B59A68]/40 hover:bg-[#B59A68] hover:text-[#151716] hover:border-[#B59A68] hover:scale-105'
+                  }`}
+                  title={cit ? `${cit.document_title} (Page ${cit.page_number}, Para ${cit.paragraph_number}) - Click to view excerpt` : `Citation ${sourceId}`}
+                >
+                  [{sourceId}]
+                </button>
+              );
+            })}
+          </span>
+        );
+      }
+
+      return <span key={idx}>{part}</span>;
+    });
+  };
+
+  // Render paragraphs, headings, lists, and formatted answer body
+  const renderFormattedAnswer = (rawText: string, citations: CitationItem[]) => {
+    if (!rawText) return null;
+
+    const sections = rawText.split(/\n\s*\n/);
+
+    return sections.map((sec, sIdx) => {
+      const lines = sec.split(/\n/).map(l => l.trim()).filter(Boolean);
+      if (lines.length === 0) return null;
+
+      // Check if whole block is bullet list
+      const isBulletList = lines.every(l => /^([•\-\*]|\d+\.)\s+/.test(l));
+
+      if (isBulletList) {
+        return (
+          <ul key={sIdx} className="space-y-2 my-3 pl-1">
+            {lines.map((line, lIdx) => {
+              const cleanLine = line.replace(/^([•\-\*]|\d+\.)\s+/, '');
+              return (
+                <li key={lIdx} className="flex items-start gap-2.5 text-sm leading-relaxed text-[#F4EFE5]/90">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#B59A68] mt-2 shrink-0" />
+                  <span className="flex-1">{renderInlineWithCitations(cleanLine, citations)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        );
+      }
+
+      return (
+        <div key={sIdx} className="space-y-2 my-2.5">
+          {lines.map((line, lIdx) => {
+            // Markdown header detection
+            if (/^###\s+/.test(line)) {
+              return (
+                <h4 key={lIdx} className="text-sm font-semibold text-[#B59A68] pt-2 pb-0.5 tracking-wide">
+                  {renderInlineWithCitations(line.replace(/^###\s+/, ''), citations)}
+                </h4>
+              );
+            }
+            if (/^##\s+/.test(line)) {
+              return (
+                <h3 key={lIdx} className="text-base font-semibold text-[#F4EFE5] pt-3 pb-1 border-b border-[#3B3A33]/50 tracking-tight">
+                  {renderInlineWithCitations(line.replace(/^##\s+/, ''), citations)}
+                </h3>
+              );
+            }
+            if (/^#\s+/.test(line)) {
+              return (
+                <h2 key={lIdx} className="text-lg font-bold text-[#F4EFE5] pt-3 pb-1 tracking-tight">
+                  {renderInlineWithCitations(line.replace(/^#\s+/, ''), citations)}
+                </h2>
+              );
+            }
+
+            // Standalone bullet line in mixed paragraph
+            if (/^([•\-\*]|\d+\.)\s+/.test(line)) {
+              const clean = line.replace(/^([•\-\*]|\d+\.)\s+/, '');
+              return (
+                <div key={lIdx} className="flex items-start gap-2.5 text-sm leading-relaxed text-[#F4EFE5]/90 pl-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#B59A68] mt-2 shrink-0" />
+                  <span className="flex-1">{renderInlineWithCitations(clean, citations)}</span>
+                </div>
+              );
+            }
+
+            return (
+              <p key={lIdx} className="text-sm leading-relaxed text-[#F4EFE5]/90">
+                {renderInlineWithCitations(line, citations)}
+              </p>
+            );
+          })}
+        </div>
+      );
     });
   };
 
@@ -491,30 +623,39 @@ export default function LegalResearchPage() {
               </div>
             )}
 
-            {/* Answer Display Card */}
+            {/* Grounded Answer Card */}
             {result && (
-              <div className="rounded-xl border border-[#3B3A33] bg-[#1D211F] p-6 shadow-xl flex flex-col gap-5">
+              <div className="rounded-xl border border-[#3B3A33] bg-[#1D211F] p-6 shadow-xl flex flex-col gap-4">
                 
                 {/* Answer Meta Bar */}
-                <div className="flex items-center justify-between pb-4 border-b border-[#3B3A33]/60">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-[#B59A68]" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[#A9A49A]">
-                      Grounded Answer
-                    </span>
-                    <span className="text-[11px] rounded bg-[#151716] px-2 py-0.5 text-[#B59A68] border border-[#3B3A33]">
-                      {result.provider} · {result.model}
-                    </span>
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-[#3B3A33]/70">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-[#B59A68]/15 border border-[#B59A68]/30 flex items-center justify-center text-[#B59A68] shrink-0">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-semibold text-[#F4EFE5] tracking-tight">
+                        Final Grounded Answer
+                      </h2>
+                      <span className="text-[11px] text-[#A9A49A]">
+                        Evidence-grounded judicial synthesis
+                      </span>
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleCopyAnswer}
-                    className="inline-flex items-center gap-1.5 text-xs text-[#A9A49A] hover:text-[#F4EFE5] transition-colors"
-                  >
-                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                    <span>{copied ? 'Copied' : 'Copy'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] rounded-md bg-[#151716] px-2.5 py-1 text-[#B59A68] border border-[#3B3A33] font-mono">
+                      {result.provider} · {result.model}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyAnswer}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#3B3A33] bg-[#151716] px-3 py-1.5 text-xs text-[#A9A49A] hover:text-[#F4EFE5] hover:border-[#B59A68]/50 transition-colors"
+                    >
+                      {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                      <span>{copied ? 'Copied' : 'Copy Answer'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Insufficient Evidence Warning Banner */}
@@ -524,71 +665,131 @@ export default function LegalResearchPage() {
                     <div>
                       <span className="font-semibold">Insufficient Document Evidence Detected:</span>
                       <p className="mt-0.5 text-amber-200/80">
-                        The retrieved corpus does not contain unambiguous factual evidence to fully answer your question. The model has refrained from guessing.
+                        The retrieved corpus does not contain unambiguous factual evidence to fully answer your question. The system has refrained from guessing.
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Body of the Answer with Interactive Citation Tags */}
-                <div className="text-sm leading-relaxed text-[#F4EFE5]/90 space-y-3 font-sans">
-                  {renderAnswerText(result.answer, result.citations)}
+                {/* Body of the Answer */}
+                <div className="py-1">
+                  {renderFormattedAnswer(result.answer, result.citations)}
                 </div>
 
-                {/* Citation Cards Strip */}
-                {result.citations && result.citations.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-[#3B3A33]/70">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-[#A9A49A] mb-3 flex items-center justify-between">
-                      <span>Verifiable Supporting Citations ({result.citations.length})</span>
-                      <span className="text-[11px] text-[#A9A49A]/60">click to inspect source passage</span>
+                <div className="pt-3 border-t border-[#3B3A33]/50 flex items-center justify-between text-[11px] text-[#A9A49A]/70">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-[#B59A68]" />
+                    Every statement above is tethered directly to the source citations below.
+                  </span>
+                  <span>{result.citations.length} cited source{result.citations.length === 1 ? '' : 's'}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Separate Card: Relevant Source Passages */}
+            {result && result.citations && result.citations.length > 0 && (
+              <div className="rounded-xl border border-[#3B3A33] bg-[#1D211F] p-6 shadow-xl flex flex-col gap-4">
+                
+                <div className="flex items-center justify-between pb-3.5 border-b border-[#3B3A33]/70">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-[#B59A68]/15 border border-[#B59A68]/30 flex items-center justify-center text-[#B59A68] shrink-0">
+                      <BookOpen className="h-4 w-4" />
                     </div>
-
-                    <div className="flex flex-col gap-2">
-                      {result.citations.map((cit) => {
-                        const isSelected = activeCitation?.source_id === cit.source_id;
-                        return (
-                          <div
-                            key={cit.source_id}
-                            onClick={() => selectCitation(cit)}
-                            className={`cursor-pointer rounded-lg border p-3 transition-all ${
-                              isSelected
-                                ? 'border-[#B59A68] bg-[#B59A68]/10 shadow-md'
-                                : 'border-[#3B3A33]/70 bg-[#151716]/60 hover:border-[#B59A68]/50 hover:bg-[#151716]'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2">
-                                <span className="rounded bg-[#B59A68] text-[#151716] font-bold text-xs px-2 py-0.5">
-                                  [{cit.source_id}]
-                                </span>
-                                <span className="font-medium text-xs text-[#F4EFE5]">
-                                  {cit.document_title}
-                                </span>
-                              </div>
-                              <span className="text-[11px] text-[#A9A49A] font-mono">
-                                Page {cit.page_number} · Para {cit.paragraph_number}
-                              </span>
-                            </div>
-
-                            <p className="text-xs text-[#A9A49A] line-clamp-2 italic font-serif pl-2 border-l-2 border-[#B59A68]/40 mt-1.5">
-                              "{cit.excerpt}"
-                            </p>
-                          </div>
-                        );
-                      })}
+                    <div>
+                      <h3 className="text-sm font-semibold text-[#F4EFE5] tracking-tight">
+                        Relevant Source Passages
+                      </h3>
+                      <span className="text-[11px] text-[#A9A49A]">
+                        Verbatim evidentiary paragraphs extracted directly from your selected documents
+                      </span>
                     </div>
                   </div>
-                )}
+
+                  <span className="text-xs text-[#B59A68] bg-[#B59A68]/10 border border-[#B59A68]/30 px-2.5 py-0.5 rounded-full font-medium">
+                    {result.citations.length} passage{result.citations.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-3.5">
+                  {result.citations.map((cit) => {
+                    const isSelected = activeCitation?.source_id.toUpperCase() === cit.source_id.toUpperCase();
+                    const isCopiedExcerpt = copiedExcerptId === cit.source_id;
+
+                    return (
+                      <div
+                        key={cit.source_id}
+                        id={`source-passage-${cit.source_id.toLowerCase()}`}
+                        onClick={() => selectCitation(cit)}
+                        className={`group cursor-pointer rounded-xl border p-4.5 transition-all duration-200 ${
+                          isSelected
+                            ? 'border-[#B59A68] bg-[#B59A68]/15 shadow-[0_0_20px_rgba(181,154,104,0.18)] ring-1 ring-[#B59A68]/60'
+                            : 'border-[#3B3A33]/80 bg-[#151716]/80 hover:border-[#B59A68]/50 hover:bg-[#151716]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2.5">
+                            <span className="rounded bg-[#B59A68] text-[#151716] font-mono font-bold text-xs px-2.5 py-0.5 tracking-tight shadow-sm">
+                              [{cit.source_id}]
+                            </span>
+                            <span className="font-semibold text-xs text-[#F4EFE5] truncate max-w-[280px] flex items-center gap-1.5">
+                              <FileText className="h-3.5 w-3.5 text-[#B59A68] shrink-0" />
+                              <span className="truncate">{cit.document_title}</span>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-[#A9A49A] font-mono bg-[#1D211F] px-2.5 py-0.5 rounded-md border border-[#3B3A33]/70 shadow-inner">
+                              Page {cit.page_number} · Para {cit.paragraph_number}
+                            </span>
+                            {isSelected && (
+                              <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" /> Active Excerpt
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {cit.section_title && (
+                          <div className="mb-2.5 text-[11px] text-[#B59A68] font-medium flex items-center gap-1 bg-[#B59A68]/10 px-2.5 py-1 rounded border border-[#B59A68]/20">
+                            <span className="font-semibold">Section:</span>
+                            <span className="text-[#F4EFE5]/90">{cit.section_title}</span>
+                          </div>
+                        )}
+
+                        <blockquote className="text-xs text-[#F4EFE5]/95 font-serif leading-relaxed pl-3.5 border-l-2 border-[#B59A68] bg-[#151716]/80 p-3 rounded-r-lg shadow-inner">
+                          "{cit.excerpt}"
+                        </blockquote>
+
+                        <div className="mt-3.5 flex items-center justify-between pt-2.5 border-t border-[#3B3A33]/40">
+                          <span className="text-[11px] text-[#A9A49A] group-hover:text-[#B59A68] transition-colors flex items-center gap-1.5">
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>{isSelected ? 'Currently Loaded in Right Inspector' : 'Click to inspect in document viewer'}</span>
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyExcerpt(cit.excerpt, cit.source_id, e)}
+                            className="inline-flex items-center gap-1 text-[11px] text-[#A9A49A] hover:text-[#F4EFE5] px-2 py-1 rounded bg-[#1D211F]/80 border border-[#3B3A33]/50 hover:border-[#B59A68]/50 transition-colors"
+                            title="Copy this excerpt"
+                          >
+                            {isCopiedExcerpt ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                            <span>{isCopiedExcerpt ? 'Copied' : 'Copy Excerpt'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
 
           {/* RIGHT PANEL: Source Document & Exact Paragraph Inspector (Col 8-12) */}
           <div className={`lg:col-span-5 flex flex-col gap-4 ${activeTab === 'answer' ? 'hidden md:flex' : 'flex'}`}>
-            <div className="rounded-xl border border-[#3B3A33] bg-[#1D211F] p-5 shadow-xl min-h-[500px] flex flex-col sticky top-28">
+            <div className="rounded-xl border border-[#3B3A33] bg-[#1D211F] p-5 shadow-xl sticky top-28 max-h-[calc(100vh-8.5rem)] flex flex-col">
               
               {/* Header Bar */}
-              <div className="flex items-center justify-between pb-3 border-b border-[#3B3A33]/70">
+              <div className="flex items-center justify-between pb-3.5 border-b border-[#3B3A33]/70 shrink-0">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-[#B59A68]" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-[#A9A49A]">
@@ -597,24 +798,24 @@ export default function LegalResearchPage() {
                 </div>
 
                 {activeCitation && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 bg-[#151716] p-0.5 rounded-lg border border-[#3B3A33]">
                     <button
                       type="button"
                       onClick={() => setViewMode('excerpt')}
-                      className={`text-[11px] px-2.5 py-1 rounded transition-colors ${
+                      className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
                         viewMode === 'excerpt'
-                          ? 'bg-[#B59A68] text-[#151716] font-semibold'
+                          ? 'bg-[#B59A68] text-[#151716] font-semibold shadow-sm'
                           : 'text-[#A9A49A] hover:text-[#F4EFE5]'
                       }`}
                     >
-                      Excerpt
+                      Verbatim Excerpt
                     </button>
                     <button
                       type="button"
                       onClick={() => setViewMode('pdf')}
-                      className={`text-[11px] px-2.5 py-1 rounded transition-colors ${
+                      className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
                         viewMode === 'pdf'
-                          ? 'bg-[#B59A68] text-[#151716] font-semibold'
+                          ? 'bg-[#B59A68] text-[#151716] font-semibold shadow-sm'
                           : 'text-[#A9A49A] hover:text-[#F4EFE5]'
                       }`}
                     >
@@ -629,15 +830,15 @@ export default function LegalResearchPage() {
                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#A9A49A]">
                   <FileCheck className="h-12 w-12 text-[#3B3A33] mb-3 stroke-[1]" />
                   <h4 className="text-sm font-semibold text-[#F4EFE5]">No Citation Selected</h4>
-                  <p className="text-xs text-[#A9A49A] mt-1 max-w-xs">
-                    Ask a legal question and click any <span className="text-[#B59A68] font-semibold">[S1]</span> citation marker in the answer to inspect authentic source text.
+                  <p className="text-xs text-[#A9A49A] mt-1.5 max-w-xs leading-relaxed">
+                    Execute a research query and click any <span className="text-[#B59A68] font-semibold">[S#]</span> marker or source passage to inspect the authentic excerpt here.
                   </p>
                 </div>
               ) : viewMode === 'excerpt' ? (
-                <div className="flex-1 flex flex-col gap-4 pt-4">
+                <div className="flex-1 flex flex-col gap-3 pt-3 overflow-hidden">
                   {/* Active Source Title & Meta */}
-                  <div className="rounded-lg bg-[#151716] p-3 border border-[#3B3A33]/70">
-                    <div className="flex items-center justify-between mb-1">
+                  <div className="rounded-lg bg-[#151716] p-3.5 border border-[#3B3A33]/70 shrink-0">
+                    <div className="flex items-center justify-between mb-1.5">
                       <span className="rounded bg-[#B59A68] text-[#151716] text-xs font-bold px-2 py-0.5">
                         [{activeCitation.source_id}]
                       </span>
@@ -671,32 +872,49 @@ export default function LegalResearchPage() {
                     <h3 className="text-sm font-semibold text-[#F4EFE5] truncate">
                       {activeCitation.document_title}
                     </h3>
-                    <div className="flex items-center gap-3 text-xs text-[#A9A49A] mt-1">
+                    <div className="flex items-center gap-2.5 text-xs text-[#A9A49A] mt-1.5 font-mono">
                       <span>Page {activeCitation.page_number}</span>
                       <span>·</span>
                       <span>Paragraph {activeCitation.paragraph_number}</span>
                       {activeCitation.section_title && (
                         <>
                           <span>·</span>
-                          <span className="text-[#B59A68]">{activeCitation.section_title}</span>
+                          <span className="text-[#B59A68] font-sans truncate">{activeCitation.section_title}</span>
                         </>
                       )}
                     </div>
                   </div>
 
                   {/* Verbatim Excerpt Reader */}
-                  <div className="flex-1 rounded-lg bg-[#151716] p-4 border border-[#3B3A33]/70 overflow-y-auto max-h-[460px]">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#A9A49A]/70 mb-2 block">
-                      Authentic Stored Paragraph Extract:
-                    </span>
-                    <p className="text-sm font-serif leading-relaxed text-[#F2EBDD] bg-[#B59A68]/10 p-3.5 rounded border-l-4 border-[#B59A68]">
-                      "{activeCitation.excerpt}"
-                    </p>
+                  <div className="flex-1 rounded-lg bg-[#151716] p-4 border border-[#3B3A33]/70 overflow-y-auto min-h-[180px] flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#A9A49A]/80">
+                          Authentic Stored Paragraph Extract:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyExcerpt(activeCitation.excerpt, activeCitation.source_id)}
+                          className="inline-flex items-center gap-1 text-[11px] text-[#A9A49A] hover:text-[#F4EFE5] transition-colors"
+                        >
+                          {copiedExcerptId === activeCitation.source_id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                          <span>{copiedExcerptId === activeCitation.source_id ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                      <p className="text-sm font-serif leading-relaxed text-[#F2EBDD] bg-[#B59A68]/10 p-3.5 rounded-lg border-l-4 border-[#B59A68]">
+                        "{activeCitation.excerpt}"
+                      </p>
+                    </div>
+
+                    <div className="text-[11px] text-[#A9A49A]/60 flex items-center justify-between pt-2 border-t border-[#3B3A33]/40">
+                      <span>Verified against indexed chunk record</span>
+                      <span>{activeCitation.excerpt.length} characters</span>
+                    </div>
                   </div>
 
                   {/* Source Navigation Controls */}
                   {result && result.citations.length > 1 && (
-                    <div className="flex items-center justify-between pt-2 border-t border-[#3B3A33]/50">
+                    <div className="flex items-center justify-between pt-2 border-t border-[#3B3A33]/50 shrink-0">
                       <span className="text-xs text-[#A9A49A]">
                         Citation {result.citations.findIndex(c => c.source_id === activeCitation.source_id) + 1} of {result.citations.length}
                       </span>
@@ -707,7 +925,7 @@ export default function LegalResearchPage() {
                             const idx = result.citations.findIndex(c => c.source_id === activeCitation.source_id);
                             if (idx > 0) setActiveCitation(result.citations[idx - 1]);
                           }}
-                          className="p-1 rounded border border-[#3B3A33] hover:border-[#B59A68] text-[#A9A49A] hover:text-[#F4EFE5] transition-colors"
+                          className="p-1.5 rounded-lg border border-[#3B3A33] hover:border-[#B59A68] text-[#A9A49A] hover:text-[#F4EFE5] transition-colors"
                           title="Previous Citation"
                         >
                           <ChevronLeft className="h-4 w-4" />
@@ -718,7 +936,7 @@ export default function LegalResearchPage() {
                             const idx = result.citations.findIndex(c => c.source_id === activeCitation.source_id);
                             if (idx < result.citations.length - 1) setActiveCitation(result.citations[idx + 1]);
                           }}
-                          className="p-1 rounded border border-[#3B3A33] hover:border-[#B59A68] text-[#A9A49A] hover:text-[#F4EFE5] transition-colors"
+                          className="p-1.5 rounded-lg border border-[#3B3A33] hover:border-[#B59A68] text-[#A9A49A] hover:text-[#F4EFE5] transition-colors"
                           title="Next Citation"
                         >
                           <ChevronRight className="h-4 w-4" />
@@ -729,8 +947,8 @@ export default function LegalResearchPage() {
                 </div>
               ) : (
                 /* PDF / Raw File Viewer Mode */
-                <div className="flex-1 flex flex-col pt-3 min-h-[440px]">
-                  <div className="flex items-center justify-between text-xs text-[#A9A49A] mb-2">
+                <div className="flex-1 flex flex-col pt-3 min-h-[440px] overflow-hidden">
+                  <div className="flex items-center justify-between text-xs text-[#A9A49A] mb-2 shrink-0">
                     <span className="truncate max-w-[200px]">{activeCitation.document_title}</span>
                     <div className="flex items-center gap-3">
                       <button
@@ -766,7 +984,7 @@ export default function LegalResearchPage() {
                   </div>
                   <iframe
                     src={`http://localhost:8000/api/qa/documents/${activeCitation.document_id}/file#page=${activeCitation.page_number}`}
-                    className="w-full flex-1 min-h-[420px] rounded border border-[#3B3A33] bg-[#151716]"
+                    className="w-full flex-1 min-h-[380px] rounded-lg border border-[#3B3A33] bg-[#151716]"
                     title="Source Document Viewer"
                   />
                 </div>
