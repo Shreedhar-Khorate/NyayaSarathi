@@ -99,9 +99,8 @@ def setup_logging() -> None:
     Configure the root logger and uvicorn loggers with the NyayaFormatter.
     Call this once at application startup in main.py.
     """
-    # Force UTF-8 on Windows to support colored output correctly
-    stdout_utf8 = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    handler = logging.StreamHandler(stdout_utf8)
+    # Safe stream handler to avoid closed-pipe ValueError on Windows / subprocesses
+    handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(NyayaFormatter())
 
     # Root application logger

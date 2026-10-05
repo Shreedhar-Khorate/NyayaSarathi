@@ -16,10 +16,11 @@ export function Navbar() {
   const { language, setLanguage, currentLanguageObj, t } = useLanguage();
 
   const NAV_LINKS = [
-    { href: '/predictor',    label: t('nav.predictor') },
-    { href: '/#pipeline',     label: t('nav.howItWorks') },
-    { href: '/#capabilities', label: t('nav.capabilities') },
-    { href: '/#workspace',    label: t('nav.workspace')    },
+    { href: '/predictor',      label: t('nav.predictor') },
+    { href: '/legal-research', label: t('nav.research')  },
+    { href: '/#pipeline',       label: t('nav.howItWorks') },
+    { href: '/#capabilities',   label: t('nav.capabilities') },
+    { href: '/#workspace',      label: t('nav.workspace')    },
   ];
 
   useEffect(() => {

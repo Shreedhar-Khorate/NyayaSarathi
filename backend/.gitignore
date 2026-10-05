@@ -55,11 +55,20 @@ cover/
 *.mo
 *.pot
 
-# Django stuff:
+# Django / SQLite / Database files & folders
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+.db/
+*/.db/
+**/.db/
+.db
 
 # Sphinx documentation
 docs/_build/
@@ -145,3 +154,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Document uploads
+data/uploads/

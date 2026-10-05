@@ -52,6 +52,10 @@ env/
 *.sqlite3
 *.db-wal
 *.db-shm
+.db/
+*/.db/
+**/.db/
+.db
 backend/data/*.db
 
 # Editor & OS files
