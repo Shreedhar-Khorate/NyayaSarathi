@@ -29,6 +29,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
+import { API_BASE_URL } from '@/lib/config';
 
 interface DocumentItem {
   id: string;
@@ -104,7 +105,7 @@ export default function LegalResearchPage() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/qa/documents');
+      const res = await fetch(`${API_BASE_URL}/api/qa/documents`);
       if (res.ok) {
         const data = await res.json();
         const docs: DocumentItem[] = data.documents || [];
@@ -143,7 +144,7 @@ export default function LegalResearchPage() {
     const targetId = docToDelete.id;
     setDeletingDoc(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/qa/documents/${targetId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/qa/documents/${targetId}`, {
         method: 'DELETE',
       });
       if (!res.ok && res.status !== 204 && res.status !== 404) {
@@ -172,7 +173,7 @@ export default function LegalResearchPage() {
     setResult(null);
 
     try {
-      const res = await fetch('http://localhost:8000/api/qa/ask', {
+      const res = await fetch(`${API_BASE_URL}/api/qa/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -216,7 +217,7 @@ export default function LegalResearchPage() {
         formData.append('title', uploadTitle.trim());
       }
 
-      const res = await fetch('http://localhost:8000/api/qa/documents/upload', {
+      const res = await fetch(`${API_BASE_URL}/api/qa/documents/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -973,7 +974,7 @@ export default function LegalResearchPage() {
                         <Trash2 className="h-3 w-3" /> Delete
                       </button>
                       <a
-                        href={`http://localhost:8000/api/qa/documents/${activeCitation.document_id}/file`}
+                        href={`${API_BASE_URL}/api/qa/documents/${activeCitation.document_id}/file`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-[#B59A68] hover:underline"
@@ -983,7 +984,7 @@ export default function LegalResearchPage() {
                     </div>
                   </div>
                   <iframe
-                    src={`http://localhost:8000/api/qa/documents/${activeCitation.document_id}/file#page=${activeCitation.page_number}`}
+                    src={`${API_BASE_URL}/api/qa/documents/${activeCitation.document_id}/file#page=${activeCitation.page_number}`}
                     className="w-full flex-1 min-h-[380px] rounded-lg border border-[#3B3A33] bg-[#151716]"
                     title="Source Document Viewer"
                   />

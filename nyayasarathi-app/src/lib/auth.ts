@@ -17,9 +17,10 @@ export interface AuthResponse {
   user: UserProfile;
 }
 
+import { API_BASE_URL } from './config';
+
 const TOKEN_KEY = 'nyayasarathi_jwt_token';
 const USER_KEY = 'nyayasarathi_user_profile';
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;

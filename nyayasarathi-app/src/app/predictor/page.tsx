@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
+import { API_BASE_URL } from '@/lib/config';
 
 interface Precedent {
   case_name: string;
@@ -96,7 +97,7 @@ export default function PredictorPage() {
         ? sections.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean)
         : [];
 
-      const res = await fetch('http://localhost:8000/api/analyze', {
+      const res = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +126,7 @@ export default function PredictorPage() {
       setResult(data);
     } catch (err: any) {
       console.error('Prediction API Error:', err);
-      setError(err.message || 'Could not connect to NyayaSarathi API backend. Ensure the backend server is running at http://localhost:8000.');
+      setError(err.message || `Could not connect to NyayaSarathi API backend. Ensure the backend server is running at ${API_BASE_URL}.`);
     } finally {
       setLoading(false);
     }
