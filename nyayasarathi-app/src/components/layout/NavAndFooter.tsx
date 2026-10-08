@@ -18,6 +18,7 @@ export function Navbar() {
   const NAV_LINKS = [
     { href: '/predictor',      label: t('nav.predictor') },
     { href: '/legal-research', label: t('nav.research')  },
+    { href: '/ocr',            label: t('nav.ocr')       },
     { href: '/#pipeline',       label: t('nav.howItWorks') },
     { href: '/#capabilities',   label: t('nav.capabilities') },
     { href: '/#workspace',      label: t('nav.workspace')    },

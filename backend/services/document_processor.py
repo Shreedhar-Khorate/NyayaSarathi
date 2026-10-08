@@ -128,6 +128,10 @@ class DocumentProcessor:
                 ext = ".pdf"
             elif "word" in content_type or "docx" in content_type:
                 ext = ".docx"
+            elif "image" in content_type or "jpeg" in content_type:
+                ext = ".jpg"
+            elif "png" in content_type:
+                ext = ".png"
             else:
                 ext = ".txt"
 
@@ -264,10 +268,46 @@ class DocumentProcessor:
                         "page_number": page_num,
                         "text": sanitize_legal_text(text),
                     })
-                if pages:
+                if pages and any(p["text"] for p in pages):
                     return pages
             except Exception as e2:
-                logger.error(f"pypdf extraction failed: {e2}")
+                logger.warning(f"pypdf extraction failed or empty: {e2}")
+
+            # If digital extraction yielded empty text (scanned PDF), invoke LegalOCRProcessor
+            try:
+                logger.info("PDF has no digital text. Invoking LegalOCRProcessor for scanned pages.")
+                from services.ocr import LegalOCRProcessor
+                ocr_res = LegalOCRProcessor.process_document(file_path, os.path.basename(file_path))
+                ocr_pages = []
+                for p_data in ocr_res.get("pages_data", []):
+                    clean_t = sanitize_legal_text(p_data.get("text", ""))
+                    ocr_pages.append({
+                        "page_number": p_data.get("page_number", 1),
+                        "text": clean_t,
+                        "confidence": p_data.get("confidence"),
+                        "blocks": p_data.get("blocks", []),
+                    })
+                if ocr_pages and any(p["text"] for p in ocr_pages):
+                    return ocr_pages
+            except Exception as e_ocr:
+                logger.error(f"LegalOCRProcessor fallback failed on scanned PDF: {e_ocr}")
+
+        elif ext in [".jpg", ".jpeg", ".png"]:
+            try:
+                from services.ocr import LegalOCRProcessor
+                ocr_res = LegalOCRProcessor.process_document(file_path, os.path.basename(file_path))
+                pages = []
+                for p_data in ocr_res.get("pages_data", []):
+                    clean_t = sanitize_legal_text(p_data.get("text", ""))
+                    pages.append({
+                        "page_number": p_data.get("page_number", 1),
+                        "text": clean_t,
+                        "confidence": p_data.get("confidence"),
+                        "blocks": p_data.get("blocks", []),
+                    })
+                return pages
+            except Exception as e:
+                logger.error(f"Image OCR extraction failed: {e}")
                 raise
 
         elif ext in [".docx", ".doc"]:
