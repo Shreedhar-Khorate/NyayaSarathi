@@ -58,7 +58,7 @@ class NyayaFormatter(logging.Formatter):
     Colored, structured log formatter.
 
     Format:
-        HH:MM:SS.mmm  INFO   │ COMPONENT  │ message
+        HH:MM:SS.mmm  INFO   | COMPONENT  | message
     """
 
     def format(self, record: logging.LogRecord) -> str:
@@ -75,6 +75,13 @@ class NyayaFormatter(logging.Formatter):
 
         # Message
         msg = record.getMessage()
+
+        # Sanitize for consoles that do not support unicode (e.g. Windows cp1252)
+        encoding = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
+        try:
+            msg.encode(encoding)
+        except (UnicodeEncodeError, LookupError):
+            msg = msg.encode("ascii", errors="replace").decode("ascii")
 
         # Separator
         sep = f"{GRAY}|{RESET}"
@@ -99,6 +106,18 @@ def setup_logging() -> None:
     Configure the root logger and uvicorn loggers with the NyayaFormatter.
     Call this once at application startup in main.py.
     """
+    # Safe reconfigure on Windows to support UTF-8 console output when possible
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    if hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     # Safe stream handler to avoid closed-pipe ValueError on Windows / subprocesses
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(NyayaFormatter())

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models.prediction import CaseInputRequest, FinalPredictionResponse
+from schemas.analyze import CaseInputRequest, FinalPredictionResponse
 from services.analyze_service import predict_case_outcome
 
 router = APIRouter()

@@ -9,10 +9,15 @@ Endpoints:
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Header, status
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel, EmailStr, Field
 import jwt
 
 from logger import get_logger
+from schemas.auth import (
+    SignupRequest,
+    LoginRequest,
+    UserProfile,
+    AuthTokenResponse,
+)
 from services.user_repository import (
     get_user_by_email,
     get_user_by_id,
@@ -30,33 +35,6 @@ log = get_logger("nyayasarathi.auth_router")
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
-
-
-# ── Pydantic Request / Response Schemas ─────────────────────────────────────
-class SignupRequest(BaseModel):
-    email: EmailStr
-    password: str = Field(..., min_length=6, description="Minimum 6 characters")
-    full_name: str = Field(..., min_length=2, description="Full user name")
-    role: Optional[str] = Field("ADVOCATE", description="ADVOCATE | RESEARCHER | JUDGE | CLIENT")
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class UserProfile(BaseModel):
-    id: str
-    email: str
-    full_name: str
-    role: str
-    created_at: str
-
-
-class AuthTokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: UserProfile
 
 
 # ── Dependency: Get Current Authenticated User ──────────────────────────────

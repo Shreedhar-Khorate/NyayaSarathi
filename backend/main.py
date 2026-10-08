@@ -21,6 +21,8 @@ from fastapi.responses import JSONResponse
 
 from routers import analyze, auth, cases, contracts, drafts, qa, search, statutes, translate, war_room
 from services.user_repository import init_user_table
+from services.document_processor import init_document_tables
+from services.ingest import init_database
 
 log = get_logger("nyayasarathi")
 
@@ -113,7 +115,7 @@ async def logging_middleware(request: Request, call_next):
         log.info(
             f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
             f"{_WHITE}{path}{query}{_R}  "
-            f"{_GRAY}← {client_ip}{_R}",
+            f"{_GRAY}<- {client_ip}{_R}",
             extra={"component": "REQUEST"},
         )
     except Exception:
@@ -209,20 +211,30 @@ def health_check():
 # ── Startup / Shutdown Events ─────────────────────────────────────────────────
 @app.on_event("startup")
 async def on_startup():
-    # Initialize user database table
+    # Initialize all database tables safely
     try:
         init_user_table()
     except Exception as e:
         log.error(f"Failed to initialize user database table: {e}", extra={"component": "STARTUP"})
 
+    try:
+        init_document_tables()
+    except Exception as e:
+        log.error(f"Failed to initialize document database tables: {e}", extra={"component": "STARTUP"})
+
+    try:
+        init_database()
+    except Exception as e:
+        log.error(f"Failed to initialize judgment database schema: {e}", extra={"component": "STARTUP"})
+
     log.info(
-        f"\033[1m\033[92m⚖  NyayaSarathi API\033[0m  "
-        f"\033[90mv1.0.0 · http://0.0.0.0:8000 · docs → /docs\033[0m",
+        f"\033[1m\033[92mNyayaSarathi API\033[0m  "
+        f"\033[90mv1.0.0 · http://0.0.0.0:8000 · docs -> /docs\033[0m",
         extra={"component": "STARTUP"},
     )
     log.info(
         "Routes: /api/auth  /api/analyze  /api/cases  /api/contracts  /api/drafts  "
-        "/api/qa  /api/search  /api/statutes  /api/war-room",
+        "/api/qa  /api/search  /api/statutes  /api/translate  /api/war-room",
         extra={"component": "STARTUP"},
     )
 

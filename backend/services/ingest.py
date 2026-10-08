@@ -128,6 +128,10 @@ def init_database():
         conn.close()
 
 
+# Backward compatibility alias
+init_db = init_database
+
+
 def _enrich_record(record: Dict[str, Any], config: str, split: str) -> Dict[str, Any]:
     """
     Enrich a raw dataset record with parsed metadata.

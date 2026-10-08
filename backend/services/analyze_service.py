@@ -237,7 +237,7 @@ def predict_case_outcome(request: CaseInputRequest) -> FinalPredictionResponse:
     total_ms = (time.perf_counter() - t_total) * 1000
     outcome_color = _GREEN if predicted_outcome == "favorable" else _RED if predicted_outcome == "unfavorable" else _YELLOW
     log.info(
-        f"{_BOLD}{_GREEN}✓ Prediction complete{_R}  "
+        f"{_BOLD}{_GREEN}[OK] Prediction complete{_R}  "
         f"probability={_BOLD}{_CYAN}{prob}%{_R}  "
         f"confidence={_BOLD}{conf_color}{confidence_label}{_R}  "
         f"outcome={_BOLD}{outcome_color}{predicted_outcome}{_R}  "
