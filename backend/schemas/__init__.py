@@ -84,6 +84,14 @@ from .war_room import (
     WarRoomResponse,
 )
 
+from .ocr import (
+    Block,
+    PageData,
+    OCRDocumentResponse,
+    DocumentResponse,
+    SendToResearchRequest,
+)
+
 __all__ = [
     # Analyze / Predictor
     "CaseInputRequest",
@@ -146,4 +154,10 @@ __all__ = [
     # War Room
     "WarRoomRequest",
     "WarRoomResponse",
+    # Legal Document OCR
+    "Block",
+    "PageData",
+    "OCRDocumentResponse",
+    "DocumentResponse",
+    "SendToResearchRequest",
 ]

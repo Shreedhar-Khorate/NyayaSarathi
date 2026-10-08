@@ -22,6 +22,7 @@ from schemas.qa import (
     DocumentDetailResponse,
     ChunkMetadata,
 )
+from schemas.ocr import SendToResearchRequest
 from services.qa_service import answer_question
 from services.document_processor import (
     get_document_processor,
@@ -123,6 +124,48 @@ async def upload_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Document indexing failed: {str(e)}",
+        )
+
+
+@router.post("/documents/from-ocr", response_model=DocumentMetadata, status_code=status.HTTP_201_CREATED)
+async def ingest_document_from_ocr(
+    request: SendToResearchRequest,
+    user_id: Optional[str] = Depends(get_optional_user_id),
+):
+    """
+    Ingest a structured OCR result directly into the Legal Research knowledge base.
+    Avoids requiring the user to re-upload the same document.
+    """
+    if not request.text or not request.text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot ingest empty document text into Legal Research.",
+        )
+
+    processor = get_document_processor()
+    try:
+        ocr_dict = request.model_dump() if hasattr(request, "model_dump") else request.dict()
+        doc_info = processor.process_ocr_document(
+            ocr_data=ocr_dict,
+            user_id=user_id,
+            custom_title=request.title,
+        )
+        return DocumentMetadata(
+            id=doc_info["document_id"],
+            title=doc_info["title"],
+            filename=doc_info["filename"],
+            file_type=doc_info["file_type"],
+            file_size=doc_info["file_size"],
+            total_pages=doc_info["total_pages"],
+            total_chunks=doc_info["total_chunks"],
+            status=doc_info["status"],
+            created_at=doc_info["created_at"],
+            user_id=user_id,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"OCR handoff to Legal Research failed: {str(e)}",
         )
 
 

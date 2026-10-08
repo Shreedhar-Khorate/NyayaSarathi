@@ -45,6 +45,19 @@ from .war_room_service import simulate_war_room
 from .cases_service import create_case, list_cases, get_case, get_timeline
 from .search_service import hybrid_search
 
+# ── Legal OCR Subsystem ──────────────────────────────────────────────────────
+from .ocr import (
+    LegalOCRProcessor,
+    DocumentDetector,
+    PDFExtractor,
+    DOCXExtractor,
+    ImageExtractor,
+    ImagePreprocessor,
+    OCREngine,
+    LayoutAnalyzer,
+    ReadingOrder,
+)
+
 __all__ = [
     # Predictor & Analysis
     "get_dataset_client",
@@ -94,4 +107,14 @@ __all__ = [
     "get_case",
     "get_timeline",
     "hybrid_search",
+    # Legal OCR
+    "LegalOCRProcessor",
+    "DocumentDetector",
+    "PDFExtractor",
+    "DOCXExtractor",
+    "ImageExtractor",
+    "ImagePreprocessor",
+    "OCREngine",
+    "LayoutAnalyzer",
+    "ReadingOrder",
 ]

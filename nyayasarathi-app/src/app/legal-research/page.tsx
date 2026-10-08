@@ -110,8 +110,20 @@ export default function LegalResearchPage() {
         const data = await res.json();
         const docs: DocumentItem[] = data.documents || [];
         setDocuments(docs);
-        // By default select all indexed documents if none selected
-        if (docs.length > 0 && selectedDocIds.length === 0) {
+        
+        // Check if docId was passed from OCR or link
+        let selectedFromUrl = false;
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const targetDocId = urlParams.get('docId');
+          if (targetDocId && docs.some(d => d.id === targetDocId)) {
+            setSelectedDocIds([targetDocId]);
+            selectedFromUrl = true;
+          }
+        }
+
+        // By default select all indexed documents if none selected from URL
+        if (!selectedFromUrl && docs.length > 0 && selectedDocIds.length === 0) {
           setSelectedDocIds(docs.filter(d => d.status === 'indexed').map(d => d.id));
         }
       }

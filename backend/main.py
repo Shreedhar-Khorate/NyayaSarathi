@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from routers import analyze, auth, cases, contracts, drafts, qa, search, statutes, translate, war_room
+from routers import analyze, auth, cases, contracts, drafts, ocr, qa, search, statutes, translate, war_room
 from services.user_repository import init_user_table
 from services.document_processor import init_document_tables
 from services.ingest import init_database
@@ -194,7 +194,9 @@ app.include_router(qa.router,        prefix="/api/qa",         tags=["RAG Q&A"])
 app.include_router(search.router,    prefix="/api/search",     tags=["Hybrid Search"])
 app.include_router(statutes.router,  prefix="/api/statutes",   tags=["Statutory Mapping"])
 app.include_router(translate.router, prefix="/api/translate",  tags=["Translation"])
-app.include_router(war_room.router,  prefix="/api/war-room",   tags=["War Room"])
+app.include_router(ocr.router,         prefix="/api/ocr",        tags=["Legal Document OCR"])
+app.include_router(ocr.router,         prefix="/api/legal-documents", tags=["Legal Document OCR"], include_in_schema=False)
+app.include_router(ocr.router,         prefix="/api/v1/documents", tags=["Legacy OCR"], include_in_schema=False)
 
 
 # ── Root & Health ─────────────────────────────────────────────────────────────
@@ -234,7 +236,7 @@ async def on_startup():
     )
     log.info(
         "Routes: /api/auth  /api/analyze  /api/cases  /api/contracts  /api/drafts  "
-        "/api/qa  /api/search  /api/statutes  /api/translate  /api/war-room",
+        "/api/ocr  /api/qa  /api/search  /api/statutes  /api/translate  /api/war-room",
         extra={"component": "STARTUP"},
     )
 
