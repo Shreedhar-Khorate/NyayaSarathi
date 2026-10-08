@@ -1,243 +1,113 @@
-# NyayaSarathi OCR Integration Work Plan
+# Feature — OCR → Legal Research Integration
 
 ## Objective
 
-Integrate the completed standalone `OCR/` module into the existing NyayaSarathi project **without breaking the current application**.
+Allow a user to process a legal document through OCR and directly send the resulting extracted text to the existing Legal Research module.
 
-The standalone `OCR/` folder is temporary. After successful integration and full testing, it must be deleted.
+## Required Flow
 
-## Critical Rules
+Document Upload
+    ↓
+OCR
+    ↓
+Layout Analysis
+    ↓
+Reading Order
+    ↓
+Structured Legal Text
+    ↓
+Send to Legal Research
+    ↓
+Existing Document/RAG Pipeline
+    ↓
+Legal Research
 
-1. Work only on the OCR branch.
-2. Do not delete the standalone `OCR/` folder until integration is verified.
-3. Do not create a second FastAPI application.
-4. Do not create a second React/Vite application.
-5. Reuse NyayaSarathi's existing FastAPI and React architecture.
-6. Keep OCR logic modular inside the existing architecture.
-7. Do not rewrite working OCR algorithms unnecessarily.
-8. Do not replace PaddleOCR.
-9. Do not add handwriting OCR.
-10. Preserve the working PaddleOCR/PaddlePaddle versions unless a real blocker requires change.
-11. Do not redesign or implement RAG as part of this integration unless explicitly requested.
-12. Do not log complete legal-document text unnecessarily.
-13. Do not remove existing NyayaSarathi functionality.
-14. Make small, reversible changes and test after each major step.
+## Requirements
 
-# Phase 1 — Inspect Existing NyayaSarathi
+1. Add a "Send to Legal Research" action after successful OCR.
+2. Do not make the user upload the same document again.
+3. Pass the OCR output to the existing Legal Research ingestion pipeline.
+4. Preserve:
+   - document name
+   - document ID
+   - page numbers
+   - extracted text
+   - OCR confidence where available
+   - page/section metadata where available
+5. Reuse the existing Legal Research/RAG ingestion logic.
+6. Do not create a second RAG pipeline.
+7. Do not duplicate document-processing logic.
+8. Preserve the existing OCR reading-order implementation.
+9. Show clear processing states:
+   - OCR Processing
+   - OCR Complete
+   - Sending to Legal Research
+   - Ready for Legal Research
+10. If ingestion fails, show an error without losing the OCR result.
+11. The user must be able to retry sending the OCR result to Legal Research without running OCR again.
 
-Before changing anything:
-- Inspect the complete NyayaSarathi backend structure.
-- Find the existing FastAPI entry point, routes, services, schemas/models, dependencies, tests, and configuration.
-- Inspect the React/Vite structure and existing API-client/request pattern.
-- Identify existing document upload functionality, if any.
-- Identify the existing RAG entry point/interfaces.
-- Do not assume paths.
-- Record the discovered structure in `logs.md`.
+## Backend Design
 
-# Phase 2 — Map Standalone OCR to NyayaSarathi
+Create a clean integration boundary between:
 
-Standalone OCR contains:
+OCR service
+    ↓
+Legal Research ingestion service
 
-```text
-OCR/
-├── prd.md
-├── UP.md
-├── log.md
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── routes/
-│   │   ├── schemas/
-│   │   └── services/
-│   ├── requirements.txt
-│   └── tests/
-└── frontend/
-```
+Prefer passing the structured OCR response rather than raw OCR strings.
 
-Important services:
+The existing Legal Research/RAG processor should remain responsible for:
+- document ingestion
+- chunking
+- embeddings
+- indexing
+- retrieval
+- answering
 
-```text
-detector.py
-pdf_extractor.py
-docx_extractor.py
-image_extractor.py
-image_preprocessor.py
-ocr.py
-layout_analyzer.py
-reading_order.py
-document_processor.py
-```
+OCR should remain responsible only for:
+- validation
+- extraction
+- OCR
+- layout analysis
+- reading-order reconstruction
+- structured OCR output.
 
-Map these into the existing NyayaSarathi architecture. The exact destination must follow the structure discovered in Phase 1.
+## Frontend
 
-Preferred conceptual structure:
+After OCR succeeds, show:
 
-```text
-NyayaSarathi backend
-├── existing routes
-├── OCR route
-├── existing services
-└── legal_ocr/
-    ├── detector.py
-    ├── pdf_extractor.py
-    ├── docx_extractor.py
-    ├── image_extractor.py
-    ├── image_preprocessor.py
-    ├── ocr.py
-    ├── layout_analyzer.py
-    ├── reading_order.py
-    └── document_processor.py
-```
+[ Send to Legal Research ]
 
-# Phase 3 — Integrate Backend
+After successful ingestion:
 
-## Dependencies
+[ Open in Legal Research ]
 
-Compare the standalone OCR dependency file with NyayaSarathi dependencies. Add only missing dependencies.
+Do not build a separate Legal Research UI.
 
-Preserve the currently working OCR versions:
+Reuse the existing NyayaSarathi Legal Research page and routing.
 
-```text
-paddlepaddle==2.6.2
-paddleocr==2.8.1
-```
+## Testing
 
-Do not blindly duplicate dependencies.
+Test:
 
-## OCR Services
+1. Digital PDF → OCR → Legal Research
+2. Scanned PDF → OCR → Legal Research
+3. DOCX → OCR/extraction → Legal Research
+4. Image → OCR → Legal Research
+5. Failed ingestion → OCR result remains available
+6. Retry ingestion without rerunning OCR
+7. Existing Legal Research/RAG tests remain passing
+8. Existing OCR tests remain passing
 
-Integrate the required OCR services and update imports carefully. Preserve:
+## Definition of Done
 
-```text
-Document detection
-        ↓
-Digital text extraction
-        ↓
-Scanned-page preprocessing
-        ↓
-PaddleOCR
-        ↓
-Bounding boxes
-        ↓
-Layout analysis
-        ↓
-Reading-order reconstruction
-        ↓
-Unified OCR response
-```
+A user can:
 
-Do not remove page numbers, bounding boxes, confidence values, or reading-order information.
+Upload legal document
+→ Run OCR
+→ Review extracted text
+→ Click "Send to Legal Research"
+→ Open Legal Research
+→ Ask questions about that exact document
 
-## OCR Route
-
-Create an OCR route inside the existing FastAPI application, following existing naming conventions. Conceptually:
-
-```text
-POST /api/legal-documents/process
-```
-
-The route should validate the upload, call the OCR document processor, return the unified response, and use NyayaSarathi's existing error-handling pattern.
-
-Do not create another `FastAPI()` instance.
-
-## Register Route
-
-Register the OCR router in the existing FastAPI application. Verify startup, existing routes, OpenAPI/docs, and imports.
-
-# Phase 4 — Integrate Frontend
-
-Do not keep the standalone OCR Vite application.
-
-Reuse the existing NyayaSarathi React/Vite application and add only the required OCR UI:
-
-```text
-Upload document
-      ↓
-Send to OCR API
-      ↓
-Loading/progress
-      ↓
-Display extracted text
-      ↓
-Display useful document/page information
-```
-
-Follow existing components, API client, styling, routing, and error handling.
-
-# Phase 5 — Backend Testing
-
-Test existing functionality and OCR functionality:
-- digital PDF
-- scanned PDF
-- mixed PDF if supported
-- DOCX
-- JPG/PNG
-- invalid file type
-- invalid/empty upload
-- multi-page document
-
-Verify the complete pipeline:
-
-```text
-Upload → Detection → Extraction/OCR → Layout → Reading Order → Unified Response
-```
-
-Most importantly, verify reading order remains correct after integration.
-
-# Phase 6 — Frontend Testing
-
-Verify document selection, upload, API request, loading state, error handling, extracted-text display, and existing frontend pages.
-
-# Phase 7 — RAG Preparation
-
-Do not redesign OCR for RAG. Preserve an interface that can later feed:
-
-```text
-OCR → Correct Reading Order → Structured Legal Text → Chunking → 3-Level RAG
-```
-
-Preserve useful metadata such as document ID, page number, text, bounding boxes, confidence, and structure where available.
-
-# Phase 8 — Final Cleanup
-
-Only after all integration tests pass:
-1. Confirm no code imports from `OCR/...`.
-2. Confirm no frontend code depends on `OCR/frontend`.
-3. Confirm all required OCR files are in final NyayaSarathi locations.
-4. Confirm dependencies are integrated.
-5. Run tests/build checks.
-6. Delete temporary `NyayaSarathi/OCR/`.
-7. Run the complete checks again after deletion.
-8. Commit the cleanup.
-
-# Definition of Done
-
-- [ ] Existing backend starts.
-- [ ] Existing APIs still work.
-- [ ] Existing frontend still works.
-- [ ] OCR is part of the main FastAPI application.
-- [ ] OCR services are integrated into the main backend.
-- [ ] No duplicate FastAPI application remains.
-- [ ] No duplicate React/Vite application remains.
-- [ ] Digital PDFs work.
-- [ ] Scanned PDFs work.
-- [ ] DOCX works.
-- [ ] Images work.
-- [ ] Bounding boxes are preserved where applicable.
-- [ ] Reading order remains correct.
-- [ ] OCR errors are handled safely.
-- [ ] Dependencies are integrated correctly.
-- [ ] No code depends on the temporary `OCR/` folder.
-- [ ] `OCR/` is deleted only after verification.
-- [ ] Final tests/build pass after deletion.
-- [ ] `logs.md` contains the complete integration history.
-
-# Agent Working Style
-
-Use:
-
-```text
-INSPECT → PLAN → SMALL CHANGE → TEST → LOG → NEXT CHANGE
-```
-
-Never make a large uncontrolled rewrite. If NyayaSarathi's existing conventions differ from the standalone OCR structure, adapt OCR to NyayaSarathi rather than duplicating architecture. If something is unclear, inspect the code first instead of guessing. Record every significant change in `logs.md`.
+without uploading the document a second time.

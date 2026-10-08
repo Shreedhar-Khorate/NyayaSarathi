@@ -89,6 +89,7 @@ from .ocr import (
     PageData,
     OCRDocumentResponse,
     DocumentResponse,
+    SendToResearchRequest,
 )
 
 __all__ = [
@@ -158,4 +159,5 @@ __all__ = [
     "PageData",
     "OCRDocumentResponse",
     "DocumentResponse",
+    "SendToResearchRequest",
 ]

@@ -263,6 +263,105 @@ class TestFastAPIOcrEndpoints(unittest.TestCase):
         self.assertEqual(data["document_type"], "docx")
         self.assertIn("DELHI", data["text"])
 
+    def test_send_to_research_success(self):
+        # 1. Simulate successful OCR result payload
+        ocr_payload = {
+            "document_id": "test_ocr_doc_001",
+            "filename": "state_vs_sharma_judgment.pdf",
+            "status": "completed",
+            "document_type": "text_pdf",
+            "pages": 2,
+            "extraction_method": "digital",
+            "text": "IN THE SUPREME COURT OF INDIA\n\nIssue for Consideration\nWhether anticipatory bail is warranted under Section 438 CrPC when the accused cooperated with the investigation.\n\nJUDGMENT\nThe appeal is allowed. The appellant shall be released on bail in the event of arrest on furnishing security of Rs. 25,000.",
+            "pages_data": [
+                {
+                    "page_number": 1,
+                    "text": "IN THE SUPREME COURT OF INDIA\n\nIssue for Consideration\nWhether anticipatory bail is warranted under Section 438 CrPC when the accused cooperated with the investigation.",
+                    "confidence": 0.98,
+                    "blocks": [
+                        {"text": "IN THE SUPREME COURT OF INDIA", "confidence": 0.99, "bbox": [50, 50, 300, 70]},
+                        {"text": "Issue for Consideration", "confidence": 0.97, "bbox": [50, 90, 250, 110]},
+                    ]
+                },
+                {
+                    "page_number": 2,
+                    "text": "JUDGMENT\nThe appeal is allowed. The appellant shall be released on bail in the event of arrest on furnishing security of Rs. 25,000.",
+                    "confidence": 0.99,
+                    "blocks": [
+                        {"text": "JUDGMENT", "confidence": 1.0, "bbox": [50, 50, 150, 70]},
+                    ]
+                }
+            ],
+            "title": "State vs Sharma Bail Judgment"
+        }
+
+        # 2. Call POST /api/ocr/send-to-research
+        response = self.client.post("/api/ocr/send-to-research", json=ocr_payload)
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertEqual(data["id"], "test_ocr_doc_001")
+        self.assertEqual(data["status"], "indexed")
+        self.assertEqual(data["total_pages"], 2)
+        self.assertTrue(data["total_chunks"] >= 1)
+
+        # 3. Verify document appears in Legal Research GET /api/qa/documents
+        list_res = self.client.get("/api/qa/documents")
+        self.assertEqual(list_res.status_code, 200)
+        doc_ids = [d["id"] for d in list_res.json()["documents"]]
+        self.assertIn("test_ocr_doc_001", doc_ids)
+
+        # 4. Verify document details and chunks are retrievable
+        detail_res = self.client.get("/api/qa/documents/test_ocr_doc_001")
+        self.assertEqual(detail_res.status_code, 200)
+        self.assertTrue(len(detail_res.json()["chunks"]) >= 1)
+
+    def test_send_to_research_idempotent_retry(self):
+        # Sending the same document twice must succeed idempotently without crashing
+        payload = {
+            "document_id": "test_retry_doc_002",
+            "filename": "affidavit_retry.pdf",
+            "text": "Paragraph 1: The deponent states under oath that all facts are true.\n\nParagraph 2: The notice was received on 12th January 2026.",
+            "pages": 1,
+            "pages_data": [
+                {
+                    "page_number": 1,
+                    "text": "Paragraph 1: The deponent states under oath that all facts are true.\n\nParagraph 2: The notice was received on 12th January 2026.",
+                    "confidence": 0.95,
+                    "blocks": []
+                }
+            ]
+        }
+        res1 = self.client.post("/api/ocr/send-to-research", json=payload)
+        self.assertEqual(res1.status_code, 201)
+
+        # Retry sending the exact same OCR result
+        res2 = self.client.post("/api/ocr/send-to-research", json=payload)
+        self.assertEqual(res2.status_code, 201)
+        self.assertEqual(res2.json()["id"], "test_retry_doc_002")
+
+    def test_send_to_research_empty_text_validation(self):
+        payload = {
+            "document_id": "empty_doc",
+            "filename": "empty.pdf",
+            "text": "   ",
+        }
+        response = self.client.post("/api/ocr/send-to-research", json=payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("empty", response.json()["error"].lower())
+
+    def test_qa_from_ocr_alias_endpoint(self):
+        payload = {
+            "document_id": "alias_ocr_doc_003",
+            "filename": "high_court_pleadings.docx",
+            "text": "IN THE HIGH COURT OF GUJARAT AT AHMEDABAD\n\nCivil Application No. 445 of 2026.",
+            "pages": 1,
+            "pages_data": []
+        }
+        response = self.client.post("/api/qa/documents/from-ocr", json=payload)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["id"], "alias_ocr_doc_003")
+
 
 if __name__ == "__main__":
     unittest.main()
+

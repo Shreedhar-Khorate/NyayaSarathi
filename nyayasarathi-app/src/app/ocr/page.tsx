@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import {
   FileText,
   Upload,
@@ -16,6 +17,9 @@ import {
   Eye,
   RefreshCw,
   Search,
+  BookOpen,
+  ArrowRight,
+  ExternalLink,
 } from 'lucide-react';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import { API_BASE_URL } from '@/lib/config';
@@ -55,6 +59,13 @@ export default function OCRPage() {
   const [viewMode, setViewMode] = useState<'text' | 'blocks'>('text');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Legal Research Handoff States
+  const [researchSending, setResearchSending] = useState(false);
+  const [researchSent, setResearchSent] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+  const [researchDocId, setResearchDocId] = useState<string | null>(null);
+  const [researchChunks, setResearchChunks] = useState<number>(0);
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -71,6 +82,7 @@ export default function OCRPage() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setFile(e.dataTransfer.files[0]);
       setError(null);
+      resetResearchState();
     }
   };
 
@@ -78,7 +90,16 @@ export default function OCRPage() {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setError(null);
+      resetResearchState();
     }
+  };
+
+  const resetResearchState = () => {
+    setResearchSending(false);
+    setResearchSent(false);
+    setResearchError(null);
+    setResearchDocId(null);
+    setResearchChunks(0);
   };
 
   const handleProcessDocument = async () => {
@@ -87,6 +108,7 @@ export default function OCRPage() {
     setLoading(true);
     setError(null);
     setResult(null);
+    resetResearchState();
 
     const formData = new FormData();
     formData.append('file', file);
@@ -116,6 +138,53 @@ export default function OCRPage() {
       setError(err.message || 'An error occurred during OCR extraction.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendToResearch = async () => {
+    if (!result) return;
+
+    setResearchSending(true);
+    setResearchError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ocr/send-to-research`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          document_id: result.document_id,
+          filename: result.filename,
+          title: result.filename.replace(/\.[^/.]+$/, '').replace(/[_\\-]/g, ' '),
+          document_type: result.document_type,
+          pages: result.pages,
+          extraction_method: result.extraction_method,
+          text: result.text,
+          pages_data: result.pages_data,
+        }),
+      });
+
+      if (!response.ok) {
+        let errDetail = 'Failed to index document in Legal Research';
+        try {
+          const errData = await response.json();
+          errDetail = errData.detail || errData.error || errDetail;
+        } catch {
+          // ignore json error
+        }
+        throw new Error(errDetail);
+      }
+
+      const data = await response.json();
+      setResearchSent(true);
+      setResearchDocId(data.id || result.document_id);
+      setResearchChunks(data.total_chunks || 1);
+    } catch (err: any) {
+      console.error('Send to Legal Research error:', err);
+      setResearchError(
+        err.message || 'Failed to send document to Legal Research. You can retry without re-running OCR.'
+      );
+    } finally {
+      setResearchSending(false);
     }
   };
 
@@ -168,7 +237,7 @@ export default function OCRPage() {
 
         {/* Upload & Workspace Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Upload and Controls */}
+          {/* Left Column: Upload, Controls and Handoff */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-[#151716] border border-[#3B3A33] rounded-2xl p-6 shadow-xl">
               <h2 className="font-display text-lg font-medium text-[#EDE8DC] mb-2 flex items-center gap-2">
@@ -311,6 +380,117 @@ export default function OCRPage() {
                     </div>
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {/* Legal Research Handoff Box */}
+            {result && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`border rounded-2xl p-6 shadow-xl transition-all duration-300 ${
+                  researchSent
+                    ? 'bg-[#151D18] border-emerald-800/60'
+                    : 'bg-[#151716] border-[#3B3A33]'
+                }`}
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-[#3B3A33]/60">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className={`w-4 h-4 ${researchSent ? 'text-emerald-400' : 'text-[#B59A68]'}`} />
+                    <h3 className="font-display text-sm font-medium text-[#EDE8DC]">
+                      Legal Research Integration
+                    </h3>
+                  </div>
+                  {/* Status Indicator Badge */}
+                  <span
+                    className={`text-[11px] font-mono uppercase px-2.5 py-0.5 rounded-full border ${
+                      researchSent
+                        ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/60'
+                        : researchSending
+                        ? 'bg-[#B59A68]/20 text-[#B59A68] border-[#B59A68]/40 animate-pulse'
+                        : researchError
+                        ? 'bg-amber-950/50 text-amber-300 border-amber-800/50'
+                        : 'bg-[#1A1C1B] text-stone-400 border-[#3B3A33]'
+                    }`}
+                  >
+                    {researchSent
+                      ? 'Ready for Legal Research'
+                      : researchSending
+                      ? 'Sending to Legal Research'
+                      : researchError
+                      ? 'Ingestion Error'
+                      : 'OCR Complete'}
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  {researchSent ? (
+                    <div className="space-y-4">
+                      <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-xl text-xs text-emerald-200">
+                        <p className="font-medium flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          Document successfully indexed into 3-Level RAG!
+                        </p>
+                        <p className="mt-1 text-emerald-300/80">
+                          {researchChunks} chunks created with page-level citations. You can now conduct citation-grounded research on this exact document without re-uploading.
+                        </p>
+                      </div>
+
+                      <Link
+                        href={`/legal-research?docId=${encodeURIComponent(researchDocId || result.document_id)}`}
+                        className="w-full py-3 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-[#B59A68] hover:bg-[#C8AD7B] text-[#0C0D0C] shadow-lg shadow-[#B59A68]/20 active:scale-[0.99]"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>Open in Legal Research</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-xs text-stone-400 leading-relaxed">
+                        Handoff this extracted legal text directly to NyayaSarathi&apos;s Legal Research engine for citation-backed question answering and statutory analysis without uploading again.
+                      </p>
+
+                      {researchError && (
+                        <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl flex items-start gap-2 text-xs text-amber-200">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold block">Handoff Failed:</span>
+                            <span>{researchError}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handleSendToResearch}
+                        disabled={researchSending}
+                        className={`w-full py-3 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+                          researchSending
+                            ? 'bg-[#252826] text-stone-400 cursor-not-allowed'
+                            : 'bg-[#B59A68] hover:bg-[#C8AD7B] text-[#0C0D0C] shadow-lg shadow-[#B59A68]/15 active:scale-[0.99]'
+                        }`}
+                      >
+                        {researchSending ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin text-[#B59A68]" />
+                            <span>Indexing in RAG Pipeline...</span>
+                          </>
+                        ) : researchError ? (
+                          <>
+                            <RefreshCw className="w-4 h-4" />
+                            <span>Retry Send to Legal Research</span>
+                          </>
+                        ) : (
+                          <>
+                            <BookOpen className="w-4 h-4" />
+                            <span>Send to Legal Research</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
           </div>

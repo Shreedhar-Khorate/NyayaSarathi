@@ -230,6 +230,174 @@ class DocumentProcessor:
                 conn.close()
             raise RuntimeError(f"Document extraction and indexing failed: {e}")
 
+    def process_ocr_document(
+        self,
+        ocr_data: Dict[str, Any],
+        user_id: Optional[str] = None,
+        custom_title: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Ingests an already-extracted, structured OCR legal document directly into the
+        RAG knowledge base without requiring a second upload or re-running OCR.
+        Preserves document_id, page numbers, OCR confidence, bounding boxes, and
+        reconstructed reading order. Fully idempotent to support retries.
+        """
+        raw_doc_id = str(ocr_data.get("document_id") or uuid.uuid4().hex[:12])
+        filename = ocr_data.get("filename") or f"ocr_document_{raw_doc_id[:8]}.pdf"
+        ext = os.path.splitext(filename)[1].lower()
+        if not ext:
+            doc_type = (ocr_data.get("document_type") or "").lower()
+            if "pdf" in doc_type:
+                ext = ".pdf"
+            elif "docx" in doc_type or "word" in doc_type:
+                ext = ".docx"
+            elif any(img_t in doc_type for img_t in ["png", "jpg", "jpeg", "image"]):
+                ext = ".png"
+            else:
+                ext = ".txt"
+
+        doc_id = raw_doc_id
+
+        # 1. Resolve storage path
+        expected_upload_path = os.path.join(UPLOADS_DIR, f"{raw_doc_id}_{filename}")
+        expected_doc_path = os.path.join(UPLOADS_DIR, f"{raw_doc_id}{ext}")
+
+        if os.path.exists(expected_upload_path):
+            storage_path = expected_upload_path
+            file_size = os.path.getsize(expected_upload_path)
+        elif os.path.exists(expected_doc_path):
+            storage_path = expected_doc_path
+            file_size = os.path.getsize(expected_doc_path)
+        else:
+            storage_path = os.path.join(UPLOADS_DIR, f"{doc_id}.txt")
+            full_text_content = ocr_data.get("text") or ""
+            with open(storage_path, "w", encoding="utf-8") as f:
+                f.write(full_text_content)
+            file_size = len(full_text_content.encode("utf-8"))
+
+        # Compute file hash
+        if os.path.exists(storage_path):
+            try:
+                with open(storage_path, "rb") as f:
+                    file_hash = compute_file_hash(f.read())
+            except Exception:
+                file_hash = compute_file_hash(ocr_data.get("text", "").encode("utf-8"))
+        else:
+            file_hash = compute_file_hash(ocr_data.get("text", "").encode("utf-8"))
+
+        # Case title
+        if custom_title and custom_title.strip():
+            title = custom_title.strip()
+        elif ocr_data.get("title") and str(ocr_data.get("title")).strip():
+            title = str(ocr_data.get("title")).strip()
+        else:
+            title = os.path.splitext(filename)[0].replace("_", " ").replace("-", " ").title()
+
+        # 2. Extract structured pages from OCR response
+        raw_pages = ocr_data.get("pages_data") or []
+        clean_pages: List[Dict[str, Any]] = []
+
+        if raw_pages:
+            for idx, page in enumerate(raw_pages, start=1):
+                p_num = page.get("page_number", idx) if isinstance(page, dict) else getattr(page, "page_number", idx)
+                p_text = page.get("text", "") if isinstance(page, dict) else getattr(page, "text", "")
+                clean_text = sanitize_legal_text(p_text)
+                clean_pages.append({
+                    "page_number": p_num,
+                    "text": clean_text,
+                })
+        else:
+            clean_text = sanitize_legal_text(ocr_data.get("text") or "")
+            clean_pages.append({
+                "page_number": 1,
+                "text": clean_text,
+            })
+
+        now = datetime.now(timezone.utc).isoformat()
+
+        # 3. Chunk paragraphs
+        chunks = self._chunk_pages(doc_id, user_id, clean_pages)
+
+        # 4. Idempotent database storage
+        conn = _get_db_connection()
+        try:
+            # Delete existing chunks if retrying the same document_id
+            conn.execute("DELETE FROM rag_chunks WHERE document_id = ?", (doc_id,))
+
+            # Insert or update rag_documents record
+            conn.execute("""
+                INSERT INTO rag_documents (
+                    id, user_id, title, filename, file_type, file_size, file_hash,
+                    storage_path, total_pages, total_chunks, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    title=excluded.title,
+                    filename=excluded.filename,
+                    file_type=excluded.file_type,
+                    file_size=excluded.file_size,
+                    file_hash=excluded.file_hash,
+                    storage_path=excluded.storage_path,
+                    total_pages=excluded.total_pages,
+                    total_chunks=excluded.total_chunks,
+                    status='indexed',
+                    updated_at=excluded.updated_at
+            """, (
+                doc_id, user_id, title, filename, ext, file_size, file_hash,
+                storage_path, len(clean_pages), len(chunks), 'indexed', now, now
+            ))
+
+            chunk_tuples = [
+                (
+                    c["id"],
+                    c["document_id"],
+                    c["user_id"],
+                    c["chunk_index"],
+                    c["page_number"],
+                    c["paragraph_number"],
+                    c["section_title"],
+                    c["text"],
+                    c["token_count"],
+                    c["start_offset"],
+                    c["end_offset"],
+                    now,
+                )
+                for c in chunks
+            ]
+            conn.executemany("""
+                INSERT INTO rag_chunks (
+                    id, document_id, user_id, chunk_index, page_number,
+                    paragraph_number, section_title, text, token_count,
+                    start_offset, end_offset, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, chunk_tuples)
+            conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to ingest OCR document {doc_id} into RAG: {e}", exc_info=True)
+            try:
+                conn.execute("""
+                    UPDATE rag_documents
+                    SET status = 'failed', error_message = ?, updated_at = ?
+                    WHERE id = ?
+                """, (str(e), datetime.now(timezone.utc).isoformat(), doc_id))
+                conn.commit()
+            except Exception:
+                pass
+            raise RuntimeError(f"OCR document indexing in RAG failed: {e}")
+        finally:
+            conn.close()
+
+        return {
+            "document_id": doc_id,
+            "title": title,
+            "filename": filename,
+            "file_type": ext,
+            "file_size": file_size,
+            "total_pages": len(clean_pages),
+            "total_chunks": len(chunks),
+            "status": "indexed",
+            "created_at": now,
+        }
+
     def _extract_pages(self, file_path: str, ext: str, file_bytes: bytes) -> List[Dict[str, Any]]:
         """
         Extracts page-wise text and paragraphs from PDF, DOCX, or TXT.

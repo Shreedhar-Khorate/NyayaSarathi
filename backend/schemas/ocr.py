@@ -35,6 +35,18 @@ class OCRDocumentResponse(BaseModel):
     pages_data: Optional[List[PageData]] = Field(default_factory=list, description="Page-by-page extraction details")
 
 
+class SendToResearchRequest(BaseModel):
+    """Request model for transferring structured OCR results directly to Legal Research / RAG."""
+    document_id: str = Field(..., description="Document identifier from OCR extraction")
+    filename: str = Field(..., description="Document filename")
+    title: Optional[str] = Field(None, description="Optional custom case title")
+    document_type: Optional[str] = Field("unknown", description="Document classification")
+    pages: Optional[int] = Field(1, description="Total number of pages")
+    extraction_method: Optional[str] = Field("digital", description="Extraction method used")
+    text: str = Field(..., description="Full extracted text")
+    pages_data: Optional[List[PageData]] = Field(default_factory=list, description="Structured page-level extractions")
+
+
 # Backward compatibility alias
 DocumentResponse = OCRDocumentResponse
 
@@ -43,4 +55,6 @@ __all__ = [
     "PageData",
     "OCRDocumentResponse",
     "DocumentResponse",
+    "SendToResearchRequest",
 ]
+
