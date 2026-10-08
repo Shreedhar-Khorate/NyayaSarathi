@@ -157,3 +157,4 @@ cython_debug/
 
 # Document uploads
 data/uploads/
+data/temp_ocr/
