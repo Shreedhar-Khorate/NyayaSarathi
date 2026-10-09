@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Scale, Menu, X, ArrowUpRight, Globe, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { SUPPORTED_LANGUAGES } from '@/i18n/config';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function Navbar() {
+  const pathname = usePathname();
   const [scrolled, setScrolled]     = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -63,22 +65,29 @@ export function Navbar() {
 
           {/* Nav links with border pill */}
           <nav
-            className="hidden items-center gap-1 md:flex rounded-full border border-[#3B3A33] px-2 py-1.5"
+            className="hidden items-center gap-0.5 lg:flex rounded-full border border-[#3B3A33] px-1.5 py-1 bg-[#151716]/60 backdrop-blur-md"
             aria-label="Main navigation"
           >
-            {NAV_LINKS.map(({ href, label }) => (
-              <a
-                key={href}
-                href={href}
-                className="rounded-full px-4 py-1.5 font-sans text-sm font-medium text-stone/75 transition-colors duration-200 hover:text-ivory hover:bg-white/[0.04]"
-              >
-                {label}
-              </a>
-            ))}
+            {NAV_LINKS.map(({ href, label }) => {
+              const isActive = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`rounded-full px-3.5 py-1.5 font-sans text-xs xl:text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'text-[#B59A68] bg-[#B59A68]/15 border border-[#B59A68]/30 font-semibold shadow-sm'
+                      : 'text-stone/80 hover:text-ivory hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Language Selector + Auth buttons */}
-          <div className="hidden items-center gap-3 md:flex shrink-0">
+          <div className="hidden items-center gap-2.5 md:flex shrink-0">
             
             {/* Language Selector Dropdown */}
             <div className="relative">
@@ -229,19 +238,22 @@ export function Navbar() {
               </div>
 
               {NAV_LINKS.map(({ href, label }, i) => (
-                <motion.a
+                <motion.div
                   key={href}
-                  href={href}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{
                     opacity: 1, x: 0,
                     transition: { delay: i * 0.05, duration: 0.22 },
                   }}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center rounded px-2 py-3 font-sans text-sm font-medium text-stone/80 transition-colors hover:text-ivory"
                 >
-                  {label}
-                </motion.a>
+                  <Link
+                    href={href}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center rounded px-2 py-3 font-sans text-sm font-medium text-stone/80 transition-colors hover:text-ivory"
+                  >
+                    {label}
+                  </Link>
+                </motion.div>
               ))}
 
               <motion.div

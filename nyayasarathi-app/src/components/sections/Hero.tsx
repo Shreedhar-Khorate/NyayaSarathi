@@ -6,6 +6,8 @@ import { ArrowUpRight, Upload, Scale } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useLanguage } from '@/context/LanguageContext';
 
+import Link from 'next/link';
+
 // AmbientCanvas removed per design spec (no animated blobs/particles)
 const BackgroundVideo = dynamic(() => import('@/components/ui/BackgroundVideo'), { ssr: false });
 
@@ -86,18 +88,24 @@ export default function Hero() {
 
           {/* CTAs */}
           <motion.div variants={item} className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <button className="btn-oxblood group flex items-center justify-center gap-2 rounded px-7 py-3.5 font-sans text-sm font-semibold tracking-wide">
-              {t('hero.launchHub')}
+            <Link
+              href="/predictor"
+              className="btn-oxblood group flex items-center justify-center gap-2 rounded px-7 py-3.5 font-sans text-sm font-semibold tracking-wide"
+            >
+              <span>{t('hero.launchHub')}</span>
               <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </button>
-            <button className="group flex items-center justify-center gap-2 rounded border border-[#3B3A33] bg-transparent px-7 py-3.5 font-sans text-sm font-semibold text-ivory transition-colors duration-300 hover:border-[#8A3545]/50 hover:bg-[#6E2634]/8">
+            </Link>
+            <Link
+              href="/ocr"
+              className="group flex items-center justify-center gap-2 rounded border border-[#3B3A33] bg-transparent px-7 py-3.5 font-sans text-sm font-semibold text-ivory transition-colors duration-300 hover:border-[#8A3545]/50 hover:bg-[#6E2634]/8"
+            >
               <Upload className="h-4 w-4 text-stone transition-colors group-hover:text-ivory" />
-              {t('hero.uploadDoc')}
-            </button>
+              <span>{t('hero.uploadDoc')}</span>
+            </Link>
           </motion.div>
 
           {/* Stats row */}
-          <motion.div variants={item} className="mt-16 flex flex-wrap items-stretch gap-0">
+          <motion.div variants={item} className="mt-16 flex flex-wrap items-center gap-6 sm:gap-0">
             {[
               [t('hero.stat1Value'), t('hero.stat1Label')],
               [t('hero.stat2Value'), t('hero.stat2Label')],
@@ -105,7 +113,7 @@ export default function Hero() {
             ].map(([value, label], i) => (
               <div
                 key={label}
-                className={`pr-10 ${i > 0 ? 'pl-10 border-l border-[#3B3A33]' : ''}`}
+                className={`pr-8 sm:pr-10 ${i > 0 ? 'sm:pl-10 sm:border-l sm:border-[#3B3A33]' : ''}`}
               >
                 <p className="font-display text-3xl font-semibold text-[#B59A68]">{value}</p>
                 <p className="mt-1 font-sans text-xs tracking-wide text-stone">{label}</p>

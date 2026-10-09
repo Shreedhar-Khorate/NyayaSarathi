@@ -666,8 +666,10 @@ export default function PredictorPage() {
                               </p>
                             )}
 
-                            <div className="flex items-center justify-between text-xs text-[#151716]/80 pt-2 border-t border-[#DED5C4]">
-                              <span className="font-medium">{precedent.court} &bull; <span className="font-mono">{precedent.citation}</span></span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#151716]/80 pt-2 border-t border-[#DED5C4]">
+                              <span className="font-medium truncate max-w-full sm:max-w-[72%]">
+                                {precedent.court} &bull; <span className="font-mono">{precedent.citation}</span>
+                              </span>
                               {(() => {
                                 const isKanoon = precedent.source_url?.includes('indiankanoon.org') || precedent.cnr?.startsWith('WEB_');
                                 const label = isKanoon ? 'Indian Kanoon' : 'Hugging Face Dataset';

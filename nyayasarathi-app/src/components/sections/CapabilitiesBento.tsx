@@ -94,44 +94,44 @@ export default function CapabilitiesBento() {
       icon: Search,
       title: t('capabilities.card1Title'),
       detail: t('capabilities.card1Desc'),
-      span: 'md:col-span-3 md:row-span-2',
+      span: 'md:col-span-1',
       iconColor: 'text-[#B59A68]',
     },
     {
       icon: FileText,
       title: t('capabilities.card2Title'),
       detail: t('capabilities.card2Desc'),
-      span: 'md:col-span-3',
+      span: 'md:col-span-1',
       iconColor: 'text-[#71877A]',
     },
     {
       icon: Users2,
       title: t('capabilities.card3Title'),
       detail: t('capabilities.card3Desc'),
-      span: 'md:col-span-3',
+      span: 'md:col-span-1',
       iconColor: 'text-[#71877A]',
     },
     {
       icon: ScrollText,
       title: t('capabilities.card4Title'),
       detail: t('capabilities.card4Desc'),
-      span: 'md:col-span-3',
+      span: 'md:col-span-1',
       iconColor: 'text-[#B59A68]',
     },
   ];
 
   return (
-    <section id="capabilities" className="relative py-32 md:py-40 bg-[#151716]">
+    <section id="capabilities" className="relative py-28 md:py-36 bg-[#151716]">
       <div className="mx-auto max-w-6xl px-6">
-        <div className="mb-16 max-w-2xl">
-          <div className="mb-5">
+        <div className="mb-14 max-w-2xl">
+          <div className="mb-4">
             <span className="section-label">{t('capabilities.label')}</span>
           </div>
-          <h2 className="font-display text-4xl font-semibold leading-tight text-ivory md:text-5xl">
+          <h2 className="font-display text-3xl font-semibold leading-tight text-ivory sm:text-4xl md:text-5xl">
             {t('capabilities.title')}
           </h2>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {dynamicCards.map((card) => (
             <BentoCard key={card.title} card={card} />
           ))}

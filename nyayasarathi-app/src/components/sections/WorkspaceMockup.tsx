@@ -13,12 +13,6 @@ const CITATIONS = [
   { id: 'c2', label: 'Para 21', page: 'Page 21' },
 ];
 
-const ANSWER_LINES_KEYS = [
-  { textKey: 'workspace.docPara14Part1', citeId: null },
-  { textKey: 'workspace.docPara14Part2', citeId: 'c1' },
-  { textKey: 'workspace.docPara21Part1', citeId: 'c2' },
-];
-
 export default function WorkspaceMockup() {
   const [activeCite, setActiveCite] = useState<string | null>(null);
   const [activeFilters, setActiveFilters] = useState<string[]>(['#Section420']);
@@ -67,7 +61,7 @@ export default function WorkspaceMockup() {
               value={t('workspace.searchPlaceholder')}
               className="w-full bg-transparent font-sans text-sm text-ivory outline-none placeholder:text-stone"
             />
-            <span className="shrink-0 font-mono text-[10px] tracking-widest text-[#6E2634] font-semibold whitespace-nowrap">
+            <span className="shrink-0 font-mono text-[10px] tracking-widest text-[#B59A68] font-semibold whitespace-nowrap">
               {t('workspace.hybridSearch')}
             </span>
           </div>
@@ -80,7 +74,7 @@ export default function WorkspaceMockup() {
                   onClick={() => toggleFilter(tag)}
                   className={`rounded-sm border px-3 py-1.5 font-sans text-xs font-medium transition-colors duration-200 ${
                     active
-                      ? 'border-[#6E2634]/50 bg-[#6E2634]/12 text-[#8A3545]'
+                      ? 'border-[#B59A68]/50 bg-[#B59A68]/15 text-[#B59A68]'
                       : 'border-[#3B3A33] text-stone hover:border-[#3B3A33] hover:text-ivory'
                   }`}
                 >
@@ -92,12 +86,12 @@ export default function WorkspaceMockup() {
         </div>
 
         {/* ── Split View ─────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-stretch">
 
           {/* ── LEFT: Legal Document (Warm Vellum) ──────────────────────── */}
-          <div className="flex flex-col rounded border border-[#DED5C4]/40 overflow-hidden">
+          <div className="flex flex-col h-full rounded border border-[#DED5C4]/40 overflow-hidden bg-[#F2EBDD]">
             {/* Document header bar */}
-            <div className="flex items-center justify-between border-b border-[#DED5C4]/50 px-5 py-4 bg-[#DED5C4]">
+            <div className="flex items-center justify-between border-b border-[#DED5C4]/50 px-5 py-4 bg-[#DED5C4] shrink-0">
               <div>
                 <p className="font-display text-sm font-semibold text-[#151716]">
                   {t('workspace.docCaseName')}
@@ -113,7 +107,7 @@ export default function WorkspaceMockup() {
             </div>
 
             {/* Vellum document body */}
-            <div className="doc-scroll h-[420px] overflow-y-auto px-7 py-6 bg-[#F2EBDD]">
+            <div className="doc-scroll flex-1 min-h-[460px] max-h-[560px] overflow-y-auto px-7 py-6">
               {/* Document label */}
               <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#DED5C4]">
                 <span className="font-mono text-[9px] tracking-[0.2em] text-[#A9A49A] uppercase">
@@ -174,9 +168,9 @@ export default function WorkspaceMockup() {
           </div>
 
           {/* ── RIGHT: Research Note (AI Response) ─────────────────────── */}
-          <div className="flex flex-col rounded border border-[#3B3A33] bg-[#151716] overflow-hidden">
+          <div className="flex flex-col h-full rounded border border-[#3B3A33] bg-[#151716] overflow-hidden">
             {/* Note header */}
-            <div className="flex items-center justify-between border-b border-[#3B3A33] px-5 py-4">
+            <div className="flex items-center justify-between border-b border-[#3B3A33] px-5 py-4 shrink-0">
               <div className="flex items-center gap-2.5">
                 <BookOpen className="h-4 w-4 text-[#B59A68]" strokeWidth={1.4} />
                 <p className="font-sans text-xs font-semibold tracking-[0.2em] uppercase text-stone">
@@ -259,7 +253,7 @@ export default function WorkspaceMockup() {
                           {CITATIONS.find((c) => c.id === activeCite)?.label} — {t('workspace.sourceHighlighted')}
                         </p>
                       </div>
-                      <button className="font-sans text-[11px] font-semibold text-[#6E2634] hover:text-[#8A3545] tracking-wide transition-colors">
+                      <button className="font-sans text-[11px] font-semibold text-[#B59A68] hover:text-[#D4AF37] tracking-wide transition-colors">
                         {t('workspace.viewSource')}
                       </button>
                     </div>
@@ -269,7 +263,7 @@ export default function WorkspaceMockup() {
             </div>
 
             {/* Follow-up input */}
-            <div className="border-t border-[#3B3A33] px-5 py-4">
+            <div className="border-t border-[#3B3A33] px-5 py-4 shrink-0">
               <div className="flex items-center gap-3 rounded-sm border border-[#3B3A33] bg-[#1D211F] px-4 py-3">
                 <input
                   readOnly

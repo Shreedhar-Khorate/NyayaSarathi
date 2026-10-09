@@ -799,7 +799,7 @@ export default function LegalResearchPage() {
 
           {/* RIGHT PANEL: Source Document & Exact Paragraph Inspector (Col 8-12) */}
           <div className={`lg:col-span-5 flex flex-col gap-4 ${activeTab === 'answer' ? 'hidden md:flex' : 'flex'}`}>
-            <div className="rounded-xl border border-[#3B3A33] bg-[#1D211F] p-5 shadow-xl sticky top-28 max-h-[calc(100vh-8.5rem)] flex flex-col">
+            <div className="rounded-xl border border-[#3B3A33] bg-[#1D211F] p-5 shadow-xl sticky top-24 max-h-[calc(100vh-7rem)] flex flex-col">
               
               {/* Header Bar */}
               <div className="flex items-center justify-between pb-3.5 border-b border-[#3B3A33]/70 shrink-0">

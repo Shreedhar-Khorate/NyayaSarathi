@@ -216,35 +216,35 @@ export default function OCRPage() {
       : null;
 
   return (
-    <div className="min-h-screen bg-[#0C0D0C] text-[#EDE8DC] flex flex-col selection:bg-[#B59A68]/30 selection:text-white">
+    <div className="min-h-screen bg-[#151716] text-[#F4EFE5] flex flex-col selection:bg-[#6E2634]/40 font-sans">
       <Navbar />
 
-      <main className="flex-1 pt-28 pb-20 px-6 max-w-7xl mx-auto w-full">
+      <main className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3B3A33] bg-[#151716]/60 text-xs font-mono text-[#B59A68] uppercase tracking-wider mb-4">
-            <Sparkles className="w-3.5 h-3.5" />
-            Legal Document Intelligence
+          <div className="section-label mx-auto mb-3">
+            <Sparkles className="w-3.5 h-3.5 text-[#B59A68]" />
+            <span>Legal Document Intelligence</span>
           </div>
-          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-[#EDE8DC]">
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-[#F4EFE5]">
             Document OCR & Layout Analysis
           </h1>
-          <p className="mt-3 text-stone-400 font-sans text-sm sm:text-base leading-relaxed">
+          <p className="mt-3 text-stone/80 font-sans text-sm sm:text-base leading-relaxed">
             Extract text from court filings, judgments, affidavits, and scanned records with
             PaddleOCR, dual-column layout preservation, and reading-order reconstruction.
           </p>
         </div>
 
         {/* Upload & Workspace Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Upload, Controls and Handoff */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="bg-[#151716] border border-[#3B3A33] rounded-2xl p-6 shadow-xl">
-              <h2 className="font-display text-lg font-medium text-[#EDE8DC] mb-2 flex items-center gap-2">
+            <div className="ink-panel border border-[#3B3A33] rounded-xl p-6 sm:p-7 shadow-xl">
+              <h2 className="font-display text-lg font-semibold text-[#F4EFE5] mb-2 flex items-center gap-2">
                 <Upload className="w-4 h-4 text-[#B59A68]" />
                 Upload Court Document
               </h2>
-              <p className="text-xs text-stone-400 mb-5">
+              <p className="text-xs text-stone/80 mb-5">
                 Supports PDF (digital, scanned, mixed), Word DOCX, and JPG/PNG documents up to 50MB.
               </p>
 
@@ -303,10 +303,10 @@ export default function OCRPage() {
               <button
                 onClick={handleProcessDocument}
                 disabled={!file || loading}
-                className={`w-full mt-6 py-3 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+                className={`w-full mt-6 py-3 px-4 rounded font-semibold text-sm tracking-wide transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${
                   !file || loading
-                    ? 'bg-[#252826] text-stone-500 cursor-not-allowed'
-                    : 'bg-[#B59A68] hover:bg-[#C8AD7B] text-[#0C0D0C] shadow-lg shadow-[#B59A68]/10 active:scale-[0.99]'
+                    ? 'bg-[#252826] text-stone/50 cursor-not-allowed border border-[#3B3A33]'
+                    : 'btn-oxblood'
                 }`}
               >
                 {loading ? (
@@ -328,31 +328,31 @@ export default function OCRPage() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#151716] border border-[#3B3A33] rounded-2xl p-6 shadow-xl space-y-4"
+                className="ink-panel border border-[#3B3A33] rounded-xl p-6 shadow-xl space-y-4"
               >
                 <div className="flex items-center justify-between pb-3 border-b border-[#3B3A33]">
-                  <h3 className="font-display text-base font-medium text-[#EDE8DC] flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <h3 className="font-display text-base font-semibold text-[#F4EFE5] flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#71877A]" />
                     Extraction Summary
                   </h3>
-                  <span className="text-xs font-mono uppercase px-2.5 py-0.5 rounded-full bg-emerald-950/50 text-emerald-300 border border-emerald-800/50">
+                  <span className="text-xs font-mono uppercase px-2.5 py-0.5 rounded-full bg-[#71877A]/15 text-[#71877A] border border-[#71877A]/30">
                     {result.status}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-[#1A1C1B] p-3 rounded-xl border border-[#3B3A33]/50">
-                    <span className="text-stone-400 block mb-1">Doc Classification</span>
-                    <span className="font-mono text-[#EDE8DC] font-semibold uppercase">
+                  <div className="bg-[#151716] p-3 rounded-lg border border-[#3B3A33]/70">
+                    <span className="text-stone/70 block mb-1">Doc Classification</span>
+                    <span className="font-mono text-[#F4EFE5] font-semibold uppercase">
                       {result.document_type}
                     </span>
                   </div>
-                  <div className="bg-[#1A1C1B] p-3 rounded-xl border border-[#3B3A33]/50">
-                    <span className="text-stone-400 block mb-1">Total Pages</span>
-                    <span className="font-mono text-[#EDE8DC] font-semibold">{result.pages}</span>
+                  <div className="bg-[#151716] p-3 rounded-lg border border-[#3B3A33]/70">
+                    <span className="text-stone/70 block mb-1">Total Pages</span>
+                    <span className="font-mono text-[#F4EFE5] font-semibold">{result.pages}</span>
                   </div>
-                  <div className="bg-[#1A1C1B] p-3 rounded-xl border border-[#3B3A33]/50 col-span-2">
-                    <span className="text-stone-400 block mb-1">OCR Method</span>
+                  <div className="bg-[#151716] p-3 rounded-lg border border-[#3B3A33]/70 col-span-2">
+                    <span className="text-stone/70 block mb-1">OCR Method</span>
                     <span className="font-mono text-[#B59A68] font-semibold">
                       {result.extraction_method}
                     </span>
@@ -362,16 +362,16 @@ export default function OCRPage() {
                 {/* Page Navigation */}
                 {result.pages > 1 && (
                   <div className="pt-2">
-                    <label className="text-xs text-stone-400 block mb-2">Select Page:</label>
-                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                    <label className="text-xs text-stone/80 block mb-2 font-medium">Select Page:</label>
+                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto doc-scroll">
                       {Array.from({ length: result.pages }, (_, i) => i + 1).map((p) => (
                         <button
                           key={p}
                           onClick={() => setSelectedPage(p)}
-                          className={`px-3 py-1 text-xs rounded-lg font-mono transition-colors ${
+                          className={`px-3 py-1 text-xs rounded font-mono transition-colors ${
                             selectedPage === p
-                              ? 'bg-[#B59A68] text-[#0C0D0C] font-bold'
-                              : 'bg-[#1A1C1B] text-stone-300 hover:bg-[#252826] border border-[#3B3A33]/60'
+                              ? 'bg-[#B59A68] text-[#151716] font-bold shadow-sm'
+                              : 'bg-[#151716] text-stone hover:bg-[#242925] hover:text-[#F4EFE5] border border-[#3B3A33]'
                           }`}
                         >
                           P. {p}
@@ -388,16 +388,16 @@ export default function OCRPage() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`border rounded-2xl p-6 shadow-xl transition-all duration-300 ${
+                className={`border rounded-xl p-6 shadow-xl transition-all duration-300 ${
                   researchSent
-                    ? 'bg-[#151D18] border-emerald-800/60'
-                    : 'bg-[#151716] border-[#3B3A33]'
+                    ? 'ink-panel border-[#71877A]/60'
+                    : 'ink-panel border-[#3B3A33]'
                 }`}
               >
                 <div className="flex items-center justify-between pb-3 border-b border-[#3B3A33]/60">
                   <div className="flex items-center gap-2">
-                    <BookOpen className={`w-4 h-4 ${researchSent ? 'text-emerald-400' : 'text-[#B59A68]'}`} />
-                    <h3 className="font-display text-sm font-medium text-[#EDE8DC]">
+                    <BookOpen className={`w-4 h-4 ${researchSent ? 'text-[#71877A]' : 'text-[#B59A68]'}`} />
+                    <h3 className="font-display text-sm font-semibold text-[#F4EFE5]">
                       Legal Research Integration
                     </h3>
                   </div>
@@ -405,12 +405,12 @@ export default function OCRPage() {
                   <span
                     className={`text-[11px] font-mono uppercase px-2.5 py-0.5 rounded-full border ${
                       researchSent
-                        ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/60'
+                        ? 'bg-[#71877A]/20 text-[#71877A] border-[#71877A]/40'
                         : researchSending
                         ? 'bg-[#B59A68]/20 text-[#B59A68] border-[#B59A68]/40 animate-pulse'
                         : researchError
-                        ? 'bg-amber-950/50 text-amber-300 border-amber-800/50'
-                        : 'bg-[#1A1C1B] text-stone-400 border-[#3B3A33]'
+                        ? 'bg-[#6E2634]/30 text-[#8A3545] border-[#8A3545]/40'
+                        : 'bg-[#151716] text-stone border-[#3B3A33]'
                     }`}
                   >
                     {researchSent
@@ -426,19 +426,19 @@ export default function OCRPage() {
                 <div className="mt-4">
                   {researchSent ? (
                     <div className="space-y-4">
-                      <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-xl text-xs text-emerald-200">
-                        <p className="font-medium flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div className="p-3.5 bg-[#71877A]/15 border border-[#71877A]/30 rounded-lg text-xs text-[#F4EFE5]">
+                        <p className="font-medium flex items-center gap-1.5 text-[#71877A]">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
                           Document successfully indexed into 3-Level RAG!
                         </p>
-                        <p className="mt-1 text-emerald-300/80">
+                        <p className="mt-1 text-stone leading-relaxed">
                           {researchChunks} chunks created with page-level citations. You can now conduct citation-grounded research on this exact document without re-uploading.
                         </p>
                       </div>
 
                       <Link
                         href={`/legal-research?docId=${encodeURIComponent(researchDocId || result.document_id)}`}
-                        className="w-full py-3 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-[#B59A68] hover:bg-[#C8AD7B] text-[#0C0D0C] shadow-lg shadow-[#B59A68]/20 active:scale-[0.99]"
+                        className="w-full py-3 px-4 rounded font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 btn-oxblood shadow-lg shadow-[#6E2634]/20"
                       >
                         <BookOpen className="w-4 h-4" />
                         <span>Open in Legal Research</span>
@@ -447,15 +447,15 @@ export default function OCRPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <p className="text-xs text-stone-400 leading-relaxed">
+                      <p className="text-xs text-stone/80 leading-relaxed">
                         Handoff this extracted legal text directly to NyayaSarathi&apos;s Legal Research engine for citation-backed question answering and statutory analysis without uploading again.
                       </p>
 
                       {researchError && (
-                        <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl flex items-start gap-2 text-xs text-amber-200">
-                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                        <div className="p-3 bg-[#6E2634]/20 border border-[#8A3545]/50 rounded-lg flex items-start gap-2 text-xs text-[#F4EFE5]">
+                          <AlertTriangle className="w-4 h-4 text-[#8A3545] shrink-0 mt-0.5" />
                           <div>
-                            <span className="font-semibold block">Handoff Failed:</span>
+                            <span className="font-semibold block text-[#8A3545]">Handoff Failed:</span>
                             <span>{researchError}</span>
                           </div>
                         </div>
@@ -464,10 +464,12 @@ export default function OCRPage() {
                       <button
                         onClick={handleSendToResearch}
                         disabled={researchSending}
-                        className={`w-full py-3 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+                        className={`w-full py-3 px-4 rounded font-semibold text-sm tracking-wide transition-all duration-200 flex items-center justify-center gap-2 ${
                           researchSending
-                            ? 'bg-[#252826] text-stone-400 cursor-not-allowed'
-                            : 'bg-[#B59A68] hover:bg-[#C8AD7B] text-[#0C0D0C] shadow-lg shadow-[#B59A68]/15 active:scale-[0.99]'
+                            ? 'bg-[#252826] text-stone/50 cursor-not-allowed border border-[#3B3A33]'
+                            : researchError
+                            ? 'btn-oxblood'
+                            : 'btn-oxblood'
                         }`}
                       >
                         {researchSending ? (
@@ -496,16 +498,16 @@ export default function OCRPage() {
           </div>
 
           {/* Right Column: Output Viewer */}
-          <div className="lg:col-span-7">
-            <div className="bg-[#151716] border border-[#3B3A33] rounded-2xl p-6 shadow-xl flex flex-col h-full min-h-[580px]">
+          <div className="lg:col-span-7 h-full">
+            <div className="ink-panel border border-[#3B3A33] rounded-xl p-6 sm:p-7 shadow-xl flex flex-col h-full min-h-[580px] lg:min-h-[720px]">
               {/* Output Header */}
               <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#3B3A33]">
                 <div className="flex items-center gap-3">
-                  <span className="font-display text-lg font-medium text-[#EDE8DC]">
+                  <span className="font-display text-lg font-semibold text-[#F4EFE5]">
                     Extracted Text & Reading Order
                   </span>
                   {result && (
-                    <span className="text-xs text-stone-400 font-mono">
+                    <span className="text-xs text-stone font-mono">
                       (Page {selectedPage} of {result.pages})
                     </span>
                   )}
@@ -514,23 +516,23 @@ export default function OCRPage() {
                 {result && (
                   <div className="flex items-center gap-2">
                     {/* View mode toggle */}
-                    <div className="flex bg-[#1A1C1B] border border-[#3B3A33] rounded-lg p-0.5">
+                    <div className="flex bg-[#151716] border border-[#3B3A33] rounded-lg p-0.5">
                       <button
                         onClick={() => setViewMode('text')}
-                        className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                        className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
                           viewMode === 'text'
-                            ? 'bg-[#B59A68] text-[#0C0D0C]'
-                            : 'text-stone-400 hover:text-[#EDE8DC]'
+                            ? 'bg-[#B59A68] text-[#151716] font-bold shadow-sm'
+                            : 'text-stone hover:text-[#F4EFE5]'
                         }`}
                       >
                         Reading Order
                       </button>
                       <button
                         onClick={() => setViewMode('blocks')}
-                        className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                        className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
                           viewMode === 'blocks'
-                            ? 'bg-[#B59A68] text-[#0C0D0C]'
-                            : 'text-stone-400 hover:text-[#EDE8DC]'
+                            ? 'bg-[#B59A68] text-[#151716] font-bold shadow-sm'
+                            : 'text-stone hover:text-[#F4EFE5]'
                         }`}
                       >
                         BBoxes ({currentPageData?.blocks?.length || 0})
@@ -539,11 +541,11 @@ export default function OCRPage() {
 
                     <button
                       onClick={handleCopy}
-                      className="p-1.5 rounded-lg border border-[#3B3A33] bg-[#1A1C1B] text-stone-300 hover:text-white hover:border-[#B59A68]/50 transition-colors"
+                      className="p-1.5 rounded border border-[#3B3A33] bg-[#151716] text-stone hover:text-ivory hover:border-[#B59A68]/50 transition-colors"
                       title="Copy text"
                     >
                       {copied ? (
-                        <Check className="w-4 h-4 text-emerald-400" />
+                        <Check className="w-4 h-4 text-[#71877A]" />
                       ) : (
                         <Copy className="w-4 h-4" />
                       )}
@@ -551,7 +553,7 @@ export default function OCRPage() {
 
                     <button
                       onClick={handleDownload}
-                      className="p-1.5 rounded-lg border border-[#3B3A33] bg-[#1A1C1B] text-stone-300 hover:text-white hover:border-[#B59A68]/50 transition-colors"
+                      className="p-1.5 rounded border border-[#3B3A33] bg-[#151716] text-stone hover:text-ivory hover:border-[#B59A68]/50 transition-colors"
                       title="Download as TXT"
                     >
                       <Download className="w-4 h-4" />
@@ -561,24 +563,24 @@ export default function OCRPage() {
               </div>
 
               {/* Content Body */}
-              <div className="flex-1 mt-4">
+              <div className="flex-1 mt-4 flex flex-col">
                 {loading ? (
-                  <div className="h-full flex flex-col items-center justify-center py-20 text-center">
+                  <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
                     <RefreshCw className="w-8 h-8 text-[#B59A68] animate-spin mb-4" />
-                    <p className="text-sm font-medium text-[#EDE8DC]">
+                    <p className="text-sm font-semibold text-[#F4EFE5]">
                       Extracting Document Text & Layout...
                     </p>
-                    <p className="text-xs text-stone-400 max-w-sm mt-1">
+                    <p className="text-xs text-stone/80 max-w-sm mt-1 leading-relaxed">
                       Applying OpenCV preprocessing, PaddleOCR line detection, and column-aware
                       reading-order reconstruction.
                     </p>
                   </div>
                 ) : result ? (
                   viewMode === 'text' ? (
-                    <div className="relative">
+                    <div className="relative flex-1 flex flex-col">
                       {currentPageData?.confidence !== null &&
                         currentPageData?.confidence !== undefined && (
-                          <div className="mb-3 px-3 py-1.5 rounded-lg bg-[#1A1C1B] border border-[#3B3A33] inline-flex items-center gap-2 text-xs font-mono text-[#B59A68]">
+                          <div className="mb-3 px-3 py-1.5 rounded bg-[#151716] border border-[#3B3A33] inline-flex items-center gap-2 text-xs font-mono text-[#B59A68] self-start">
                             <span>Avg OCR Confidence:</span>
                             <span className="font-bold">
                               {(currentPageData.confidence * 100).toFixed(1)}%
@@ -588,47 +590,47 @@ export default function OCRPage() {
                       <textarea
                         readOnly
                         value={currentPageData?.text || result.text}
-                        className="w-full h-[460px] p-4 bg-[#101211] border border-[#3B3A33]/70 rounded-xl text-stone-200 font-mono text-xs leading-relaxed resize-none focus:outline-none focus:border-[#B59A68]/40"
+                        className="w-full flex-1 min-h-[460px] lg:min-h-[560px] p-4 bg-[#151716] border border-[#3B3A33] rounded-xl text-[#F4EFE5]/90 font-mono text-xs leading-relaxed resize-none focus:outline-none focus:border-[#B59A68]/50 doc-scroll"
                       />
                     </div>
                   ) : (
-                    <div className="h-[460px] overflow-y-auto space-y-2 pr-1">
+                    <div className="flex-1 min-h-[460px] lg:min-h-[560px] overflow-y-auto space-y-2 pr-1 doc-scroll">
                       {currentPageData?.blocks && currentPageData.blocks.length > 0 ? (
                         currentPageData.blocks.map((block, idx) => (
                           <div
                             key={idx}
-                            className="p-3 bg-[#1A1C1B] border border-[#3B3A33]/50 rounded-xl flex flex-col gap-1.5 text-xs hover:border-[#B59A68]/40 transition-colors"
+                            className="p-3 bg-[#151716] border border-[#3B3A33]/70 rounded-lg flex flex-col gap-1.5 text-xs hover:border-[#B59A68]/40 transition-colors"
                           >
-                            <div className="flex items-center justify-between text-[11px] font-mono text-stone-400">
-                              <span className="text-[#B59A68]">Block #{idx + 1}</span>
-                              <span className="bg-[#151716] px-2 py-0.5 rounded border border-[#3B3A33]">
+                            <div className="flex items-center justify-between text-[11px] font-mono text-stone">
+                              <span className="text-[#B59A68] font-bold">Block #{idx + 1}</span>
+                              <span className="bg-[#1D211F] px-2 py-0.5 rounded border border-[#3B3A33]">
                                 bbox: [{block.bbox.join(', ')}]
                               </span>
                               {block.confidence !== undefined && block.confidence !== null && (
-                                <span className="text-emerald-400">
+                                <span className="text-[#71877A] font-bold">
                                   {(block.confidence * 100).toFixed(1)}%
                                 </span>
                               )}
                             </div>
-                            <p className="text-stone-200 font-mono text-xs mt-0.5 whitespace-pre-wrap">
+                            <p className="text-[#F4EFE5]/90 font-mono text-xs mt-0.5 whitespace-pre-wrap leading-relaxed">
                               {block.text}
                             </p>
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-16 text-stone-500 text-xs">
+                        <div className="text-center py-16 text-stone/60 text-xs">
                           No discrete bounding boxes recorded for this page.
                         </div>
                       )}
                     </div>
                   )
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center py-24 text-center">
-                    <div className="w-12 h-12 rounded-full bg-[#1A1C1B] border border-[#3B3A33] flex items-center justify-center mb-3 text-stone-500">
+                  <div className="flex-1 flex flex-col items-center justify-center py-24 text-center">
+                    <div className="w-12 h-12 rounded-full bg-[#151716] border border-[#3B3A33] flex items-center justify-center mb-3 text-stone">
                       <Layers className="w-5 h-5" />
                     </div>
-                    <p className="text-sm font-medium text-stone-400">No Document Processed Yet</p>
-                    <p className="text-xs text-stone-500 max-w-xs mt-1">
+                    <p className="text-sm font-semibold text-[#F4EFE5]">No Document Processed Yet</p>
+                    <p className="text-xs text-stone/80 max-w-xs mt-1 leading-relaxed">
                       Upload a legal filing or scanned judgment on the left to inspect reconstructed
                       text and bounding boxes.
                     </p>

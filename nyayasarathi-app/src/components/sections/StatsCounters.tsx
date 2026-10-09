@@ -27,7 +27,7 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
   }, [isInView, value]);
 
   return (
-    <span className="font-display text-[#B59A68] text-6xl font-semibold tabular-nums md:text-7xl">
+    <span className="font-display text-[#B59A68] text-5xl sm:text-6xl lg:text-7xl font-semibold tabular-nums leading-none">
       <span ref={ref}>0</span>
       {suffix}
     </span>
@@ -64,7 +64,7 @@ export default function StatsCounters() {
               className="py-10 md:py-0 md:px-14 first:pl-0 last:pr-0"
             >
               {stat.isText ? (
-                <span className="font-display text-[#B59A68] text-6xl font-semibold md:text-7xl">
+                <span className="font-display text-[#B59A68] text-4xl sm:text-5xl lg:text-6xl font-semibold leading-none block">
                   Hybrid RAG
                 </span>
               ) : (
