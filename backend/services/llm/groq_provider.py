@@ -22,7 +22,7 @@ class GroqProvider(BaseLLMProvider):
         model: Optional[str] = None,
     ):
         self._api_key = api_key
-        self.model = model or os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
+        self.model = model or os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant").strip()
 
     @property
     def api_key(self) -> str:
@@ -46,11 +46,11 @@ class GroqProvider(BaseLLMProvider):
         preferred_model = os.environ.get("GROQ_MODEL", self.model).strip()
         candidate_models = [
             preferred_model,
+            "llama-3.1-8b-instant",
+            "llama-3.3-70b-versatile",
             "openai/gpt-oss-120b",
             "openai/gpt-oss-20b",
             "qwen/qwen3.8-27b",
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant",
         ]
         # De-duplicate while preserving order
         unique_models = []
