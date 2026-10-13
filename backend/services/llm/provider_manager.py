@@ -14,6 +14,7 @@ load_dotenv()
 from services.llm.base import BaseLLMProvider, LLMAnswerResult
 from services.llm.groq_provider import GroqProvider
 from services.llm.cerebras_provider import CerebrasProvider
+from services.llm.gemini_provider import GeminiProvider
 from services.llm.ollama_provider import OllamaProvider
 
 logger = logging.getLogger("nyayasarathi.llm.manager")
@@ -74,6 +75,7 @@ class LLMProviderManager:
         self.providers: Dict[str, BaseLLMProvider] = {
             "groq": GroqProvider(),
             "cerebras": CerebrasProvider(),
+            "gemini": GeminiProvider(),
             "ollama": OllamaProvider(),
         }
         self.circuit_breakers: Dict[str, CircuitBreaker] = {
