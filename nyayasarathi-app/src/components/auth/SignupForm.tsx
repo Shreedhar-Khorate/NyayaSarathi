@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -8,7 +8,9 @@ import AuthInput from './AuthInput';
 import PasswordInput from './PasswordInput';
 import AuthButton from './AuthButton';
 import TrustIndicator from './TrustIndicator';
+import { GoogleAuthButton } from './GoogleAuthButton';
 import { signupUser } from '@/lib/auth';
+import { useGoogleAuth } from '@/lib/useGoogleAuth';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -26,6 +28,18 @@ export function SignupForm() {
     general?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Handle Google OAuth callback on mount
+  const googleAuth = useGoogleAuth();
+  useEffect(() => {
+    if (googleAuth.handled && googleAuth.user) {
+      // Google sign-up succeeded — redirect to workspace
+      router.push('/predictor');
+    }
+    if (googleAuth.error) {
+      setErrors({ general: googleAuth.error });
+    }
+  }, [googleAuth.handled, googleAuth.error]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -99,7 +113,7 @@ export function SignupForm() {
         </p>
       </motion.div>
 
-      {/* General Error Banner if applicable */}
+      {/* General Error Banner */}
       {errors.general && (
         <motion.div
           initial={{ opacity: 0, y: -4 }}
@@ -111,7 +125,26 @@ export function SignupForm() {
         </motion.div>
       )}
 
-      {/* Signup Form */}
+      {/* ── Google OAuth Button ─────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.08, ease: EASE }}
+        className="mb-4"
+      >
+        <GoogleAuthButton label="Sign up with Google" />
+      </motion.div>
+
+      {/* ── Divider ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex-1 h-px bg-[#3B3A33]/60" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#A9A49A]/60">
+          or register with email
+        </span>
+        <div className="flex-1 h-px bg-[#3B3A33]/60" />
+      </div>
+
+      {/* ── Email / Password Signup Form ─────────────────────────────────────── */}
       <form onSubmit={handleSubmit} className="space-y-3" noValidate>
         {/* Full Name */}
         <AuthInput

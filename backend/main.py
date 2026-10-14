@@ -20,6 +20,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from routers import analyze, auth, cases, contracts, drafts, ocr, qa, search, statutes, translate, war_room
+from routers import google_oauth
 from services.user_repository import init_user_table
 from services.document_processor import init_document_tables
 from services.ingest import init_database
@@ -185,7 +186,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 # ── Routers ───────────────────────────────────────────────────────────────────
-app.include_router(auth.router,      prefix="/api/auth",       tags=["Authentication"])
+app.include_router(auth.router,         prefix="/api/auth",            tags=["Authentication"])
+app.include_router(google_oauth.router, prefix="/api/auth/google",     tags=["Google OAuth"])
 app.include_router(analyze.router,   prefix="/api/analyze",    tags=["Judgment Predictor"])
 app.include_router(cases.router,     prefix="/api/cases",      tags=["Cases"])
 app.include_router(contracts.router, prefix="/api/contracts",  tags=["Contracts"])
