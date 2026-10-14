@@ -19,20 +19,6 @@ log = get_logger("nyayasarathi.procedural_context_engine")
 # 1 July 2024: Date of enforcement of Bharatiya Nyaya Sanhita & Bharatiya Nagarik Suraksha Sanhita
 NEW_CRIMINAL_LAWS_CUTOFF = datetime(2024, 7, 1)
 
-PROVISION_CROSS_WALK = {
-    "ipc_302": {"old": "Section 302 IPC", "new": "Section 103(1) BNS, 2023", "subject": "Punishment for Murder"},
-    "ipc_300_exc_4": {"old": "Exception 4 to Section 300 IPC", "new": "Exception 4 to Section 101 BNS, 2023", "subject": "Sudden Fight in Heat of Passion"},
-    "ipc_304_part_2": {"old": "Section 304 Part II IPC", "new": "Section 105 BNS, 2023", "subject": "Culpable Homicide Not Amounting to Murder (Knowledge without Intention)"},
-    "ipc_307": {"old": "Section 307 IPC", "new": "Section 109 BNS, 2023", "subject": "Attempt to Murder"},
-    "ipc_498a": {"old": "Section 498A IPC", "new": "Section 85 & 86 BNS, 2023", "subject": "Cruelty by Husband or Relatives"},
-    "crpc_41": {"old": "Section 41 CrPC", "new": "Section 35(1) BNSS, 2023", "subject": "Police Power of Arrest Without Warrant"},
-    "crpc_41a": {"old": "Section 41A CrPC", "new": "Section 35(3) BNSS, 2023", "subject": "Mandatory Notice of Appearance Before Police"},
-    "crpc_313": {"old": "Section 313(5) CrPC", "new": "Section 351(5) BNSS, 2023", "subject": "Written Statement of Accused"},
-    "crpc_428": {"old": "Section 428 CrPC", "new": "Section 468 BNSS, 2023", "subject": "Set-off of Pre-trial Detention Against Sentence"},
-    "crpc_438": {"old": "Section 438 CrPC", "new": "Section 482 BNSS, 2023", "subject": "Anticipatory Bail"},
-    "crpc_439": {"old": "Section 439 CrPC", "new": "Section 483 BNSS, 2023", "subject": "Special Powers of High Court/Sessions on Bail"},
-}
-
 
 def evaluate_statutory_era(session: Dict[str, Any], text: str) -> Dict[str, Any]:
     """
@@ -61,8 +47,29 @@ def evaluate_statutory_era(session: Dict[str, Any], text: str) -> Dict[str, Any]
     # Check explicit statute references in input
     mentions_bns = "bns" in combined or "bharatiya nyaya" in combined or "bnss" in combined
     mentions_ipc = "ipc" in combined or "indian penal code" in combined or "crpc" in combined
+    case_type = session.get("case_type", "").lower()
 
-    if mentions_bns and not mentions_ipc:
+    # Civil dispute check
+    is_civil_dispute = (
+        case_type in ("civil", "property", "contract", "commercial", "family", "recovery") or
+        any(k in combined for k in [
+            "sale deed", "family settlement", "title suit", "specific relief",
+            "registration act", "transfer of property", "residential property",
+            "property tax receipts", "partition", "adverse possession"
+        ])
+    ) and not any(k in combined for k in [
+        "ipc", "crpc", "bns", "bnss", "fir", "police", "bail", "murder",
+        "302", "498a", "remand", "sessions case", "charge sheet", "accused"
+    ])
+
+    if is_civil_dispute:
+        era = "CIVIL_STATUTES"
+        statute_title = "Transfer of Property Act, 1882; Indian Registration Act, 1908; Indian Evidence Act, 1872 & Code of Civil Procedure, 1908"
+        transition_note = (
+            "Substantive rights and conveyances are governed by the Transfer of Property Act, 1882 and Indian Registration Act, 1908. "
+            "Adjudication and pleadings are governed by the Code of Civil Procedure, 1908. For documentary and secondary evidence, the Indian Evidence Act, 1872 applies (and Bharatiya Sakshya Adhiniyam, 2023 for evidence tendered after 1 July 2024)."
+        )
+    elif mentions_bns and not mentions_ipc:
         era = "BNS_BNSS"
         statute_title = "Bharatiya Nyaya Sanhita, 2023 & BNSS, 2023"
         transition_note = "Offence and proceedings initiated under the Bharatiya Nyaya Sanhita, 2023 and Bharatiya Nagarik Suraksha Sanhita, 2023."
@@ -82,30 +89,43 @@ def evaluate_statutory_era(session: Dict[str, Any], text: str) -> Dict[str, Any]
         "era": era,
         "statute_title": statute_title,
         "transition_note": transition_note,
-        "cross_walk": PROVISION_CROSS_WALK
     }
 
 
 def analyze_procedural_context(session: Dict[str, Any], chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Analyzes the complete judicial forum, procedural posture, party designations,
-    and stage-appropriate legal next steps.
+    and stage-appropriate legal next steps. Distinguishes civil property suits from criminal proceedings.
     """
     title = session.get("title", "")
     desc = session.get("description", "")
     user_pos = session.get("user_position", "appellant").strip().lower()
     court_raw = session.get("court", "").strip()
+    case_type = session.get("case_type", "general").strip().lower()
 
     combined_text = f"{title} {desc} {court_raw} " + " ".join([c.get("text", "") for c in chunks[:5]])
     combined_lower = combined_text.lower()
 
+    # Detect civil dispute
+    is_civil = (
+        case_type in ("civil", "property", "contract", "commercial", "family", "recovery") or
+        any(k in combined_lower for k in [
+            "sale deed", "family settlement", "title suit", "specific relief",
+            "registration act", "transfer of property", "residential property",
+            "property tax receipts", "partition", "adverse possession", "ownership"
+        ])
+    ) and not any(k in combined_lower for k in [
+        "ipc", "crpc", "bns", "bnss", "fir", "police", "bail", "murder",
+        "302", "498a", "remand", "sessions case", "charge sheet", "accused"
+    ])
+
     # 1. Forum Determination
     is_sc = any(term in combined_lower for term in [
-        "supreme court", "apex court", "special leave petition", "slp (crl)", "slp(crl)", "insc", "scc"
+        "supreme court", "apex court", "special leave petition", "slp (crl)", "slp(crl)", "slp (civil)", "insc", "scc"
     ]) or "supreme court" in court_raw.lower()
 
     is_hc = any(term in combined_lower for term in [
-        "high court", "principal seat", "nagpur bench", "lucknow bench", "criminal appeal", "crla"
+        "high court", "principal seat", "nagpur bench", "lucknow bench", "criminal appeal", "crla", "first appeal", "second appeal"
     ]) and not is_sc
 
     # 2. Case Posture Determination (Concluded vs Pending)
@@ -125,44 +145,93 @@ def analyze_procedural_context(session: Dict[str, Any], chunks: List[Dict[str, A
         respondent = parties[1].strip()
     elif len(parties) == 1 and parties[0].strip():
         appellant = parties[0].strip()
-        respondent = session.get("opposing_party") or "Respondent State / Opposing Party"
+        respondent = session.get("opposing_party") or ("Defendant / Opposing Party" if is_civil else "Respondent State / Opposing Party")
     else:
-        appellant = "Appellant / Applicant"
-        respondent = session.get("opposing_party") or "Respondent State / Opposing Party"
+        appellant = "Plaintiff / Claimant" if is_civil else "Appellant / Applicant"
+        respondent = session.get("opposing_party") or ("Defendant / Opposing Party" if is_civil else "Respondent State / Opposing Party")
 
-    party_role = "Appellant" if user_pos in ("appellant", "petitioner", "applicant", "accused") else "Respondent"
+    # Consistent role assignment based on user position and dispute nature
+    if user_pos in ("plaintiff", "claimant"):
+        party_role = "Plaintiff / Claimant"
+    elif user_pos in ("defendant", "respondent"):
+        party_role = "Defendant / Opposing Party" if is_civil else "Respondent"
+    elif user_pos in ("appellant", "petitioner", "applicant", "accused"):
+        party_role = "Appellant"
+    else:
+        party_role = "Plaintiff / Claimant" if is_civil else "Appellant"
 
     # 4. Prior Procedural History Extraction
     prior_stages = []
     lines = [s.strip() for s in re.split(r"[.\n]+", desc) if len(s.strip()) > 15]
     for line in lines:
         line_l = line.lower()
-        if any(term in line_l for term in ["sessions", "trial court", "additional sessions", "convicted by", "magistrate", "sessions case"]):
+        if any(term in line_l for term in ["sessions", "trial court", "additional sessions", "convicted by", "magistrate", "sessions case", "civil judge", "sub-judge"]):
             prior_stages.append(f"Trial Stage: {line}")
         elif any(term in line_l for term in ["high court", "first appeal", "appeal dismissed", "confirmed the conviction"]):
             prior_stages.append(f"High Court Stage: {line}")
-        elif any(term in line_l for term in ["supreme court", "slp", "criminal appeal no", "apex court"]):
+        elif any(term in line_l for term in ["supreme court", "slp", "criminal appeal no", "civil appeal no", "apex court"]):
             prior_stages.append(f"Supreme Court Stage: {line}")
 
     if not prior_stages:
-        if is_sc:
-            prior_stages = [
-                "Trial Court – Conviction and sentence by Sessions Court",
-                "High Court – First appellate review under Section 374 CrPC",
-                "Supreme Court of India – Apex appellate adjudication"
-            ]
-        elif is_hc:
-            prior_stages = [
-                "Trial Court – Conviction and sentence by Sessions Court",
-                f"{court_raw or 'High Court'} – Appellate jurisdiction under Section 374 CrPC"
-            ]
+        if is_civil:
+            if is_sc:
+                prior_stages = [
+                    "Trial Court – Original Civil Suit (Declaration and Title)",
+                    "High Court – First/Second Appellate Review",
+                    "Supreme Court of India – Apex appellate adjudication"
+                ]
+            elif is_hc:
+                prior_stages = [
+                    "Trial Court – Original Civil Suit before Civil Judge / District Court",
+                    f"{court_raw or 'High Court'} – Regular First Appeal under Section 96 CPC"
+                ]
+            else:
+                prior_stages = [f"{court_raw or 'Civil Court'} – Original jurisdiction / Pre-institution title dispute"]
         else:
-            prior_stages = [f"{court_raw or 'Trial Court'} – Original jurisdiction / Trial"]
+            if is_sc:
+                prior_stages = [
+                    "Trial Court – Conviction and sentence by Sessions Court",
+                    "High Court – First appellate review under Section 374 CrPC",
+                    "Supreme Court of India – Apex appellate adjudication"
+                ]
+            elif is_hc:
+                prior_stages = [
+                    "Trial Court – Conviction and sentence by Sessions Court",
+                    f"{court_raw or 'High Court'} – Appellate jurisdiction under Section 374 CrPC"
+                ]
+            else:
+                prior_stages = [f"{court_raw or 'Trial Court'} – Original jurisdiction / Trial"]
 
     # 5. Forum & Posture Assembly with Stage-Appropriate Next Steps
     statutory_info = evaluate_statutory_era(session, combined_text)
 
-    if is_sc:
+    if is_civil:
+        if is_sc:
+            current_forum = "Supreme Court of India"
+            posture = "Decided Civil Appeal" if is_decided else "Civil Appellate Proceeding (Supreme Court of India)"
+            next_steps = (
+                "1. Decree Transmission: Transmit certified copy of Supreme Court judgment and decree to Trial Court for execution.\n"
+                "2. Execution Petition: File execution petition under Order XXI CPC before executing court to enforce declaration/possession.\n"
+                "3. Conclusive Finality: No further appeal lies against Supreme Court judgment."
+            )
+        elif is_hc:
+            current_forum = court_raw or "High Court of Judicature"
+            posture = "Decided Civil Appeal" if is_decided else "Regular Civil Appeal / Civil Revision (High Court)"
+            next_steps = (
+                "1. Regular First Appeal: File Regular First Appeal under Section 96 CPC within the 90-day statutory limitation.\n"
+                "2. Stay of Execution: Move application under Order XLI Rule 5 CPC for stay of trial court judgment/decree.\n"
+                "3. Certified Copies: Apply immediately for certified copies of the trial court judgment and decree."
+            )
+        else:
+            current_forum = court_raw or "Civil Court / Court of Civil Judge (Senior Division)"
+            posture = "Original Civil Suit / Title Dispute"
+            next_steps = (
+                "1. Production of Primary Documents: File certified copies of title deeds, revenue extracts, and primary instruments relied upon under Order VII Rule 14 CPC.\n"
+                "2. Admissibility & Evidentiary Scrutiny: Scrutinize adverse documents for execution, attestation, and mandatory registration requirements under Sections 17 & 49 of the Indian Registration Act, 1908 and the Evidence Act / BSA.\n"
+                "3. Plaint Formulation: Draft civil plaint for Declaration of Title, Recovery of Possession, and Ancillary Relief under the Specific Relief Act, 1963 and Order VII CPC.\n"
+                "4. Interlocutory Injunction: Move application under Order XXXIX Rules 1 & 2 CPC restraining the adverse party from creating third-party interests, alienating the property, or altering its physical status."
+            )
+    elif is_sc:
         current_forum = "Supreme Court of India"
         posture = "Decided Criminal Appeal" if is_decided else "Criminal Appellate Proceeding (Supreme Court of India)"
         if is_decided:
@@ -223,6 +292,7 @@ def analyze_procedural_context(session: Dict[str, Any], chunks: List[Dict[str, A
         "party_role": party_role,
         "prior_stages": prior_stages,
         "is_decided": is_decided,
+        "is_civil": is_civil,
         "is_arrest_safeguards": is_arrest_safeguards,
         "statutory_era": statutory_info["era"],
         "statute_title": statutory_info["statute_title"],

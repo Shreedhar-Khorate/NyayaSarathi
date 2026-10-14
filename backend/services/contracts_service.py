@@ -1,78 +1,16 @@
 """
-Contract Analysis Service — Reads real file bytes and extracts risk clauses.
+Contract Analysis Service — Real AI analysis of contract text and risk clauses.
 Supports PDF (pdfplumber), DOCX (python-docx), and plain TXT.
-Falls back to keyword-based red-flag scanning when parsers are unavailable.
+Dynamically extracts clauses, evaluates risk levels, and explains legal exposure under Indian law.
 """
 import re
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 
 from schemas.contracts import ContractAnalysisResponse, RedFlag
+from services.war_room_service import _call_llm_json, _ensure_list
+from logger import get_logger
 
-
-# ── Known high-risk contract clause patterns ─────────────────────────────────
-RISK_PATTERNS: List[Tuple[str, str, str]] = [
-    # (pattern, risk_level, explanation)
-    (
-        r"\bindemnif(?:y|ication|ies)\b.{0,120}unlimited\b",
-        "high",
-        "Unlimited indemnification clause detected. This exposes you to uncapped financial liability."
-    ),
-    (
-        r"\b(?:liquidated damages|penalty clause)\b.{0,80}\b(?:50|60|70|80|90|100)\s*%",
-        "high",
-        "Extremely high liquidated damages percentage. Likely unenforceable under Section 74 of the Indian Contract Act."
-    ),
-    (
-        r"\bautomatic\s+renewal\b.{0,120}(?:without\s+notice|unless\s+cancelled)",
-        "medium",
-        "Auto-renewal clause without prior notice may lock parties into unwanted extensions."
-    ),
-    (
-        r"\bunilateral(?:ly)?\s+(?:amend|modify|change|alter)\b",
-        "high",
-        "One-sided amendment right allows counterparty to change terms without your consent."
-    ),
-    (
-        r"\bwaive(?:r|s)?\s+(?:of\s+)?(?:right|claim|remedy)",
-        "medium",
-        "Broad waiver clause may strip you of statutory remedies available under Indian law."
-    ),
-    (
-        r"\bnon[\-\s]compete\b.{0,120}\b(?:5|6|7|8|9|10)\s+years\b",
-        "high",
-        "Non-compete period exceeding 5 years may be void under Section 27 of the Indian Contract Act."
-    ),
-    (
-        r"\bforce\s+majeure\b.{0,200}(?:does\s+not\s+include|excluding)\b",
-        "medium",
-        "Force majeure clause has narrow exclusions that may leave you exposed during unforeseen events."
-    ),
-    (
-        r"\bexclusive\s+jurisdiction\b.{0,80}\b(?:foreign|international|arbitration abroad)\b",
-        "medium",
-        "Foreign jurisdiction clause may make dispute resolution prohibitively expensive for an Indian party."
-    ),
-    (
-        r"\bno\s+(?:refund|return)\b",
-        "medium",
-        "Blanket no-refund clause may be challenged under the Consumer Protection Act, 2019."
-    ),
-    (
-        r"\blast\s+notice\b.{0,80}conclusive\b",
-        "medium",
-        "Clause making last notice conclusive can prevent you from disputing errors."
-    ),
-    (
-        r"\bgoverning\s+law\b.{0,80}(?:england|singapore|uae|us|usa|united\s+states)",
-        "medium",
-        "Foreign governing law clause. Indian courts may still have jurisdiction but enforcement costs increase."
-    ),
-    (
-        r"\bindemnif(?:y|ication)\b.{0,200}third[\-\s]party",
-        "medium",
-        "Third-party indemnification clause. Ensure scope is clearly defined to avoid open-ended liability."
-    ),
-]
+log = get_logger("nyayasarathi.contracts_service")
 
 
 def _extract_text_from_bytes(filename: str, content_type: str, file_bytes: bytes) -> str:
@@ -122,10 +60,10 @@ def analyze_contract(
     file_bytes: bytes,
 ) -> ContractAnalysisResponse:
     """
-    Read and analyze contract file bytes.
-    Scans for known risk patterns and returns flagged clauses with explanations.
+    Read and dynamically analyze contract file bytes using AI inference.
+    Extracts high-risk clauses, assigns risk ratings, and cites Indian statutory exposure.
     """
-    # 1. Extract text
+    # 1. Extract text from uploaded bytes
     text = _extract_text_from_bytes(filename, content_type, file_bytes)
     if not text.strip():
         return ContractAnalysisResponse(
@@ -138,52 +76,96 @@ def analyze_contract(
             overall_risk_score="Unknown",
         )
 
-    # 2. Scan for risk patterns
-    red_flags: List[RedFlag] = []
-    paragraphs = [p.strip() for p in re.split(r"\n{2,}|\r\n\r\n", text) if len(p.strip()) > 20]
+    # 2. Dynamic AI Contract Risk Analysis
+    system_prompt = (
+        "You are an expert Indian Contract Law Legal Counsel.\n"
+        "Analyze the provided contract text and identify high-risk, one-sided, ambiguous, or legally precarious clauses "
+        "under Indian law (e.g. Indian Contract Act 1872, Specific Relief Act 1963, Arbitration & Conciliation Act 1996, "
+        "Consumer Protection Act 2019, etc.).\n\n"
+        "Return strictly a JSON object with this schema:\n"
+        "{\n"
+        '  "red_flags": [\n'
+        "    {\n"
+        '      "clause_text": "verbatim excerpt or concise snippet of clause from text (max 200 chars)",\n'
+        '      "risk_level": "high" | "medium" | "low",\n'
+        '      "explanation": "concise legal explanation citing relevant Indian law / statutory section (e.g. Section 27, Section 74 Contract Act, unilateral alteration, uncapped liability)",\n'
+        '      "page_ref": 1\n'
+        "    }\n"
+        "  ],\n"
+        '  "overall_risk_score": "Critical" | "High" | "Medium" | "Low-Medium" | "Low"\n'
+        "}"
+    )
 
-    for pattern, risk_level, explanation in RISK_PATTERNS:
-        for para_idx, para in enumerate(paragraphs):
-            match = re.search(pattern, para, re.IGNORECASE | re.DOTALL)
-            if match:
+    sample_text = text[:8000]
+    user_prompt = (
+        f"Contract Document: {filename}\n"
+        f"Document Excerpt:\n{sample_text}\n\n"
+        "Analyze the contract clauses and provide your structured legal risk assessment in JSON."
+    )
+
+    try:
+        data, provider, model, _, _ = _call_llm_json(system_prompt, user_prompt)
+        if isinstance(data, dict) and data.get("red_flags"):
+            parsed_flags = []
+            for rf in data["red_flags"]:
+                if isinstance(rf, dict) and rf.get("clause_text") and rf.get("explanation"):
+                    parsed_flags.append(
+                        RedFlag(
+                            clause_text=str(rf["clause_text"])[:300],
+                            risk_level=str(rf.get("risk_level", "medium")).lower(),
+                            explanation=str(rf["explanation"]),
+                            page_ref=int(rf.get("page_ref", 1)) if str(rf.get("page_ref", "1")).isdigit() else 1,
+                        )
+                    )
+            if parsed_flags:
+                overall_score = str(data.get("overall_risk_score", "Medium"))
+                return ContractAnalysisResponse(
+                    red_flags=parsed_flags,
+                    overall_risk_score=overall_score,
+                )
+    except Exception as e:
+        log.warning(f"AI contract analysis failed, falling back to dynamic heuristic scan: {e}")
+
+    # 3. Dynamic Heuristic Scan Fallback
+    paragraphs = [p.strip() for p in re.split(r"\n{2,}|\r\n\r\n", text) if len(p.strip()) > 20]
+    red_flags: List[RedFlag] = []
+
+    heuristic_rules = [
+        (r"\bindemnif(?:y|ication|ies)\b", "medium", "Indemnification obligation detected. Review scope of indemnity and ensure liability is capped.", 1),
+        (r"\b(?:liquidated damages|penalty)\b", "high", "Liquidated damages/penalty provision. In Indian law under Section 74 Contract Act, only reasonable compensation is enforceable.", 1),
+        (r"\bautomatic\s+renewal\b", "medium", "Automatic renewal clause detected. Ensure adequate prior notice requirement before lock-in.", 1),
+        (r"\bunilateral(?:ly)?\s+(?:amend|modify|change|alter)\b", "high", "Unilateral modification clause permits the counterparty to alter contractual terms without prior written consent.", 1),
+        (r"\bnon[\-\s]compete\b", "high", "Restrictive covenant / non-compete clause. Post-termination restraints of trade may be void under Section 27 of the Indian Contract Act.", 1),
+        (r"\bexclusive\s+jurisdiction\b", "medium", "Jurisdiction clause specifying forum for legal disputes. Verify geographical convenience and dispute cost implications.", 1),
+    ]
+
+    for pattern, risk_level, explanation, page in heuristic_rules:
+        for idx, para in enumerate(paragraphs):
+            if re.search(pattern, para, re.IGNORECASE):
                 clause_snippet = para[:200].strip() + ("..." if len(para) > 200 else "")
-                page_estimate = max(1, para_idx // 3 + 1)
                 red_flags.append(RedFlag(
                     clause_text=clause_snippet,
                     risk_level=risk_level,
                     explanation=explanation,
-                    page_ref=page_estimate,
+                    page_ref=max(1, idx // 3 + 1),
                 ))
-                break  # one flag per pattern type
-
-        if len(red_flags) >= 10:
+                break
+        if len(red_flags) >= 8:
             break
 
-    # 3. Overall risk score
-    high_count = sum(1 for f in red_flags if f.risk_level == "high")
-    medium_count = sum(1 for f in red_flags if f.risk_level == "medium")
-
-    if high_count >= 3:
-        overall = "Critical"
-    elif high_count >= 1:
-        overall = "High"
-    elif medium_count >= 3:
-        overall = "Medium"
-    elif medium_count >= 1:
-        overall = "Low-Medium"
-    else:
-        overall = "Low"
-
-    # 4. If no flags found, confirm clean
     if not red_flags:
         red_flags.append(RedFlag(
-            clause_text="No high-risk clauses detected in the scanned contract text.",
+            clause_text=paragraphs[0][:200] if paragraphs else "General contract text",
             risk_level="low",
-            explanation="Standard contract language. Recommend independent legal review before signing.",
+            explanation="No conspicuous high-risk clauses identified in preliminary scan. Independent advocate review recommended.",
             page_ref=1,
         ))
+
+    high_count = sum(1 for f in red_flags if f.risk_level == "high")
+    overall = "High" if high_count >= 2 else "Medium" if high_count == 1 else "Low"
 
     return ContractAnalysisResponse(
         red_flags=red_flags,
         overall_risk_score=overall,
     )
+

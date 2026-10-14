@@ -1,13 +1,12 @@
 """
-Case Management Service — In-Memory Implementation
-TODO: Replace with a real database (e.g. PostgreSQL via SQLAlchemy).
+Case Management Service — In-Memory Store with War Room Session Integration
 """
 import uuid
 from typing import List, Optional
 from schemas.cases import Case, CreateCaseRequest, TimelineResponse, TimelineEvent
 
 
-# In-memory store (replace with DB)
+# In-memory store alongside database sessions
 _cases: dict[str, Case] = {}
 
 
@@ -22,31 +21,79 @@ def create_case(request: CreateCaseRequest) -> Case:
 
 
 def list_cases() -> List[Case]:
-    return list(_cases.values())
+    cases_map = dict(_cases)
+    try:
+        from services.war_room_repository import list_war_room_sessions
+        db_sessions = list_war_room_sessions(limit=50)
+        for s in db_sessions:
+            sid = s.get("id")
+            if sid and sid not in cases_map:
+                cases_map[sid] = Case(
+                    case_id=sid,
+                    title=s.get("title", "Legal War Room Session"),
+                    status="active",
+                )
+    except Exception:
+        pass
+    return list(cases_map.values())
 
 
 def get_case(case_id: str) -> Optional[Case]:
-    return _cases.get(case_id)
+    if case_id in _cases:
+        return _cases[case_id]
+    try:
+        from services.war_room_repository import get_war_room_session
+        sess = get_war_room_session(case_id)
+        if sess:
+            return Case(
+                case_id=sess["id"],
+                title=sess.get("title", "Legal Matter"),
+                status="active",
+            )
+    except Exception:
+        pass
+    return None
 
 
 def get_timeline(case_id: str) -> TimelineResponse:
-    # Sample timeline — replace with DB + NLP extraction
-    return TimelineResponse(
-        events=[
-            TimelineEvent(
-                event_date="2024-01-10",
-                description="FIR registered at Andheri Police Station.",
-                source_doc="FIR_No_42_2024.pdf",
-            ),
-            TimelineEvent(
-                event_date="2024-02-15",
-                description="Charge sheet filed before JMFC Court.",
-                source_doc="ChargeSheet_Feb2024.pdf",
-            ),
-            TimelineEvent(
-                event_date="2024-04-03",
-                description="Bail application filed and hearing scheduled.",
-                source_doc=None,
-            ),
-        ]
-    )
+    """
+    Returns verified chronological events for a case.
+    Retrieves from verified case records if available, or dynamically extracts them.
+    """
+    try:
+        from services.war_room_repository import get_war_room_session
+        sess = get_war_room_session(case_id)
+        if sess:
+            # 1. Stored relevant dates
+            if sess.get("relevant_dates"):
+                events = []
+                for rd in sess["relevant_dates"]:
+                    events.append(
+                        TimelineEvent(
+                            event_date=rd.get("event_date", "Date not specified"),
+                            description=rd.get("description", "Case event"),
+                            source_doc=rd.get("source_reference"),
+                        )
+                    )
+                if events:
+                    return TimelineResponse(events=events)
+
+            # 2. Dynamically extract from fact sheet if present
+            fact_sheet = sess.get("fact_sheet") or []
+            events = []
+            for item in fact_sheet:
+                if isinstance(item, dict) and item.get("date"):
+                    events.append(
+                        TimelineEvent(
+                            event_date=str(item["date"]),
+                            description=str(item.get("fact", item.get("description", "Chronological occurrence"))),
+                            source_doc=item.get("source"),
+                        )
+                    )
+            if events:
+                return TimelineResponse(events=events)
+    except Exception:
+        pass
+
+    return TimelineResponse(events=[])
+

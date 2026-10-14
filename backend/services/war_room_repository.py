@@ -37,6 +37,7 @@ def init_war_room_tables():
             CREATE TABLE IF NOT EXISTS war_room_sessions (
                 id TEXT PRIMARY KEY,
                 user_id TEXT,
+                case_id TEXT,
                 title TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT '',
                 case_type TEXT NOT NULL DEFAULT 'general',
@@ -46,6 +47,7 @@ def init_war_room_tables():
                 opposing_party TEXT NOT NULL DEFAULT '',
                 relevant_dates_json TEXT NOT NULL DEFAULT '[]',
                 selected_doc_ids_json TEXT NOT NULL DEFAULT '[]',
+                case_overview_json TEXT NOT NULL DEFAULT '{}',
                 fact_sheet_json TEXT NOT NULL DEFAULT '[]',
                 evidence_findings_json TEXT NOT NULL DEFAULT '[]',
                 arguments_json TEXT NOT NULL DEFAULT '[]',
@@ -89,6 +91,14 @@ def init_war_room_tables():
 
             CREATE INDEX IF NOT EXISTS idx_war_room_usage_session ON war_room_usage_log(session_id);
         """)
+        # Safe migrations for existing SQLite databases
+        cursor.execute("PRAGMA table_info(war_room_sessions)")
+        existing_cols = {col["name"] for col in cursor.fetchall()}
+        if "case_id" not in existing_cols:
+            cursor.execute("ALTER TABLE war_room_sessions ADD COLUMN case_id TEXT")
+        if "case_overview_json" not in existing_cols:
+            cursor.execute("ALTER TABLE war_room_sessions ADD COLUMN case_overview_json TEXT NOT NULL DEFAULT '{}'")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_war_room_case ON war_room_sessions(case_id)")
         conn.commit()
     log.info("War Room tables initialized successfully.", extra={"component": "WAR_ROOM_REPO"})
 
@@ -100,14 +110,15 @@ def create_session(session_data: Dict[str, Any]) -> Dict[str, Any]:
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO war_room_sessions (
-                id, user_id, title, description, case_type, jurisdiction, court,
+                id, user_id, case_id, title, description, case_type, jurisdiction, court,
                 user_position, opposing_party, relevant_dates_json, selected_doc_ids_json,
-                fact_sheet_json, evidence_findings_json, arguments_json, opposition_json,
-                risks_json, precedents_json, report_json, version, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                case_overview_json, fact_sheet_json, evidence_findings_json, arguments_json,
+                opposition_json, risks_json, precedents_json, report_json, version, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             session_id,
             session_data.get("user_id"),
+            session_data.get("case_id"),
             session_data.get("title", "Untitled War Room"),
             session_data.get("description", ""),
             session_data.get("case_type", "general"),
@@ -117,6 +128,7 @@ def create_session(session_data: Dict[str, Any]) -> Dict[str, Any]:
             session_data.get("opposing_party", ""),
             json.dumps(session_data.get("relevant_dates", [])),
             json.dumps(session_data.get("selected_doc_ids", [])),
+            json.dumps(session_data.get("case_overview", {})),
             json.dumps(session_data.get("fact_sheet", [])),
             json.dumps(session_data.get("evidence_findings", [])),
             json.dumps(session_data.get("arguments", [])),
@@ -167,10 +179,10 @@ def update_session(session_id: str, updates: Dict[str, Any]) -> Optional[Dict[st
     values = []
 
     for key, val in updates.items():
-        if key in ("title", "description", "case_type", "jurisdiction", "court", "user_position", "opposing_party"):
+        if key in ("title", "description", "case_type", "jurisdiction", "court", "user_position", "opposing_party", "case_id"):
             fields.append(f"{key} = ?")
             values.append(val)
-        elif key in ("relevant_dates", "selected_doc_ids", "fact_sheet", "evidence_findings", "arguments", "opposition", "risks", "precedents", "report"):
+        elif key in ("relevant_dates", "selected_doc_ids", "case_overview", "fact_sheet", "evidence_findings", "arguments", "opposition", "risks", "precedents", "report"):
             fields.append(f"{key}_json = ?")
             values.append(json.dumps(val))
 
@@ -202,9 +214,12 @@ def delete_session(session_id: str) -> bool:
 
 
 def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
+    # Support backward-compatible access if case_id or case_overview_json not present in row
+    keys = row.keys() if hasattr(row, "keys") else []
     return {
         "id": row["id"],
         "user_id": row["user_id"],
+        "case_id": row["case_id"] if "case_id" in keys else None,
         "title": row["title"],
         "description": row["description"],
         "case_type": row["case_type"],
@@ -214,6 +229,7 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         "opposing_party": row["opposing_party"],
         "relevant_dates": json.loads(row["relevant_dates_json"] or "[]"),
         "selected_doc_ids": json.loads(row["selected_doc_ids_json"] or "[]"),
+        "case_overview": json.loads(row["case_overview_json"] or "{}") if "case_overview_json" in keys else {},
         "fact_sheet": json.loads(row["fact_sheet_json"] or "[]"),
         "evidence_findings": json.loads(row["evidence_findings_json"] or "[]"),
         "arguments": json.loads(row["arguments_json"] or "[]"),

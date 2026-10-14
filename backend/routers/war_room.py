@@ -31,6 +31,7 @@ from services.war_room_service import (
     execute_war_room_analysis,
 )
 from services.auth_service import decode_access_token
+from services.cases_service import get_case, get_timeline
 
 router = APIRouter()
 
@@ -55,18 +56,42 @@ def create_war_room_session(
 ):
     """Creates a new War Room case workspace."""
     session_id = str(uuid.uuid4())
+    
+    title = payload.title.strip() if payload.title else ""
+    dates = [d.model_dump() if hasattr(d, "model_dump") else d.dict() for d in (payload.relevant_dates or [])]
+    
+    # If case_id provided, import metadata from Cases module if not set
+    if payload.case_id:
+        existing_case = get_case(payload.case_id)
+        if existing_case:
+            if not title or title == "Untitled War Room":
+                title = existing_case.title
+            if not dates:
+                timeline_data = get_timeline(payload.case_id)
+                if timeline_data and timeline_data.events:
+                    dates = [
+                        {
+                            "event_date": e.event_date,
+                            "description": e.description,
+                            "source_reference": e.source_doc,
+                        }
+                        for e in timeline_data.events
+                    ]
+
     session_data = {
         "id": session_id,
         "user_id": user_id,
-        "title": payload.title.strip() or "Untitled War Room",
+        "case_id": payload.case_id,
+        "title": title or "Untitled War Room",
         "description": (payload.description or "").strip(),
         "case_type": payload.case_type or "general",
         "jurisdiction": payload.jurisdiction or "High Court",
         "court": (payload.court or "").strip(),
         "user_position": payload.user_position or "petitioner",
         "opposing_party": (payload.opposing_party or "").strip(),
-        "relevant_dates": [d.model_dump() if hasattr(d, "model_dump") else d.dict() for d in (payload.relevant_dates or [])],
+        "relevant_dates": dates,
         "selected_doc_ids": payload.selected_doc_ids or [],
+        "case_overview": {},
         "fact_sheet": [],
         "evidence_findings": [],
         "arguments": [],
@@ -77,6 +102,54 @@ def create_war_room_session(
     }
     session = create_session(session_data)
     return session
+
+
+@router.post("/from-case/{case_id}", response_model=WarRoomSessionResponse, status_code=status.HTTP_201_CREATED)
+def create_war_room_from_case(
+    case_id: str,
+    user_id: Optional[str] = Depends(get_optional_user_id),
+):
+    """Convenience endpoint to initialize a War Room workspace directly from an existing case."""
+    existing_case = get_case(case_id)
+    if not existing_case:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found.")
+    
+    timeline_data = get_timeline(case_id)
+    relevant_dates = []
+    if timeline_data and timeline_data.events:
+        relevant_dates = [
+            {
+                "event_date": e.event_date,
+                "description": e.description,
+                "source_reference": e.source_doc,
+            }
+            for e in timeline_data.events
+        ]
+    
+    session_id = str(uuid.uuid4())
+    session_data = {
+        "id": session_id,
+        "user_id": user_id,
+        "case_id": case_id,
+        "title": existing_case.title,
+        "description": f"Imported from Case {case_id} ({existing_case.status})",
+        "case_type": "general",
+        "jurisdiction": "High Court",
+        "court": "",
+        "user_position": "petitioner",
+        "opposing_party": "",
+        "relevant_dates": relevant_dates,
+        "selected_doc_ids": [],
+        "case_overview": {},
+        "fact_sheet": [],
+        "evidence_findings": [],
+        "arguments": [],
+        "opposition": [],
+        "risks": [],
+        "precedents": [],
+        "report": {},
+    }
+    return create_session(session_data)
 
 
 @router.get("", response_model=List[WarRoomSessionResponse])
@@ -130,7 +203,7 @@ def analyze_war_room(
 ):
     """
     Executes a progressive analysis operation:
-    'facts' | 'evidence' | 'arguments' | 'opposition' | 'risks' | 'precedents' | 'report'
+    'facts' | 'evidence' | 'arguments' | 'opposition' | 'risks' | 'report'
     """
     try:
         response = execute_war_room_analysis(
@@ -140,6 +213,9 @@ def analyze_war_room(
             force_refresh=payload.force_refresh,
             custom_instructions=payload.custom_instructions,
             user_id=user_id,
+            query_text=payload.query_text,
+            page=payload.page or 1,
+            page_size=payload.page_size or 5,
         )
         return response
     except ValueError as e:
@@ -178,7 +254,7 @@ def export_strategy_report(session_id: str, format: str = "markdown"):
     next_steps = report.get('practical_next_steps') or report.get('action_plan', 'N/A')
     limitations = report.get('limitations_and_verification_warnings', 'All cited authorities verified against official court records. Procedural stage strictly aligned.')
 
-    md_content = f"""# 🏛️ NyayaSarathi Comprehensive Legal Strategy Report
+    md_content = f"""# 🏛️ NyayaSarathi Legal Strategy Report
 **Case**: {session.get('title')}
 **Forum**: {session.get('court')} ({session.get('jurisdiction')})
 **Procedural Standing**: {session.get('user_position', 'appellant').upper()}

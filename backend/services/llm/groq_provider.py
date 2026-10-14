@@ -49,9 +49,8 @@ class GroqProvider(BaseLLMProvider):
             preferred_model,
             "openai/gpt-oss-120b",
             "openai/gpt-oss-20b",
-            "qwen/qwen3.8-27b",
-            "llama-3.1-8b-instant",
             "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
         ]
         # De-duplicate while preserving order
         unique_models = []

@@ -167,6 +167,16 @@ class StrategyReport(BaseModel):
     generated_at: Optional[str] = None
 
 
+# ── Case Overview ─────────────────────────────────────────────────────────────
+class CaseOverview(BaseModel):
+    case_summary: str = ""
+    important_facts: List[Dict[str, Any]] = []
+    main_legal_issues: List[str] = []
+    relevant_dates: List[Dict[str, Any]] = []
+    unverified_allegations: List[Dict[str, Any]] = []
+    missing_information: List[str] = []
+
+
 # ── Session Management ────────────────────────────────────────────────────────
 class RelevantDate(BaseModel):
     event_date: str
@@ -176,6 +186,7 @@ class RelevantDate(BaseModel):
 
 class WarRoomSessionCreate(BaseModel):
     title: str
+    case_id: Optional[str] = None
     description: Optional[str] = ""
     case_type: Optional[str] = "general"
     jurisdiction: Optional[str] = "High Court"
@@ -188,6 +199,7 @@ class WarRoomSessionCreate(BaseModel):
 
 class WarRoomSessionUpdate(BaseModel):
     title: Optional[str] = None
+    case_id: Optional[str] = None
     description: Optional[str] = None
     case_type: Optional[str] = None
     jurisdiction: Optional[str] = None
@@ -196,6 +208,7 @@ class WarRoomSessionUpdate(BaseModel):
     opposing_party: Optional[str] = None
     relevant_dates: Optional[List[Dict[str, Any]]] = None
     selected_doc_ids: Optional[List[str]] = None
+    case_overview: Optional[Dict[str, Any]] = None
     fact_sheet: Optional[List[Dict[str, Any]]] = None
     evidence_findings: Optional[List[Dict[str, Any]]] = None
     arguments: Optional[List[Dict[str, Any]]] = None
@@ -208,6 +221,7 @@ class WarRoomSessionUpdate(BaseModel):
 class WarRoomSessionResponse(BaseModel):
     id: str
     user_id: Optional[str] = None
+    case_id: Optional[str] = None
     title: str
     description: str
     case_type: str
@@ -217,6 +231,7 @@ class WarRoomSessionResponse(BaseModel):
     opposing_party: str
     relevant_dates: List[Dict[str, Any]] = []
     selected_doc_ids: List[str] = []
+    case_overview: Dict[str, Any] = {}
     fact_sheet: List[Dict[str, Any]] = []
     evidence_findings: List[Dict[str, Any]] = []
     arguments: List[Dict[str, Any]] = []
@@ -233,11 +248,15 @@ class WarRoomSessionResponse(BaseModel):
 class WarRoomAnalyzeRequest(BaseModel):
     operation: str = Field(
         ...,
-        description="One of: 'facts', 'evidence', 'arguments', 'opposition', 'risks', 'precedents', 'report'"
+        description="One of: 'overview', 'facts', 'evidence', 'arguments', 'opposition', 'risks', 'precedents', 'report'"
     )
     target_id: Optional[str] = Field(None, description="Optional target argument_id or section to regenerate")
     force_refresh: bool = False
     custom_instructions: Optional[str] = None
+    query_text: Optional[str] = Field(None, description="Targeted search query for precedent retrieval")
+    page: Optional[int] = Field(1, description="Page number for paginated precedent retrieval")
+    page_size: Optional[int] = Field(5, description="Number of precedent authorities per page")
+
 
 
 class WarRoomAnalyzeResponse(BaseModel):
