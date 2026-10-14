@@ -29,6 +29,9 @@ def get_db_connection() -> sqlite3.Connection:
     return conn
 
 
+from services.supabase_client import get_supabase_client
+
+
 def init_user_table():
     """
     Auto-initialize the `users` table in SQLite if it does not already exist.
@@ -54,12 +57,25 @@ def init_user_table():
 
 
 def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
-    """Retrieve user dictionary by email (case-insensitive)."""
+    """Retrieve user dictionary by email (case-insensitive) from Supabase or local SQLite."""
+    clean_email = email.strip()
+    
+    # Check Supabase first if configured
+    client = get_supabase_client()
+    if client:
+        try:
+            res = client.table("users").select("*").ilike("email", clean_email).limit(1).execute()
+            if res.data:
+                return dict(res.data[0])
+        except Exception as e:
+            log.warning(f"Supabase get_user_by_email failed: {e}. Falling back to SQLite.", extra={"component": "USER_REPO"})
+
+    # Fallback to local SQLite
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT id, email, password_hash, full_name, role, created_at FROM users WHERE LOWER(email) = LOWER(?)",
-            (email.strip(),)
+            (clean_email,)
         )
         row = cursor.fetchone()
         if row:
@@ -68,7 +84,18 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 
 
 def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
-    """Retrieve user dictionary by ID."""
+    """Retrieve user dictionary by ID from Supabase or local SQLite."""
+    # Check Supabase first if configured
+    client = get_supabase_client()
+    if client:
+        try:
+            res = client.table("users").select("*").eq("id", user_id).limit(1).execute()
+            if res.data:
+                return dict(res.data[0])
+        except Exception as e:
+            log.warning(f"Supabase get_user_by_id failed: {e}. Falling back to SQLite.", extra={"component": "USER_REPO"})
+
+    # Fallback to local SQLite
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -82,17 +109,34 @@ def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
 
 
 def create_user(email: str, password_hash: str, full_name: str, role: str = "ADVOCATE") -> Dict[str, Any]:
-    """Create a new user and return the user record (excluding sensitive fields if needed)."""
+    """Create a new user in Supabase and sync to local SQLite."""
     user_id = str(uuid.uuid4())
     created_at = datetime.now(timezone.utc).isoformat()
     clean_email = email.strip().lower()
     clean_name = full_name.strip()
 
+    # Insert into Supabase if configured
+    client = get_supabase_client()
+    if client:
+        try:
+            client.table("users").insert({
+                "id": user_id,
+                "email": clean_email,
+                "password_hash": password_hash,
+                "full_name": clean_name,
+                "role": role,
+                "created_at": created_at,
+            }).execute()
+            log.info(f"User {clean_email} created in Supabase.", extra={"component": "USER_REPO"})
+        except Exception as e:
+            log.warning(f"Supabase create_user failed: {e}. Writing to local SQLite.", extra={"component": "USER_REPO"})
+
+    # Always persist locally for offline resilience
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO users (id, email, password_hash, full_name, role, created_at)
+            INSERT OR REPLACE INTO users (id, email, password_hash, full_name, role, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (user_id, clean_email, password_hash, clean_name, role, created_at)
@@ -106,3 +150,4 @@ def create_user(email: str, password_hash: str, full_name: str, role: str = "ADV
         "role": role,
         "created_at": created_at,
     }
+
