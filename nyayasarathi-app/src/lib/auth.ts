@@ -1,13 +1,32 @@
 /**
- * NyayaSarathi Frontend Authentication Helper
- * Handles JWT token storage, login/signup API calls, and request header generation.
+ * NyayaSarathi Frontend Authentication & Profile Client Helper
+ * Handles JWT token storage, login/signup API calls, profile fetching/editing,
+ * profile completion onboarding, activity history, and request header generation.
  */
+
+import { API_BASE_URL } from './config';
 
 export interface UserProfile {
   id: string;
   email: string;
   full_name: string;
   role: string;
+  avatar_url?: string | null;
+  organization?: string | null;
+  designation?: string | null;
+  profile_completed?: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ActivityHistoryItem {
+  id: string;
+  user_id: string;
+  activity_type: string;
+  title: string;
+  query_text?: string | null;
+  resource_id?: string | null;
+  metadata?: Record<string, any>;
   created_at: string;
 }
 
@@ -16,8 +35,6 @@ export interface AuthResponse {
   token_type: string;
   user: UserProfile;
 }
-
-import { API_BASE_URL } from './config';
 
 const TOKEN_KEY = 'nyayasarathi_jwt_token';
 const USER_KEY = 'nyayasarathi_user_profile';
@@ -86,7 +103,7 @@ export async function signupUser(
   email: string,
   password: string,
   full_name: string,
-  role: string = 'ADVOCATE'
+  role: string = 'USER'
 ): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
     method: 'POST',
@@ -109,7 +126,7 @@ export async function fetchMe(): Promise<UserProfile | null> {
   if (!token) return null;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    const res = await fetch(`${API_BASE_URL}/api/profile/me`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
@@ -125,4 +142,77 @@ export async function fetchMe(): Promise<UserProfile | null> {
   } catch {
     return null;
   }
+}
+
+export async function updateProfile(fields: {
+  full_name?: string;
+  organization?: string;
+  designation?: string;
+  avatar_url?: string | null;
+}): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE_URL}/api/profile/me`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(fields),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || 'Failed to update profile.');
+  }
+
+  setUser(data);
+  return data;
+}
+
+export async function completeProfileOnboarding(fields: {
+  full_name: string;
+  organization: string;
+  designation: string;
+  avatar_url?: string | null;
+}): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE_URL}/api/profile/complete`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(fields),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || 'Failed to complete profile onboarding.');
+  }
+
+  setUser(data);
+  return data;
+}
+
+export async function fetchUserHistory(
+  activityType?: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<ActivityHistoryItem[]> {
+  const params = new URLSearchParams();
+  if (activityType) params.append('activity_type', activityType);
+  params.append('limit', limit.toString());
+  params.append('offset', offset.toString());
+
+  const res = await fetch(`${API_BASE_URL}/api/history?${params.toString()}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to load user history.');
+  }
+
+  const data = await res.json();
+  return data.items || [];
+}
+
+export async function deleteUserActivity(id: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE_URL}/api/history/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  return res.ok;
 }

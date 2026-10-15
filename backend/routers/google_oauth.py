@@ -17,7 +17,13 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
 from logger import get_logger
-from services.user_repository import get_user_by_email, create_user
+from services.user_repository import (
+    get_user_by_email,
+    get_user_by_id,
+    get_user_by_google_sub,
+    create_user,
+    update_user_profile,
+)
 from services.supabase_client import get_supabase_client
 from services.auth_service import create_access_token, hash_password
 
@@ -130,45 +136,37 @@ async def google_auth_callback(code: Optional[str] = None, error: Optional[str] 
     google_name: str = google_profile.get("name", "").strip() or google_email.split("@")[0]
     google_sub: str = google_profile.get("sub", "")  # Google's unique user ID
 
-    if not google_email:
-        log.warning("Google profile missing email.", extra={"component": "GOOGLE_OAUTH"})
-        return RedirectResponse(
-            url=f"{FRONTEND_BASE_URL}/login?error=no_email"
-        )
+    google_avatar: Optional[str] = google_profile.get("picture")
 
-    # 3. Upsert user — find or create
-    existing_user = get_user_by_email(google_email)
+    # 3. Upsert user — match by google_sub first, then verified email
+    user = None
+    if google_sub:
+        user = get_user_by_google_sub(google_sub)
 
-    if existing_user:
-        # User already exists — log them in
-        user = existing_user
+    if not user:
+        user = get_user_by_email(google_email)
+        if user and google_sub and not user.get("google_sub"):
+            # Link existing account with verified Google identity
+            update_user_profile(user["id"], google_sub=google_sub, avatar_url=google_avatar or user.get("avatar_url"))
+            user = get_user_by_id(user["id"])
+
+    if user:
         log.info(f"Google OAuth: existing user signed in: {google_email}", extra={"component": "GOOGLE_OAUTH"})
+        # Update avatar if missing
+        if google_avatar and not user.get("avatar_url"):
+            update_user_profile(user["id"], avatar_url=google_avatar)
+            user = get_user_by_id(user["id"])
     else:
-        # New user — create account with role USER
-        # Use a random strong password (account is Google-managed, password login not applicable)
-        dummy_hash = hash_password(f"google_oauth_{google_sub}_{uuid.uuid4().hex}")
+        # New Google user — created with password_hash=None and safe default role 'USER'
         user = create_user(
             email=google_email,
-            password_hash=dummy_hash,
+            password_hash=None,
             full_name=google_name,
             role="USER",
+            avatar_url=google_avatar,
+            google_sub=google_sub,
+            profile_completed=False,
         )
-
-        # Also upsert into Supabase directly for resiliency
-        supabase = get_supabase_client()
-        if supabase:
-            try:
-                supabase.table("users").upsert({
-                    "id": user["id"],
-                    "email": google_email,
-                    "password_hash": dummy_hash,
-                    "full_name": google_name,
-                    "role": "USER",
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                }).execute()
-            except Exception as e:
-                log.warning(f"Supabase upsert failed for Google user: {e}", extra={"component": "GOOGLE_OAUTH"})
-
         log.info(f"Google OAuth: new user registered: {google_email}", extra={"component": "GOOGLE_OAUTH"})
 
     # 4. Issue NyayaSarathi JWT
@@ -179,11 +177,11 @@ async def google_auth_callback(code: Optional[str] = None, error: Optional[str] 
         full_name=user.get("full_name", google_name),
     )
 
-    # 5. Redirect to frontend with token & user info as URL query params
-    # Frontend will read this and store in localStorage
+    # 5. Redirect to frontend with token & profile data in query params
     import urllib.parse
     user_param = urllib.parse.quote_plus(user.get("full_name", ""))
     role_param = user.get("role", "USER")
+    completed_param = "true" if user.get("profile_completed") else "false"
 
     redirect_url = (
         f"{FRONTEND_BASE_URL}/login"
@@ -192,6 +190,7 @@ async def google_auth_callback(code: Optional[str] = None, error: Optional[str] 
         f"&google_user_name={user_param}"
         f"&google_user_role={role_param}"
         f"&google_user_id={user['id']}"
+        f"&google_profile_completed={completed_param}"
     )
     log.info(f"Google OAuth complete. Redirecting to frontend for: {google_email}", extra={"component": "GOOGLE_OAUTH"})
     return RedirectResponse(url=redirect_url)

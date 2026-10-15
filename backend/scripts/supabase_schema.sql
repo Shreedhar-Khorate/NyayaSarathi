@@ -13,14 +13,21 @@ CREATE EXTENSION IF NOT EXISTS "vector"; -- for pgvector semantic search if desi
 CREATE TABLE IF NOT EXISTS public.users (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT, -- Nullable for Google OAuth users
     full_name TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'USER', -- 'USER', 'JUDGE', 'ADMIN'
-    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+    avatar_url TEXT,
+    organization TEXT,
+    designation TEXT,
+    profile_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    google_sub TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON public.users(google_sub) WHERE google_sub IS NOT NULL;
 
 -- Seed Demo Users (same as LOGINS.md)
 -- Passwords below are pre-hashed for:
@@ -140,7 +147,24 @@ CREATE TABLE IF NOT EXISTS public.ingestion_log (
 );
 
 -- ------------------------------------------------------------------------------
--- 7. Row-Level Security (RLS) Policies
+-- 7. User Activity History Table (Persistent Research & Document Activity)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.user_activity_history (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    user_id TEXT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    activity_type TEXT NOT NULL, -- 'LEGAL_RESEARCH', 'DOCUMENT_UPLOAD', 'OCR_ANALYSIS', 'PREDICTION'
+    title TEXT NOT NULL,
+    query_text TEXT,
+    resource_id TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_user_created ON public.user_activity_history(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_type ON public.user_activity_history(activity_type);
+
+-- ------------------------------------------------------------------------------
+-- 8. Row-Level Security (RLS) Policies
 -- ------------------------------------------------------------------------------
 -- Disable RLS by default on public read tables or configure service_role bypass:
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;

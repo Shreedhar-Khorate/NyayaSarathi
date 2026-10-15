@@ -33,13 +33,16 @@ export function SignupForm() {
   const googleAuth = useGoogleAuth();
   useEffect(() => {
     if (googleAuth.handled && googleAuth.user) {
-      // Google sign-up succeeded — redirect to workspace
-      router.push('/predictor');
+      if (!googleAuth.user.profile_completed) {
+        router.push('/profile/complete');
+      } else {
+        router.push('/predictor');
+      }
     }
     if (googleAuth.error) {
       setErrors({ general: googleAuth.error });
     }
-  }, [googleAuth.handled, googleAuth.error]);
+  }, [googleAuth.handled, googleAuth.error, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

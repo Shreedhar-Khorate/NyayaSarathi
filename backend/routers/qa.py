@@ -62,7 +62,20 @@ def ask_question(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Question must be at least 3 characters long.",
         )
-    return answer_question(request, user_id=user_id)
+    res = answer_question(request, user_id=user_id)
+    if user_id:
+        try:
+            from services.user_repository import create_activity
+            create_activity(
+                user_id=user_id,
+                activity_type="LEGAL_RESEARCH",
+                title=f"Research: {request.question[:60]}...",
+                query_text=request.question,
+                metadata={"doc_ids": request.document_ids or []},
+            )
+        except Exception:
+            pass
+    return res
 
 
 @router.post("/documents/upload", response_model=DocumentMetadata, status_code=status.HTTP_201_CREATED)
@@ -108,7 +121,7 @@ async def upload_document(
             user_id=user_id,
             custom_title=title,
         )
-        return DocumentMetadata(
+        meta = DocumentMetadata(
             id=doc_info["document_id"],
             title=doc_info["title"],
             filename=doc_info["filename"],
@@ -120,6 +133,19 @@ async def upload_document(
             created_at=doc_info["created_at"],
             user_id=user_id,
         )
+        if user_id:
+            try:
+                from services.user_repository import create_activity
+                create_activity(
+                    user_id=user_id,
+                    activity_type="DOCUMENT_UPLOAD",
+                    title=f"Uploaded: {doc_info['title']}",
+                    resource_id=doc_info["document_id"],
+                    metadata={"filename": doc_info["filename"], "file_type": doc_info["file_type"]},
+                )
+            except Exception:
+                pass
+        return meta
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

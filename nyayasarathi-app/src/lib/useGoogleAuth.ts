@@ -58,12 +58,15 @@ export function useGoogleAuth(): GoogleAuthResult {
     const full_name = decodeURIComponent(searchParams.get('google_user_name') || '');
     const role = searchParams.get('google_user_role') || 'USER';
     const id = searchParams.get('google_user_id') || '';
+    const completedParam = searchParams.get('google_profile_completed');
+    const profile_completed = completedParam === 'true';
 
     const userProfile: UserProfile = {
       id,
       email,
       full_name,
       role,
+      profile_completed,
       created_at: new Date().toISOString(),
     };
 
