@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { AuthLayout, SignupForm } from '@/components/auth';
 
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
 export default function SignupPage() {
   return (
     <AuthLayout activeTab="signup">
-      <SignupForm />
+      <Suspense fallback={null}>
+        <SignupForm />
+      </Suspense>
     </AuthLayout>
   );
 }

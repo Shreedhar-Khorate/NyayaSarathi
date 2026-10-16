@@ -5,5 +5,6 @@ export { AuthInput } from './AuthInput';
 export { PasswordInput } from './PasswordInput';
 export { AuthButton } from './AuthButton';
 export { TrustIndicator } from './TrustIndicator';
+export { GoogleAuthButton } from './GoogleAuthButton';
 export { LoginForm } from './LoginForm';
 export { SignupForm } from './SignupForm';
