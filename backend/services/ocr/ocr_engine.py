@@ -3,7 +3,10 @@ PaddleOCR Engine Wrapper for Legal Document Analysis.
 Initializes PaddleOCR with English angle classification and extracts text with bounding boxes.
 """
 
-from paddleocr import PaddleOCR
+try:
+    from paddleocr import PaddleOCR
+except ImportError:
+    PaddleOCR = None
 import numpy as np
 import logging
 import time
@@ -14,6 +17,8 @@ logger = logging.getLogger("nyayasarathi.ocr.engine")
 class OCREngine:
     def __init__(self):
         # Initialize PaddleOCR
+        if PaddleOCR is None:
+            raise RuntimeError("PaddleOCR is not installed. Please install paddleocr and paddlepaddle to use OCR features.")
         # Using stable 2.8.1 arguments
         self.ocr = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False, show_log=False)
 

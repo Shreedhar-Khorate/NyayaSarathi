@@ -26,28 +26,15 @@ class GroundedExplanationEngine:
         """
         Synthesizes a grounded explanation from structured case profile and verified precedents.
         """
-        gemini_api_key = os.environ.get("GEMINI_API_KEY")
-        if not gemini_api_key:
-            env_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
-            if os.path.exists(env_file):
-                with open(env_file, "r", encoding="utf-8") as f:
-                    for line in f:
-                        if line.strip().startswith("GEMINI_API_KEY="):
-                            val = line.strip().split("=", 1)[1].strip().strip("'\"")
-                            if val:
-                                gemini_api_key = val
-                                os.environ["GEMINI_API_KEY"] = val
-                            break
-
-        if gemini_api_key:
-            try:
-                llm_explanation = self._synthesize_with_gemini(
-                    structured_case, probability, confidence, precedents, gemini_api_key
-                )
-                if llm_explanation:
-                    return llm_explanation
-            except Exception:
-                pass  # Fallback to deterministic synthesis
+        # 1. Attempt dynamic synthesis via active multi-provider LLM (Groq / Cerebras / Gemini / Ollama)
+        try:
+            llm_explanation = self._synthesize_with_llm(
+                structured_case, probability, confidence, precedents
+            )
+            if llm_explanation:
+                return llm_explanation
+        except Exception:
+            pass  # Fallback to deterministic synthesis
 
         return self._synthesize_deterministic(
             structured_case, probability, confidence, precedents
@@ -172,18 +159,16 @@ class GroundedExplanationEngine:
             synthesis_engine="NyayaSarathi Grounded Legal Synthesizer",
         )
 
-    def _synthesize_with_gemini(
+    def _synthesize_with_llm(
         self,
         structured_case: StructuredCaseProfile,
         probability: int,
         confidence: str,
         precedents: List[VerifiedPrecedent],
-        api_key: str,
     ) -> Optional[GroundedExplanation]:
-        """Live Gemini LLM grounded legal synthesis using Google Gemini API."""
+        """Dynamic grounded legal synthesis using multi-provider LLM (Groq / Cerebras / Gemini / Ollama)."""
         try:
-            import urllib.request
-            import json
+            from services.war_room_service import _call_llm_json, _ensure_list
 
             user_pos_clean = (
                 structured_case.user_position
@@ -197,68 +182,47 @@ class GroundedExplanationEngine:
                 for p in precedents[:4]
             ])
 
-            prompt = f"""
-You are NyayaSarathi's Senior Legal Intelligence Synthesizer.
-Synthesize an evidence-grounded judicial explanation for an Indian court matter.
+            system_prompt = (
+                "You are NyayaSarathi's Senior Legal Intelligence Synthesizer.\n"
+                "Synthesize an evidence-grounded judicial explanation for an Indian court matter.\n"
+                "CRITICAL RULES:\n"
+                "- Do not invent cases, statutes, or section numbers.\n"
+                f"- Do not change the mathematical probability ({probability}%).\n"
+                "Return strictly a JSON object with keys:\n"
+                "- takeaway: A 2-3 sentence executive summary explaining the judicial likelihood from the perspective of the party.\n"
+                "- supporting_factors: A list of 2-3 specific legal/factual strengths grounded in the statutory provisions or favorable precedents.\n"
+                "- opposing_factors: A list of 2-3 realistic counterarguments, prosecution/defense objections, or evidentiary hurdles.\n"
+                "- limitations: A list of 2-3 standard Indian judicial caveats (e.g. bench discretion, oral arguments, trial evidence)."
+            )
 
+            user_prompt = f"""
 CASE FACTS:
 - Legal Domain: {structured_case.case_type}
 - Procedural Position: {user_pos_clean}
 - Statutory Sections: {', '.join(structured_case.detected_sections) if structured_case.detected_sections else 'General'}
 - Case Narrative: {structured_case.key_facts[0] if structured_case.key_facts else 'Case brief'}
 
-MATHEMATICAL PREDICTION (DO NOT CHANGE OR RE-CALCULATE THIS):
+MATHEMATICAL PREDICTION (DO NOT CHANGE):
 - Calculated Success Probability: {probability}%
 - Model Confidence: {confidence}
 
 VERIFIED HISTORICAL PRECEDENTS:
 {precedents_brief}
 
-TASK:
-Produce a strictly factual, grounded explanation formatted as valid JSON with these exact keys:
-1. "takeaway": A 2-3 sentence executive summary explaining the judicial likelihood from the perspective of the {user_pos_clean}.
-2. "supporting_factors": A list of 2-3 specific legal/factual strengths grounded in the statutory provisions or favorable precedents.
-3. "opposing_factors": A list of 2-3 realistic counterarguments, prosecution/defense objections, or evidentiary hurdles.
-4. "limitations": A list of 2-3 standard Indian judicial caveats (e.g. bench discretion, oral arguments, trial evidence).
-
-CRITICAL RULES:
-- Do not invent cases, statutes, or section numbers.
-- Do not change the probability ({probability}%).
-- Output ONLY pure JSON without markdown backticks.
+Produce the structured grounded explanation in JSON now.
 """
-
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.2,
-                    "responseMimeType": "application/json"
-                }
-            }
-
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"}
-            )
-
-            with urllib.request.urlopen(req, timeout=8) as response:
-                res_body = json.loads(response.read().decode("utf-8"))
-                text_content = res_body["candidates"][0]["content"]["parts"][0]["text"]
-                # Strip markdown fences if present
-                clean_json_str = re.sub(r"^```(?:json)?\s*", "", text_content.strip())
-                clean_json_str = re.sub(r"\s*```$", "", clean_json_str)
-                parsed = json.loads(clean_json_str)
-
+            data, provider, model, _, _ = _call_llm_json(system_prompt, user_prompt)
+            if isinstance(data, dict) and data.get("takeaway"):
                 return GroundedExplanation(
-                    takeaway=parsed.get("takeaway", ""),
-                    supporting_factors=parsed.get("supporting_factors", []),
-                    opposing_factors=parsed.get("opposing_factors", []),
-                    limitations=parsed.get("limitations", []),
-                    synthesis_engine="Google Gemini 1.5 Flash (Grounded RAG)",
+                    takeaway=str(data.get("takeaway", "")),
+                    supporting_factors=_ensure_list(data.get("supporting_factors", [])),
+                    opposing_factors=_ensure_list(data.get("opposing_factors", [])),
+                    limitations=_ensure_list(data.get("limitations", [])),
+                    synthesis_engine=f"{provider.title()} ({model})",
                 )
         except Exception:
-            return None
+            pass
+        return None
 
 
 # Singleton

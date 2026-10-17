@@ -53,10 +53,10 @@ def seed_demo_users():
                 user_id = str(uuid.uuid4())
                 cursor.execute(
                     """
-                    INSERT INTO users (id, email, password_hash, full_name, role, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (user_id, email, pw_hash, acc["full_name"], acc["role"], now),
+                    (user_id, email, pw_hash, acc["full_name"], acc["role"], now, now),
                 )
                 print(f"[SEEDED] {email} (Role: {acc['role']})")
         conn.commit()

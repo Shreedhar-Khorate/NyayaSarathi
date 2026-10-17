@@ -38,19 +38,19 @@ class GroqProvider(BaseLLMProvider):
         system_prompt: str,
         user_prompt: str,
         timeout_seconds: float = 25.0,
+        max_tokens: int = 2500,
     ) -> LLMAnswerResult:
         active_key = self.api_key
         if not active_key:
             raise ValueError("Groq API key is not configured.")
 
-        preferred_model = os.environ.get("GROQ_MODEL", self.model).strip()
+        preferred_model = (self.model or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")).strip()
         candidate_models = [
             preferred_model,
-            "llama-3.1-8b-instant",
-            "llama-3.3-70b-versatile",
             "openai/gpt-oss-120b",
             "openai/gpt-oss-20b",
-            "qwen/qwen3.8-27b",
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
         ]
         # De-duplicate while preserving order
         unique_models = []
@@ -73,7 +73,7 @@ class GroqProvider(BaseLLMProvider):
                             {"role": "user", "content": user_prompt},
                         ],
                         temperature=0.1,
-                        max_tokens=1000,
+                        max_tokens=max_tokens,
                     )
                     raw_content = response.choices[0].message.content or ""
                     return self._parse_response(raw_content, m)
@@ -98,7 +98,7 @@ class GroqProvider(BaseLLMProvider):
                             {"role": "user", "content": user_prompt},
                         ],
                         "temperature": 0.1,
-                        "max_tokens": 1000,
+                        "max_tokens": max_tokens,
                     }
                     with httpx.Client(timeout=timeout_seconds) as client:
                         res = client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)

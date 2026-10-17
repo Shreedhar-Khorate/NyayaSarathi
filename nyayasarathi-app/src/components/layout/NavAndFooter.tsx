@@ -24,6 +24,7 @@ export function Navbar() {
   }, [pathname]);
 
   const NAV_LINKS = [
+    { href: '/war-room',       label: t('nav.warRoom')   },
     { href: '/predictor',      label: t('nav.predictor') },
     { href: '/legal-research', label: t('nav.research')  },
     { href: '/ocr',            label: t('nav.ocr')       },

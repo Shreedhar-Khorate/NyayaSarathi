@@ -24,6 +24,7 @@ from routers import google_oauth, profile
 from services.user_repository import init_user_table
 from services.document_processor import init_document_tables
 from services.ingest import init_database
+from services.war_room_repository import init_war_room_tables
 
 log = get_logger("nyayasarathi")
 
@@ -201,6 +202,7 @@ app.include_router(translate.router, prefix="/api/translate",  tags=["Translatio
 app.include_router(ocr.router,         prefix="/api/ocr",        tags=["Legal Document OCR"])
 app.include_router(ocr.router,         prefix="/api/legal-documents", tags=["Legal Document OCR"], include_in_schema=False)
 app.include_router(ocr.router,         prefix="/api/v1/documents", tags=["Legacy OCR"], include_in_schema=False)
+app.include_router(war_room.router,    prefix="/api/war-room",   tags=["Legal War Room"])
 app.include_router(admin.router,         prefix="/api/admin",           tags=["Admin Dashboard"])
 app.include_router(judge.router,         prefix="/api/judge",           tags=["Judge Dashboard"])
 app.include_router(advocate.router,      prefix="/api/advocate",        tags=["Advocate Portal"])
@@ -234,6 +236,11 @@ async def on_startup():
         init_database()
     except Exception as e:
         log.error(f"Failed to initialize judgment database schema: {e}", extra={"component": "STARTUP"})
+
+    try:
+        init_war_room_tables()
+    except Exception as e:
+        log.error(f"Failed to initialize war room database tables: {e}", extra={"component": "STARTUP"})
 
     log.info(
         f"\033[1m\033[92mNyayaSarathi API\033[0m  "
