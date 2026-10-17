@@ -3,11 +3,14 @@ NyayaSarathi Routers Package.
 """
 
 from . import (
+    admin,
+    advocate,
     analyze,
     auth,
     cases,
     contracts,
     drafts,
+    judge,
     ocr,
     qa,
     search,
@@ -17,11 +20,14 @@ from . import (
 )
 
 __all__ = [
+    "admin",
+    "advocate",
     "analyze",
     "auth",
     "cases",
     "contracts",
     "drafts",
+    "judge",
     "ocr",
     "qa",
     "search",

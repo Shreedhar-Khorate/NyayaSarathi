@@ -102,11 +102,16 @@ async def signup(req: SignupRequest):
         )
 
     hashed_pw = hash_password(req.password)
+    
+    # Mandatory Security: Public registration must unconditionally assign standard USER role.
+    # Administrative or Judicial elevation is restricted to authorized administrator operations.
+    safe_role = "USER"
+
     new_user = create_user(
         email=req.email,
         password_hash=hashed_pw,
         full_name=req.full_name,
-        role=req.role or "ADVOCATE"
+        role=safe_role
     )
 
     token = create_access_token(
@@ -157,7 +162,7 @@ async def login(req: LoginRequest):
         email=user["email"],
         full_name=user["full_name"],
         role=user["role"],
-        created_at=user["created_at"],
+        created_at=str(user.get("created_at", "")),
     )
 
     return AuthTokenResponse(
@@ -175,5 +180,5 @@ async def get_me(current_user: Dict[str, Any] = Depends(get_current_user)):
         email=current_user["email"],
         full_name=current_user["full_name"],
         role=current_user["role"],
-        created_at=current_user["created_at"],
+        created_at=str(current_user.get("created_at", "")),
     )

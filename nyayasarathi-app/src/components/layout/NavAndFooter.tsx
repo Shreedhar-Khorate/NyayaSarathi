@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scale, Menu, X, ArrowUpRight, Globe, ChevronDown } from 'lucide-react';
+import { Scale, Menu, X, ArrowUpRight, Globe, ChevronDown, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { SUPPORTED_LANGUAGES } from '@/i18n/config';
+import { getUser, type UserProfile } from '@/lib/auth';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -15,7 +16,12 @@ export function Navbar() {
   const [scrolled, setScrolled]     = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const { language, setLanguage, currentLanguageObj, t } = useLanguage();
+
+  useEffect(() => {
+    setCurrentUser(getUser());
+  }, [pathname]);
 
   const NAV_LINKS = [
     { href: '/war-room',       label: t('nav.warRoom')   },
@@ -140,24 +146,63 @@ export function Navbar() {
               </AnimatePresence>
             </div>
 
-            <Link
-              href="/login"
-              id="nav-signin-btn"
-              className="font-sans text-sm font-medium text-stone/75 transition-colors duration-200 hover:text-ivory px-2"
-            >
-              {t('nav.signIn')}
-            </Link>
-            <Link
-              href="/signup"
-              id="nav-getstarted-btn"
-              className="btn-oxblood group flex items-center gap-1.5 rounded px-4 py-2 font-sans text-sm font-semibold tracking-wide"
-            >
-              {t('nav.getStarted')}
-              <ArrowUpRight
-                className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                strokeWidth={2}
-              />
-            </Link>
+            {currentUser ? (
+              <div className="flex items-center gap-2">
+                {currentUser.role === 'ADMIN' && (
+                  <Link
+                    href="/admin/dashboard"
+                    id="nav-admin-portal-btn"
+                    className="flex items-center gap-1.5 rounded-xl border border-[#B59A68]/50 bg-[#6E2634]/30 px-3 py-1.5 font-sans text-xs font-bold text-[#B59A68] hover:bg-[#6E2634]/60 hover:border-[#B59A68] transition-all shadow-sm"
+                  >
+                    <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
+                    <span>Admin Portal</span>
+                  </Link>
+                )}
+
+                {currentUser.role === 'JUDGE' && (
+                  <Link
+                    href="/judge/dashboard"
+                    id="nav-judge-portal-btn"
+                    className="flex items-center gap-1.5 rounded-xl border border-[#6E2634] bg-[#6E2634]/30 px-3 py-1.5 font-sans text-xs font-bold text-[#E25C6F] hover:bg-[#6E2634]/60 hover:border-[#E25C6F] transition-all shadow-sm"
+                  >
+                    <Scale className="w-3.5 h-3.5 text-[#E25C6F]" />
+                    <span>Judicial Bench</span>
+                  </Link>
+                )}
+
+                <Link
+                  href="/profile"
+                  id="nav-profile-btn"
+                  className="flex items-center gap-2 rounded-xl border border-[#3B3A33] bg-[#1D211F] px-3.5 py-1.5 font-sans text-xs font-semibold text-[#F4EFE5] hover:border-[#B59A68]/60 transition-colors"
+                >
+                  <div className="w-5 h-5 rounded-full bg-[#B59A68]/20 flex items-center justify-center">
+                    <User className="w-3 h-3 text-[#B59A68]" />
+                  </div>
+                  <span className="max-w-[120px] truncate">{currentUser.full_name || 'Profile'}</span>
+                </Link>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  id="nav-signin-btn"
+                  className="font-sans text-sm font-medium text-stone/75 transition-colors duration-200 hover:text-ivory px-2"
+                >
+                  {t('nav.signIn')}
+                </Link>
+                <Link
+                  href="/signup"
+                  id="nav-getstarted-btn"
+                  className="btn-oxblood group flex items-center gap-1.5 rounded px-4 py-2 font-sans text-sm font-semibold tracking-wide"
+                >
+                  {t('nav.getStarted')}
+                  <ArrowUpRight
+                    className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    strokeWidth={2}
+                  />
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile hamburger & Language Trigger */}
@@ -265,26 +310,66 @@ export function Navbar() {
                 }}
                 className="flex flex-col gap-2.5 pt-5 mt-2 border-t border-[#3B3A33]"
               >
-                <Link
-                  href="/login"
-                  id="nav-mobile-signin"
-                  onClick={() => setMobileOpen(false)}
-                  className="w-full text-center rounded border border-[#3B3A33] px-5 py-2.5 font-sans text-sm font-medium text-ivory/80 transition-colors hover:text-ivory hover:border-[#8A3545]/60"
-                >
-                  {t('nav.signIn')}
-                </Link>
-                <Link
-                  href="/signup"
-                  id="nav-mobile-getstarted"
-                  onClick={() => setMobileOpen(false)}
-                  className="btn-oxblood group flex w-full items-center justify-center gap-2 rounded px-5 py-2.5 font-sans text-sm font-semibold tracking-wide"
-                >
-                  {t('nav.getStarted')}
-                  <ArrowUpRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                    strokeWidth={2}
-                  />
-                </Link>
+                {currentUser ? (
+                  <>
+                    {currentUser.role === 'ADMIN' && (
+                      <Link
+                        href="/admin/dashboard"
+                        id="nav-mobile-admin"
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full flex items-center justify-center gap-2 rounded border border-[#B59A68] bg-[#6E2634]/40 px-5 py-2.5 font-sans text-sm font-bold text-[#B59A68]"
+                      >
+                        <Scale className="w-4 h-4 text-[#B59A68]" />
+                        <span>Admin Operations Portal</span>
+                      </Link>
+                    )}
+
+                    {currentUser.role === 'JUDGE' && (
+                      <Link
+                        href="/judge/dashboard"
+                        id="nav-mobile-judge"
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full flex items-center justify-center gap-2 rounded border border-[#6E2634] bg-[#6E2634]/40 px-5 py-2.5 font-sans text-sm font-bold text-[#E25C6F]"
+                      >
+                        <Scale className="w-4 h-4 text-[#E25C6F]" />
+                        <span>Judicial Bench Dashboard</span>
+                      </Link>
+                    )}
+
+                    <Link
+                      href="/profile"
+                      id="nav-mobile-profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 rounded border border-[#B59A68]/60 bg-[#1D211F] px-5 py-2.5 font-sans text-sm font-semibold text-[#F4EFE5]"
+                    >
+                      <User className="w-4 h-4 text-[#B59A68]" />
+                      <span>My Profile ({currentUser.full_name || 'Member'})</span>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      id="nav-mobile-signin"
+                      onClick={() => setMobileOpen(false)}
+                      className="w-full text-center rounded border border-[#3B3A33] px-5 py-2.5 font-sans text-sm font-medium text-ivory/80 transition-colors hover:text-ivory hover:border-[#8A3545]/60"
+                    >
+                      {t('nav.signIn')}
+                    </Link>
+                    <Link
+                      href="/signup"
+                      id="nav-mobile-getstarted"
+                      onClick={() => setMobileOpen(false)}
+                      className="btn-oxblood group flex w-full items-center justify-center gap-2 rounded px-5 py-2.5 font-sans text-sm font-semibold tracking-wide"
+                    >
+                      {t('nav.getStarted')}
+                      <ArrowUpRight
+                        className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                        strokeWidth={2}
+                      />
+                    </Link>
+                  </>
+                )}
               </motion.div>
             </div>
           </motion.div>

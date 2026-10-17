@@ -19,7 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from routers import analyze, auth, cases, contracts, drafts, ocr, qa, search, statutes, translate, war_room
+from routers import admin, analyze, auth, cases, contracts, drafts, judge, advocate, ocr, qa, search, statutes, translate, war_room
+from routers import google_oauth, profile
 from services.user_repository import init_user_table
 from services.document_processor import init_document_tables
 from services.ingest import init_database
@@ -186,7 +187,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 # ── Routers ───────────────────────────────────────────────────────────────────
-app.include_router(auth.router,      prefix="/api/auth",       tags=["Authentication"])
+app.include_router(auth.router,         prefix="/api/auth",            tags=["Authentication"])
+app.include_router(google_oauth.router, prefix="/api/auth/google",     tags=["Google OAuth"])
+app.include_router(profile.router,      prefix="/api/profile",         tags=["Member Profile"])
+app.include_router(profile.router,      prefix="/api",                 tags=["User History"], include_in_schema=False)
 app.include_router(analyze.router,   prefix="/api/analyze",    tags=["Judgment Predictor"])
 app.include_router(cases.router,     prefix="/api/cases",      tags=["Cases"])
 app.include_router(contracts.router, prefix="/api/contracts",  tags=["Contracts"])
@@ -199,7 +203,9 @@ app.include_router(ocr.router,         prefix="/api/ocr",        tags=["Legal Do
 app.include_router(ocr.router,         prefix="/api/legal-documents", tags=["Legal Document OCR"], include_in_schema=False)
 app.include_router(ocr.router,         prefix="/api/v1/documents", tags=["Legacy OCR"], include_in_schema=False)
 app.include_router(war_room.router,    prefix="/api/war-room",   tags=["Legal War Room"])
-
+app.include_router(admin.router,         prefix="/api/admin",           tags=["Admin Dashboard"])
+app.include_router(judge.router,         prefix="/api/judge",           tags=["Judge Dashboard"])
+app.include_router(advocate.router,      prefix="/api/advocate",        tags=["Advocate Portal"])
 
 # ── Root & Health ─────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
