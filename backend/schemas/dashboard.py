@@ -1,7 +1,7 @@
 """
-Pydantic Schemas for NyayaSarathi Admin and Judge Dashboards.
+Pydantic Schemas for NyayaSarathi Admin, Judge, and Advocate Dashboards.
 Typed request and response models enforcing bounded pagination, role transitions,
-case docketing, and strict access boundaries.
+case docketing, judicial appointment, and strict access boundaries.
 """
 
 from typing import Optional, Dict, Any, List
@@ -186,3 +186,46 @@ class PrecedentListResponse(BaseModel):
     limit: int
     offset: int
     notice: Optional[str] = None
+
+
+# ── Advocate Schemas ──────────────────────────────────────────────────────────
+
+class AdvocateMetricsResponse(BaseModel):
+    """KPI overview metrics for the Advocate portal dashboard."""
+    advocate_name: str
+    organization: str
+    designation: str
+    total_activities: int = Field(..., description="Total platform activities by this advocate")
+    legal_research_count: int = Field(0, description="Legal research queries executed")
+    drafts_created: int = Field(0, description="Legal documents drafted")
+    documents_analysed: int = Field(0, description="Documents uploaded or OCR-analysed")
+    predictions_run: int = Field(0, description="Judgment prediction queries run")
+
+
+class AdvocateActivityItem(BaseModel):
+    """Single advocate activity record scoped to the requesting user."""
+    id: str
+    activity_type: str
+    title: str
+    query_text: Optional[str] = None
+    resource_id: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: str
+
+
+class AdvocateActivityListResponse(BaseModel):
+    """Paginated personal activity list for the requesting advocate."""
+    total: int
+    items: List[AdvocateActivityItem]
+    limit: int
+    offset: int
+
+
+class JudgePromoteRequest(BaseModel):
+    """Judge-only request payload to nominate a USER or ADVOCATE to the JUDGE role."""
+    target_user_id: str = Field(..., description="User ID of the person to be appointed as Judge")
+    reason: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Judicial appointment reason / nomination note",
+    )

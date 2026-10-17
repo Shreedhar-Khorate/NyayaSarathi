@@ -568,3 +568,114 @@ export async function assignCase(data: {
 }
 
 
+// ── Advocate Portal Types & Helpers ──────────────────────────────────────────
+
+export interface AdvocateMetrics {
+  advocate_name: string;
+  organization: string;
+  designation: string;
+  total_activities: number;
+  legal_research_count: number;
+  drafts_created: number;
+  documents_analysed: number;
+  predictions_run: number;
+}
+
+export interface AdvocateActivityItem {
+  id: string;
+  activity_type: string;
+  title: string;
+  query_text?: string | null;
+  resource_id?: string | null;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface AdvocateActivityList {
+  total: number;
+  items: AdvocateActivityItem[];
+  limit: number;
+  offset: number;
+}
+
+export interface EligibleUser {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  organization?: string | null;
+  designation?: string | null;
+  created_at: string;
+}
+
+export interface EligibleUserList {
+  total: number;
+  items: EligibleUser[];
+  limit: number;
+  offset: number;
+}
+
+/** Fetch advocate dashboard KPI metrics (ADVOCATE or ADMIN role required). */
+export async function fetchAdvocateMetrics(): Promise<AdvocateMetrics> {
+  const res = await fetch(`${API_BASE_URL}/api/advocate/dashboard`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || 'Failed to load advocate metrics.');
+  }
+  return data;
+}
+
+/** Fetch paginated advocate activity log scoped to the current user. */
+export async function fetchAdvocateActivity(
+  activityType?: string,
+  limit = 20,
+  offset = 0,
+): Promise<AdvocateActivityList> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (activityType) params.append('activity_type', activityType);
+  const res = await fetch(`${API_BASE_URL}/api/advocate/activity?${params}`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || 'Failed to load advocate activity.');
+  }
+  return data;
+}
+
+/** Fetch USER/ADVOCATE accounts eligible for judicial promotion (JUDGE role required). */
+export async function fetchEligibleForJudgeship(
+  search?: string,
+  limit = 20,
+  offset = 0,
+): Promise<EligibleUserList> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (search) params.append('search', search);
+  const res = await fetch(`${API_BASE_URL}/api/advocate/eligible-for-judgeship?${params}`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || 'Failed to load eligible candidates.');
+  }
+  return data;
+}
+
+/** Judge-only: Promote a USER or ADVOCATE to the JUDGE role with a nomination reason. */
+export async function judgePromoteToJudge(
+  targetUserId: string,
+  reason?: string,
+): Promise<{ success: boolean; audit_id: string; new_role: string; updated_at: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/advocate/promote-to-judge`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ target_user_id: targetUserId, reason }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || 'Promotion failed.');
+  }
+  return data;
+}

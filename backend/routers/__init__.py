@@ -4,6 +4,7 @@ NyayaSarathi Routers Package.
 
 from . import (
     admin,
+    advocate,
     analyze,
     auth,
     cases,
@@ -20,6 +21,7 @@ from . import (
 
 __all__ = [
     "admin",
+    "advocate",
     "analyze",
     "auth",
     "cases",

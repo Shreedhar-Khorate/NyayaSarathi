@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from routers import admin, analyze, auth, cases, contracts, drafts, judge, ocr, qa, search, statutes, translate, war_room
+from routers import admin, analyze, auth, cases, contracts, drafts, judge, advocate, ocr, qa, search, statutes, translate, war_room
 from routers import google_oauth, profile
 from services.user_repository import init_user_table
 from services.document_processor import init_document_tables
@@ -203,6 +203,7 @@ app.include_router(ocr.router,         prefix="/api/legal-documents", tags=["Leg
 app.include_router(ocr.router,         prefix="/api/v1/documents", tags=["Legacy OCR"], include_in_schema=False)
 app.include_router(admin.router,         prefix="/api/admin",           tags=["Admin Dashboard"])
 app.include_router(judge.router,         prefix="/api/judge",           tags=["Judge Dashboard"])
+app.include_router(advocate.router,      prefix="/api/advocate",        tags=["Advocate Portal"])
 
 # ── Root & Health ─────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])

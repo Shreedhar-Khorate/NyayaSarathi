@@ -87,3 +87,5 @@ def require_role(allowed_roles: List[str]) -> Callable:
 require_admin = require_role(["ADMIN"])
 require_judge = require_role(["JUDGE"])
 require_judge_or_admin = require_role(["JUDGE", "ADMIN"])
+require_advocate = require_role(["ADVOCATE"])
+require_advocate_or_admin = require_role(["ADVOCATE", "ADMIN"])

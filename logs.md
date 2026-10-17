@@ -459,9 +459,49 @@ Canonical log tracking the implementation of Judge and Admin Dashboards, role-ba
 **Next steps**
 - Milestone 12: Judge Access Control, Persistent Case Assignments, and Precedent Explorer Decoupling.
 
+---
 
+### 2026-10-17 12:56 — Milestone 13: Advocate Dashboard & Judge-Only Judicial Appointment
 
+**Objective**
+Implement a full Advocate Bar Portal with personal KPI dashboard, activity log, and a
+Judge-only endpoint / UI for promoting eligible users to the JUDGE role.
 
+**Changes**
+
+Backend:
+- `backend/routers/advocate.py` *(new)*: Advocate portal router with 4 endpoints:
+  - `GET /api/advocate/dashboard` — personal KPI metrics (ADVOCATE/ADMIN)
+  - `GET /api/advocate/activity` — paginated personal activity log (ADVOCATE/ADMIN)
+  - `POST /api/advocate/promote-to-judge` — **JUDGE-ONLY** endpoint to nominate a USER/ADVOCATE to JUDGE role with durable audit record
+  - `GET /api/advocate/eligible-for-judgeship` — **JUDGE-ONLY** list of promotable candidates
+- `backend/schemas/dashboard.py`: Added `AdvocateMetricsResponse`, `AdvocateActivityItem`, `AdvocateActivityListResponse`, `JudgePromoteRequest`
+- `backend/services/user_repository.py`: Added `count_user_activities(user_id, activity_type)` DAL function
+- `backend/services/auth_dependencies.py`: Added `require_advocate` and `require_advocate_or_admin` role guards
+- `backend/routers/__init__.py`: Added `advocate` to package exports
+- `backend/main.py`: Registered `/api/advocate` prefix with `tags=["Advocate Portal"]`
+
+Frontend:
+- `nyayasarathi-app/src/app/advocate/dashboard/page.tsx` *(new)*: Advocate portal dashboard with KPI stat cards, quick tool links (Research, OCR, Predictor, Drafts), and navigation
+- `nyayasarathi-app/src/app/advocate/activity/page.tsx` *(new)*: Activity log with type filter chips, paginated session history, color-coded activity icons
+- `nyayasarathi-app/src/app/advocate/nominate/page.tsx` *(new)*: **Judge-only** judicial appointment page — search eligible candidates, enter nomination reason, confirm appointment with expandable card UI
+- `nyayasarathi-app/src/lib/auth.ts`: Added `AdvocateMetrics`, `AdvocateActivityItem`, `EligibleUser` types and `fetchAdvocateMetrics`, `fetchAdvocateActivity`, `fetchEligibleForJudgeship`, `judgePromoteToJudge` helpers
+
+**Authorization Model**
+- Advocate dashboard/activity: `ADVOCATE` or `ADMIN`
+- Promote to judge / list eligible: `JUDGE` only (not ADMIN — separate pathway)
+- Public signup still unconditionally forced to `USER`
+
+**Access Control Rules**
+- Judges can only promote `USER` or `ADVOCATE` → `JUDGE`
+- Judges cannot self-nominate
+- Already-JUDGE, ADMIN accounts cannot be targeted via this endpoint
+- Every promotion creates a durable audit record with the nominating judge as actor
+
+**Verification**
+- `python -c "from routers import advocate; print(len(advocate.router.routes), 'routes')"` → OK: 4 routes
+- All 73 existing backend tests still passing (OK, 309s)
+- Backend uvicorn hot-reloaded cleanly after router registration
 
 
 

@@ -549,6 +549,43 @@ def create_activity(
     return payload
 
 
+def count_user_activities(user_id: str, activity_type: Optional[str] = None) -> int:
+    """Return total count of activity records for a user, optionally filtered by type."""
+    if is_postgres_authoritative():
+        conn = get_pg_connection()
+        try:
+            with conn.cursor() as cur:
+                if activity_type:
+                    cur.execute(
+                        "SELECT COUNT(*) FROM public.user_activity_history WHERE user_id = %s AND activity_type = %s",
+                        (user_id, activity_type),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT COUNT(*) FROM public.user_activity_history WHERE user_id = %s",
+                        (user_id,),
+                    )
+                row = cur.fetchone()
+                return int(row[0]) if row else 0
+        finally:
+            conn.close()
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if activity_type:
+            cursor.execute(
+                "SELECT COUNT(*) FROM user_activity_history WHERE user_id = ? AND activity_type = ?",
+                (user_id, activity_type),
+            )
+        else:
+            cursor.execute(
+                "SELECT COUNT(*) FROM user_activity_history WHERE user_id = ?",
+                (user_id,),
+            )
+        row = cursor.fetchone()
+        return int(row[0]) if row else 0
+
+
 def get_user_activities(
     user_id: str,
     activity_type: Optional[str] = None,
