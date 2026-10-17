@@ -146,16 +146,40 @@ export function Navbar() {
             </div>
 
             {currentUser ? (
-              <Link
-                href="/profile"
-                id="nav-profile-btn"
-                className="flex items-center gap-2 rounded-xl border border-[#3B3A33] bg-[#1D211F] px-3.5 py-1.5 font-sans text-xs font-semibold text-[#F4EFE5] hover:border-[#B59A68]/60 transition-colors"
-              >
-                <div className="w-5 h-5 rounded-full bg-[#B59A68]/20 flex items-center justify-center">
-                  <User className="w-3 h-3 text-[#B59A68]" />
-                </div>
-                <span className="max-w-[120px] truncate">{currentUser.full_name || 'Profile'}</span>
-              </Link>
+              <div className="flex items-center gap-2">
+                {currentUser.role === 'ADMIN' && (
+                  <Link
+                    href="/admin/dashboard"
+                    id="nav-admin-portal-btn"
+                    className="flex items-center gap-1.5 rounded-xl border border-[#B59A68]/50 bg-[#6E2634]/30 px-3 py-1.5 font-sans text-xs font-bold text-[#B59A68] hover:bg-[#6E2634]/60 hover:border-[#B59A68] transition-all shadow-sm"
+                  >
+                    <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
+                    <span>Admin Portal</span>
+                  </Link>
+                )}
+
+                {currentUser.role === 'JUDGE' && (
+                  <Link
+                    href="/judge/dashboard"
+                    id="nav-judge-portal-btn"
+                    className="flex items-center gap-1.5 rounded-xl border border-[#6E2634] bg-[#6E2634]/30 px-3 py-1.5 font-sans text-xs font-bold text-[#E25C6F] hover:bg-[#6E2634]/60 hover:border-[#E25C6F] transition-all shadow-sm"
+                  >
+                    <Scale className="w-3.5 h-3.5 text-[#E25C6F]" />
+                    <span>Judicial Bench</span>
+                  </Link>
+                )}
+
+                <Link
+                  href="/profile"
+                  id="nav-profile-btn"
+                  className="flex items-center gap-2 rounded-xl border border-[#3B3A33] bg-[#1D211F] px-3.5 py-1.5 font-sans text-xs font-semibold text-[#F4EFE5] hover:border-[#B59A68]/60 transition-colors"
+                >
+                  <div className="w-5 h-5 rounded-full bg-[#B59A68]/20 flex items-center justify-center">
+                    <User className="w-3 h-3 text-[#B59A68]" />
+                  </div>
+                  <span className="max-w-[120px] truncate">{currentUser.full_name || 'Profile'}</span>
+                </Link>
+              </div>
             ) : (
               <>
                 <Link
@@ -286,15 +310,41 @@ export function Navbar() {
                 className="flex flex-col gap-2.5 pt-5 mt-2 border-t border-[#3B3A33]"
               >
                 {currentUser ? (
-                  <Link
-                    href="/profile"
-                    id="nav-mobile-profile"
-                    onClick={() => setMobileOpen(false)}
-                    className="w-full flex items-center justify-center gap-2 rounded border border-[#B59A68]/60 bg-[#1D211F] px-5 py-2.5 font-sans text-sm font-semibold text-[#F4EFE5]"
-                  >
-                    <User className="w-4 h-4 text-[#B59A68]" />
-                    <span>My Profile ({currentUser.full_name || 'Member'})</span>
-                  </Link>
+                  <>
+                    {currentUser.role === 'ADMIN' && (
+                      <Link
+                        href="/admin/dashboard"
+                        id="nav-mobile-admin"
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full flex items-center justify-center gap-2 rounded border border-[#B59A68] bg-[#6E2634]/40 px-5 py-2.5 font-sans text-sm font-bold text-[#B59A68]"
+                      >
+                        <Scale className="w-4 h-4 text-[#B59A68]" />
+                        <span>Admin Operations Portal</span>
+                      </Link>
+                    )}
+
+                    {currentUser.role === 'JUDGE' && (
+                      <Link
+                        href="/judge/dashboard"
+                        id="nav-mobile-judge"
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full flex items-center justify-center gap-2 rounded border border-[#6E2634] bg-[#6E2634]/40 px-5 py-2.5 font-sans text-sm font-bold text-[#E25C6F]"
+                      >
+                        <Scale className="w-4 h-4 text-[#E25C6F]" />
+                        <span>Judicial Bench Dashboard</span>
+                      </Link>
+                    )}
+
+                    <Link
+                      href="/profile"
+                      id="nav-mobile-profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 rounded border border-[#B59A68]/60 bg-[#1D211F] px-5 py-2.5 font-sans text-sm font-semibold text-[#F4EFE5]"
+                    >
+                      <User className="w-4 h-4 text-[#B59A68]" />
+                      <span>My Profile ({currentUser.full_name || 'Member'})</span>
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link

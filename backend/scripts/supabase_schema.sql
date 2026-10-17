@@ -29,33 +29,12 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON public.users(google_sub) WHERE google_sub IS NOT NULL;
 
--- Seed Demo Users (same as LOGINS.md)
--- Passwords below are pre-hashed for:
--- User@12345, Judge@12345, Admin@12345
-INSERT INTO public.users (id, email, password_hash, full_name, role)
-VALUES 
-    (
-        'e43b171f-0e42-45e0-b6f2-7104b2a472c3',
-        'user@nyayasarathi.in',
-        '$2b$12$e07X22rI7/H9y/yq9v0k5.m0bWjL9y7g3N6K5D8b2A1Z9X7C5V3B1',
-        'Adv. Rohan Verma',
-        'USER'
-    ),
-    (
-        'a18c992d-71b3-4f9e-9d21-432859c71a82',
-        'judge@nyayasarathi.in',
-        '$2b$12$e07X22rI7/H9y/yq9v0k5.m0bWjL9y7g3N6K5D8b2A1Z9X7C5V3B1',
-        'Hon''ble Justice S. K. Mukherjee',
-        'JUDGE'
-    ),
-    (
-        'f92d441a-3e11-4b2a-8991-621804b82d99',
-        'admin@nyayasarathi.in',
-        '$2b$12$e07X22rI7/H9y/yq9v0k5.m0bWjL9y7g3N6K5D8b2A1Z9X7C5V3B1',
-        'Judicial System Administrator',
-        'ADMIN'
-    )
-ON CONFLICT (email) DO NOTHING;
+-- ------------------------------------------------------------------------------
+-- PRODUCTION SECURITY NOTICE:
+-- Do NOT insert hardcoded default passwords into production migrations.
+-- Initial administrator accounts must be provisioned via the secure bootstrap CLI:
+--   python backend/scripts/bootstrap_admin.py --email admin@domain.gov.in
+-- ------------------------------------------------------------------------------
 
 -- ------------------------------------------------------------------------------
 -- 3. RAG Documents Table (Knowledge Base Documents)
