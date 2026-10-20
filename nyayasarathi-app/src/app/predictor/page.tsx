@@ -19,6 +19,7 @@ import {
 import { useLanguage } from '@/context/LanguageContext';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import { API_BASE_URL } from '@/lib/config';
+import { CaseTypeSelect, ALL_KNOWN_CASE_TYPES } from '@/components/ui/CaseTypeSelect';
 
 interface Precedent {
   case_name: string;
@@ -233,104 +234,14 @@ export default function PredictorPage() {
                 <label htmlFor="case_type" className="block text-xs font-medium text-stone/90 mb-1">
                   {t('predictor.categoryLabel')} <span className="text-[#8A3545]">*</span>
                 </label>
-                <select
-                  id="case_type"
-                  value={
-                    [
-                      'Bail', 'Anticipatory Bail', 'Interim Bail', 'Bail Cancellation', 'Quashing of FIR', 'Discharge Application',
-                      'Criminal Appeal', 'Criminal Revision', 'SLP Criminal', 'PMLA Offense', 'NDPS Act', 'POCSO Act', 'Prevention of Corruption', 'Cheque Bounce NI 138', 'Cyber Crime IT Act', 'UAPA Offense', 'Economic Offenses',
-                      'Civil Original Suit', 'Regular First Appeal', 'Regular Second Appeal', 'Civil Revision', 'Property Partition Title', 'Land Acquisition Appeal', 'RERA Real Estate', 'Injunction Suit', 'Rent Eviction Suit',
-                      'Commercial Suit', 'Breach of Contract', 'Insolvency IBC NCLT', 'DRT Debt Recovery', 'NCLAT Company Law', 'Consumer Protection',
-                      'Writ Habeas Corpus', 'Writ Mandamus', 'Writ Certiorari', 'Public Interest Litigation', 'SLP Civil', 'Contempt of Court',
-                      'Arbitration Interim Sec 9', 'Arbitration Sec 34 Setting Aside', 'Intellectual Property IP', 'Matrimonial Divorce Custody', 'Domestic Violence DV Act', 'Labor Industrial Dispute', 'MACT Motor Accident', 'Taxation GST Income Tax'
-                    ].includes(caseType) ? caseType : 'Custom'
-                  }
-                  onChange={(e) => {
-                    if (e.target.value === 'Custom') {
-                      setCaseType('');
-                    } else {
-                      setCaseType(e.target.value);
-                    }
-                  }}
-                  className="w-full rounded bg-[#151716] border border-[#3B3A33] px-3.5 py-2 text-sm text-[#F4EFE5] focus:outline-none focus:border-[#B59A68] transition-colors"
+                <CaseTypeSelect
+                  value={caseType}
+                  onChange={(val) => setCaseType(val)}
                   required
-                >
-                  <optgroup label="⚖️ Bail & Personal Liberty Matters">
-                    <option value="Bail">Regular Bail (CrPC 437/439 / BNSS 479/483)</option>
-                    <option value="Anticipatory Bail">Anticipatory Bail (CrPC 438 / BNSS 484)</option>
-                    <option value="Interim Bail">Interim Bail / Extension of Bail</option>
-                    <option value="Bail Cancellation">Cancellation of Bail Application</option>
-                    <option value="Quashing of FIR">Quashing of FIR / Proceedings (CrPC 482 / BNSS 528)</option>
-                    <option value="Discharge Application">Discharge Application (CrPC 227/239/245)</option>
-                  </optgroup>
-
-                  <optgroup label="🚨 Criminal Law & Statutory Offenses">
-                    <option value="Criminal Appeal">Criminal Appeal (Against Conviction / Acquittal)</option>
-                    <option value="Criminal Revision">Criminal Revision Petition</option>
-                    <option value="SLP Criminal">Special Leave Petition - Criminal (SLP Crl)</option>
-                    <option value="PMLA Offense">PMLA / Money Laundering (ED / Sec 45)</option>
-                    <option value="NDPS Act">NDPS Act (Narcotic Drugs & Psychotropic Substances / Sec 37)</option>
-                    <option value="POCSO Act">POCSO Act (Protection of Children from Sexual Offences)</option>
-                    <option value="Prevention of Corruption">Prevention of Corruption Act (CBI / Anti-Corruption)</option>
-                    <option value="Cheque Bounce NI 138">Cheque Bounce (NI Act Sec 138)</option>
-                    <option value="Cyber Crime IT Act">Cyber Crime & IT Act Offenses</option>
-                    <option value="UAPA Offense">UAPA / Anti-Terrorism Matters</option>
-                    <option value="Economic Offenses">Economic Offenses & Financial Fraud (IPC 420/406/467)</option>
-                  </optgroup>
-
-                  <optgroup label="🏛️ Civil Law & Property Disputes">
-                    <option value="Civil Original Suit">Civil Original Suit (Recovery / Specific Performance)</option>
-                    <option value="Regular First Appeal">Regular First Appeal (RFA)</option>
-                    <option value="Regular Second Appeal">Regular Second Appeal (RSA)</option>
-                    <option value="Civil Revision">Civil Revision Petition (CRP)</option>
-                    <option value="Property Partition Title">Property Title, Partition & Possession Suit</option>
-                    <option value="Land Acquisition Appeal">Land Acquisition & Compensation Appeal</option>
-                    <option value="RERA Real Estate">RERA & Real Estate Regulatory Appeal</option>
-                    <option value="Injunction Suit">Injunction Suit (Temporary / Permanent)</option>
-                    <option value="Rent Eviction Suit">Rent Control & Eviction Matters</option>
-                  </optgroup>
-
-                  <optgroup label="🏢 Commercial & Financial Law">
-                    <option value="Commercial Suit">Commercial Suit (Commercial Courts Act, 2015)</option>
-                    <option value="Breach of Contract">Breach of Contract & Damages Claim</option>
-                    <option value="Insolvency IBC NCLT">Insolvency & Bankruptcy (IBC / NCLT Appeal)</option>
-                    <option value="DRT Debt Recovery">Debt Recovery & SARFAESI (DRT / DRAT)</option>
-                    <option value="NCLAT Company Law">Corporate & Companies Act (NCLAT Appeal)</option>
-                    <option value="Consumer Protection">Consumer Protection (NCDRC / State Forum)</option>
-                  </optgroup>
-
-                  <optgroup label="📜 Constitutional & Writ Jurisdiction">
-                    <option value="Writ Habeas Corpus">Writ Petition - Habeas Corpus (Art 226 / 32)</option>
-                    <option value="Writ Mandamus">Writ Petition - Mandamus (Art 226 / 32)</option>
-                    <option value="Writ Certiorari">Writ Petition - Certiorari / Prohibition (Art 226 / 32)</option>
-                    <option value="Public Interest Litigation">Public Interest Litigation (PIL)</option>
-                    <option value="SLP Civil">Special Leave Petition - Civil (SLP Civil)</option>
-                    <option value="Contempt of Court">Contempt of Court Petition (Civil / Criminal)</option>
-                  </optgroup>
-
-                  <optgroup label="💼 Special Tribunals, Arbitration & Family">
-                    <option value="Arbitration Interim Sec 9">Arbitration Interim Relief (Sec 9)</option>
-                    <option value="Arbitration Sec 34 Setting Aside">Arbitration Award Challenge (Sec 34)</option>
-                    <option value="Intellectual Property IP">Intellectual Property (Patent / Trademark / Copyright)</option>
-                    <option value="Matrimonial Divorce Custody">Matrimonial, Divorce & Custody</option>
-                    <option value="Domestic Violence DV Act">Domestic Violence Act (DV Act 2005)</option>
-                    <option value="Labor Industrial Dispute">Labor & Industrial Disputes</option>
-                    <option value="MACT Motor Accident">Motor Accident Claims Tribunal (MACT Appeal)</option>
-                    <option value="Taxation GST Income Tax">Taxation Appeals (Income Tax / GST / Customs)</option>
-                    <option value="Custom">Custom / Enter Custom Filing Type...</option>
-                  </optgroup>
-                </select>
+                />
 
                 {/* Custom Category Input field if Custom is chosen or typed */}
-                {!
-                  [
-                    'Bail', 'Anticipatory Bail', 'Interim Bail', 'Bail Cancellation', 'Quashing of FIR', 'Discharge Application',
-                    'Criminal Appeal', 'Criminal Revision', 'SLP Criminal', 'PMLA Offense', 'NDPS Act', 'POCSO Act', 'Prevention of Corruption', 'Cheque Bounce NI 138', 'Cyber Crime IT Act', 'UAPA Offense', 'Economic Offenses',
-                    'Civil Original Suit', 'Regular First Appeal', 'Regular Second Appeal', 'Civil Revision', 'Property Partition Title', 'Land Acquisition Appeal', 'RERA Real Estate', 'Injunction Suit', 'Rent Eviction Suit',
-                    'Commercial Suit', 'Breach of Contract', 'Insolvency IBC NCLT', 'DRT Debt Recovery', 'NCLAT Company Law', 'Consumer Protection',
-                    'Writ Habeas Corpus', 'Writ Mandamus', 'Writ Certiorari', 'Public Interest Litigation', 'SLP Civil', 'Contempt of Court',
-                    'Arbitration Interim Sec 9', 'Arbitration Sec 34 Setting Aside', 'Intellectual Property IP', 'Matrimonial Divorce Custody', 'Domestic Violence DV Act', 'Labor Industrial Dispute', 'MACT Motor Accident', 'Taxation GST Income Tax'
-                  ].includes(caseType) && (
+                {(!caseType || !ALL_KNOWN_CASE_TYPES.includes(caseType)) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
