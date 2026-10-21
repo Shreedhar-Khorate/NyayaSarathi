@@ -659,3 +659,198 @@ Frontend:
 - BIS Tender Simulation: 3 High findings (15 pts) + 4 Medium findings (12 pts) = 27 points computed deterministically.
 - All non-contract safeguards preserved.
 
+---
+
+### 2026-10-21 18:30 — Milestone 16: Indian Legal News Integration (GNews API & Official Sources)
+
+**Completed**
+1. **Inspected Architecture and Existing State**:
+   - Reviewed `logs.md`, backend router conventions, and frontend theme and layout tokens.
+   - Verified that no prior legal news page existed; designed an integrated, production-conscious legal news feature.
+   - Preserved all existing user data, branches, and database models.
+
+2. **Backend Schemas & Pydantic Models (`backend/schemas/news.py`)**:
+   - `NewsArticle`: Normalised model containing `title`, `description`, `url`, `source_name`, `published_at`, `image_url`, and `category`.
+   - `OfficialSource`: Schema for curated links to primary Indian judiciary and legal portals (`name`, `url`, `description`).
+   - `NewsResponse`: Complete payload including `category`, `total`, `articles`, `official_sources`, `disclaimer`, `cached`, and `fetched_at`.
+
+3. **Backend Service Layer (`backend/services/news_service.py`)**:
+   - Integration with GNews API via `GNEWS_API_KEY` using Python stdlib `urllib` (no additional external dependencies required).
+   - Predefined category-to-query mapping:
+     - `all`: Indian Supreme Court, High Court, and general legal developments.
+     - `supreme-court`: Supreme Court judgments, rulings, and constitutional bench updates.
+     - `high-courts`: High Court orders and rulings across states.
+     - `legal`: Legal reforms, statutory amendments, and Bar Council developments.
+     - `government`: Legislation, gazette notifications, and Ministry of Law & Justice circulars.
+   - Built-in In-Memory TTL Cache (5-minute TTL) with MD5 hashed category:limit keys to prevent API quota depletion.
+   - Canonical URL deduplication to eliminate repeated stories across syndicate publishers.
+   - Curated list of verified official sources (Supreme Court of India, eCourts Judgments, India Kanoon, Ministry of Law & Justice, Legislative Dept, NALSA).
+   - Strict error isolation: GNews errors or missing API keys fail gracefully returning an empty list without leaking stack traces or raw keys.
+
+4. **FastAPI Router (`backend/routers/news.py`)**:
+   - `GET /api/news`: Accepts `category` (default `all`) and `limit` (1-20, default 10) query parameters.
+   - `GET /api/news/categories`: Returns list of valid category slugs.
+   - Mounted at `/api/news` in `backend/main.py` and exported in `backend/routers/__init__.py`.
+   - Documented `GNEWS_API_KEY` in `backend/.env.example`.
+
+5. **Unit & Regression Tests (`backend/tests/test_news.py`)**:
+   - 20 unit tests covering Pydantic schemas, category validation, normalization, URL deduplication, TTL cache hits/misses/expiration, error handling, and limits.
+   - All tests mocked to prevent consuming external API quotas during test runs.
+   - Result: 20 passed in 5.80s.
+
+6. **Frontend Integration (`nyayasarathi-app`)**:
+   - Extended `src/lib/auth.ts` with `NewsArticle`, `OfficialSource`, `NewsResponse` interfaces and `fetchLegalNews()` and `fetchNewsCategories()` helpers.
+   - Added `/news` navigation item in `src/components/layout/NavAndFooter.tsx`.
+   - Created dedicated, responsive page `src/app/news/page.tsx`:
+     - Hero section with live status badge and refresh action button.
+     - Category pills (`All Indian Law`, `Supreme Court`, `High Courts`, `Legal Reforms`, `Legislation & Govt`).
+     - Keyword search filter for instant filtering by title, snippet, or source.
+     - High-polish article cards with relative timestamps ("2 hours ago"), publisher badges, external links, and copy/share actions.
+     - Official Court Portals sidebar widget clearly differentiating media coverage from primary court databases.
+     - Regulatory & Evidentiary disclaimer explaining the boundary between journalism and verified court records.
+     - Shimmer loading skeletons and retryable error states.
+
+**Files Created / Modified**
+- `backend/schemas/news.py` (New): News Pydantic response models.
+- `backend/services/news_service.py` (New): GNews client, in-memory TTL cache, category mapping, deduplication.
+- `backend/routers/news.py` (New): FastAPI news endpoints.
+- `backend/routers/__init__.py`: Registered news router.
+- `backend/main.py`: Mounted `/api/news` route and updated startup route logging.
+- `backend/.env.example`: Added `GNEWS_API_KEY` configuration.
+- `backend/tests/test_news.py` (New): 20 unit tests for legal news service and schemas.
+- `nyayasarathi-app/src/lib/auth.ts`: Added news TypeScript interfaces and API helpers.
+- `nyayasarathi-app/src/components/layout/NavAndFooter.tsx`: Added `/news` nav link.
+- `nyayasarathi-app/src/app/news/page.tsx` (New): Neo-classical Indian Legal News page.
+- `logs.md`: Recorded Milestone 16.
+
+**Verification Results**
+- Backend: 20 unit tests passed in 5.80s (`python -m pytest backend/tests/test_news.py`).
+- Frontend: Next.js production build (`npm run build`).
+
+---
+
+### 2026-10-21 18:45 — Milestone 17: Legal News Lightweight Multi-Stage Deduplication & Quality Selection
+
+**Completed**
+1. **Inspected Architecture and Problem Space**:
+   - Analyzed cross-publisher syndication patterns (e.g., ANI, PTI, Devdiscourse, LatestLY re-publishing identical wire articles).
+   - Inspected tracking parameters (`utm_*`, `fbclid`, `gclid`, etc.) and URL fragmentation creating duplicate entries.
+   - Identified the need for pre-limit deduplication so duplicates do not prematurely exhaust the requested article quota.
+
+2. **Backend Multi-Stage Deduplication (`backend/services/news_service.py`)**:
+   - **Canonical URL Normalization (`canonicalize_url`)**:
+     - Strips tracking query parameters (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `fbclid`, `gclid`, `ref`, `source`, `cmpid`, etc.).
+     - Removes URL fragments (`#...`) and redundant trailing slashes while preserving root path `/`.
+     - Preserves and deterministically sorts meaningful query parameters.
+   - **Exact Title Normalization (`normalize_title`)**:
+     - Strips trailing syndication/publisher suffixes (e.g. ` - ANI`, ` | Devdiscourse`, ` - The Hindu`, ` - Bar and Bench`).
+     - Normalizes case, standardizes common legal acronyms (`sc` -> `supreme court`, `hc` -> `high court`), and strips insignificant punctuation.
+   - **Near-Duplicate Detection (`are_near_duplicate_titles`)**:
+     - Lightweight token Jaccard similarity on content words (excluding stopwords) with threshold `>= 0.78`.
+     - Strict guardrails: blocks merging when numeric tokens differ (e.g., distinct statutory sections `377` vs `124A`, or hearing dates `July 8` vs `July 15`).
+     - Opposing judicial verbs safeguard: prevents merging conflicting judicial outcomes (`grants bail` vs `denies bail`, `acquits` vs `convicts`, `upholds` vs `strikes down`).
+     - Minimum content token constraint (`< 4` tokens must match exactly) to prevent over-eager matching of short generic headlines.
+   - **Cross-Publisher Quality Scoring (`calculate_article_quality`)**:
+     - Evaluates candidates in each duplicate cluster:
+       - Prefers valid HTTPS URLs (+20 pts).
+       - Prefers comprehensive, informative descriptions (+15 to +30 pts) over empty stubs.
+       - Prefers established, reputable legal/news publishers (+15 to +20 pts).
+       - Prefers verified ISO publication timestamps (+10 pts).
+       - Uses normalized publication recency as a tie-breaker (not the sole criterion).
+     - Retains the original publisher name and canonical article URL for the selected representative.
+   - **Pre-Limit Candidate Pooling**:
+     - GNews fetch requests an expanded candidate pool (`fetch_pool = min(max(limit + 5, limit), MAX_ARTICLES_LIMIT)`).
+     - Deduplication runs across the entire candidate pool before slicing `[:limit]`, ensuring duplicate stories never artificially reduce the count of unique returned articles.
+
+3. **Frontend Safeguards (`nyayasarathi-app/src/app/news/page.tsx`)**:
+   - Added duplicate safeguard inside `filteredArticles` to prevent duplicate key or render collisions in client state merges.
+   - Preserved backend as the primary single source of truth for deduplication.
+
+4. **Comprehensive Test Suite (`backend/tests/test_news.py`)**:
+   - Added 7 dedicated deduplication tests covering:
+     - `test_canonical_url_and_tracking_parameter_variations`: Unification across tracking parameters and fragments.
+     - `test_identical_headlines_from_ani_and_devdiscourse`: Syndicated wire headlines across publishers merged to single representative.
+     - `test_minor_headline_differences_same_story`: Near-duplicate variations referring to the same case/story.
+     - `test_similar_headlines_distinct_court_cases`: Ensures distinct matters (Kejriwal vs Sisodia bail, July 8 vs July 15 hearings, Section 377 vs Section 124A, CAA vs Electoral bonds) remain strictly separate.
+     - `test_missing_descriptions_dates_or_publisher`: Quality scoring prefers complete articles over metadata-deficient stubs.
+     - `test_stable_selection_of_best_representative`: Deterministic representative selection regardless of input list order.
+     - `test_deduplication_before_result_limit`: Confirms duplicate removal prior to result limiting preserves requested quota.
+
+**Files Modified**
+- `backend/services/news_service.py`: Implemented canonicalization, title normalization, token similarity, quality scoring, pre-limit deduplication, and expanded legal/court acronym mappings.
+- `backend/tests/test_news.py`: Added `TestDeduplication` test class with 8 test cases, including cross-section verification for Supreme Court, High Courts, Legal Reforms, Government, and All Law (suite expanded to 28 tests).
+- `nyayasarathi-app/src/app/news/page.tsx`: Added frontend duplicate safeguard.
+- `logs.md`: Recorded Milestone 17.
+
+**Verification Results**
+- News Test Suite: `python -m pytest backend/tests/test_news.py` → **28/28 passed with 5 subtests passed in 5.40s (Exit Code 0)**.
+- Regression Test Suite: `python -m pytest backend/tests/test_news.py backend/tests/test_contracts.py` → **70/70 passed in 26.1s (Exit Code 0)**.
+- Frontend Production Build: `npm run build` in `nyayasarathi-app` → **Compiled successfully in 7.1s with 0 TypeScript/React errors (Exit Code 0)**.
+
+---
+
+### Milestone 18: Legal News Story-Level Grouping & Multi-Publisher Coverage Clustering
+**Date**: October 21, 2026
+**Status**: Completed
+
+#### Objective
+Audit and implement a lightweight, deterministic legal news story-level grouping and multi-publisher coverage clustering architecture in NyayaSarathi. Substantially duplicate reports about the exact same development are merged, while distinct legal reports and procedural updates about the same underlying matter are unified under a single Story Card without losing access to original publisher sources or collapsing distinct court cases.
+
+#### Architecture & Implementation Details
+
+1. **Clean Separation of Deduplication vs. Story Grouping**:
+   - **Exact / Near-Duplicate Deduplication (`deduplicate_articles`)**: Evaluates whether two reports represent the *same development* (wire syndications, re-published copy, canonical URL tracking variations). Applied first to deduplicate redundant coverage while selecting the highest-quality representative article.
+   - **Story-Level Grouping (`group_articles_into_stories`)**: Evaluates whether reports pertain to the *same legal matter* over time or across different angles (e.g., initial petition, hearing scheduling, subsequent notices, legal explanations). Operates deterministically without external AI APIs, LLM calls, or new database tables.
+
+2. **Deterministic Matter Signatures & Association Rules (`backend/services/news_service.py`)**:
+   - **Matter Signature Extraction (`extract_matter_signature`)**:
+     - Extracts recognized court venues (e.g., `bombay_high_court`, `supreme_court`, `karnataka_high_court`).
+     - Extracts named entities and individuals (e.g., `imran_khan`, `arvind_kejriwal`, `yes_bank`).
+     - Extracts distinctive legal matter anchors (e.g., `leave_india_order`, `frro_notice`, `oci_status`, `at1_bonds`, `fatal_crash`, `electoral_bonds`).
+     - Explicitly filters out non-distinctive generic legal terms (`court`, `case`, `plea`, `petition`, `order`, `bench`, `judge`, `hearing`, `notice`) from matter anchoring.
+   - **Matter Association Guardrails (`belong_to_same_matter`)**:
+     - Requires intersecting named entities and shared distinctive matter anchors, OR substantial matter token overlap.
+     - **Strict Disambiguation Guardrails**:
+       - Articles sharing a court venue (e.g., Supreme Court) but differing in subject matter are **never** grouped together.
+       - Articles mentioning the same person (e.g., Arvind Kejriwal) across separate legal matters (e.g., defamation trial vs. excise policy bail) are prevented from grouping by conflicting anchor detection.
+       - Articles mentioning distinct statutory sections or case numbers (e.g., Section 377 vs. Section 124A) are strictly kept separate.
+       - If available evidence is insufficient to confidently establish the same legal matter, reports remain separate.
+   - **Stable Story Identifiers (`generate_story_id`)**:
+     - Generated deterministically via SHA256 hash of sorted key entities and matter anchors (e.g., `story_bombay_high_court_frro_notice_imran_khan_...`).
+     - Completely independent of array indices, response ordering, or execution timestamps.
+
+3. **Schema & API Backward Compatibility (`backend/schemas/news.py`)**:
+   - Extended `NewsArticle` schema with optional `story_id: Optional[str]`.
+   - Introduced `NewsStoryGroup` schema:
+     - `story_id`: Stable deterministic identifier.
+     - `title`: Lead headline from the best representative article.
+     - `category`: Legal category.
+     - `primary_article`: Top-quality lead article.
+     - `related_articles`: Distinct procedural updates and explanatory articles from other publishers.
+     - `coverage_count`: Total count of related publisher reports.
+     - `key_entities`: Discovered courts, parties, and legal matter tags.
+     - `last_updated`: ISO timestamp of the most recent report in the story.
+   - Updated `NewsResponse` schema:
+     - Includes `stories: List[NewsStoryGroup] = []` for grouped consumption.
+     - Preserves `articles: List[NewsArticle]` populated with lead articles for 100% backward compatibility with existing API consumers.
+     - Results limit is applied at the story-group level so the requested quota of distinct legal stories is delivered.
+
+4. **Frontend Story Cards & Expandable Coverage UI (`nyayasarathi-app`)**:
+   - Updated `src/lib/auth.ts` with `NewsStoryGroup` interface and `story_id` field.
+   - Enhanced `src/app/news/page.tsx`:
+     - Renders unified Story Cards with matter entity badges, coverage count pills (`X Reports`), lead headline, description, publication date, and source attribution.
+     - Added interactive, expandable "Related Coverage & Updates" drawer displaying distinct publisher reports, direct links, and timestamps.
+     - Maintained graceful fallback rendering if stories are absent.
+     - Maintained client-side duplicate key safeguards.
+
+5. **Exhaustive Unit & Scenario Testing (`backend/tests/test_news.py`)**:
+   - Added `TestStoryGrouping` class validating:
+     - **Scenario A (Imran Khan Leave India Order)**: 6 articles across Times of India, India Today, News18, NewsX, ThePrint, and The Tribune grouped into 1 cohesive story card; duplicate FRRO notices merged while the October 26 hearing date and OCI explanatory coverage are preserved as related updates with full publisher attribution.
+     - **Scenario B (Unrelated Cases)**: Karnataka High Court fatal underage driving case and Supreme Court Yes Bank AT-1 bonds ruling are kept strictly separate from each other and from the Imran Khan story.
+     - **Scenario C (Similar Courts & Same-Person Distinct Matters)**: Two distinct Supreme Court PILs (environmental vs. electoral) and two separate cases involving the same public figure (defamation vs. liquor policy) remain distinct without false-positive grouping.
+     - **Story Limit Enforcement**: Verified that `limit` correctly caps unique story groups rather than raw unbundled articles.
+
+#### Verification Results
+- **News Test Suite**: `python -m pytest backend/tests/test_news.py -v` → **32/32 tests passed (5 subtests passed, 0 failures)**.
+- **Full Backend Test Suite**: `python -m pytest backend/tests/test_contracts.py backend/tests/test_news.py -v` → **74/74 tests passed (0 failures)**.
+- **Frontend TypeScript Validation**: `npx tsc --noEmit` in `nyayasarathi-app` → **0 errors (Exit Code 0)**.

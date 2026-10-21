@@ -775,3 +775,88 @@ export async function analyzeContract(file: File): Promise<ContractAnalysisResul
   return data;
 }
 
+// ── Indian Legal News API Client ─────────────────────────────────────────────
+
+export interface NewsArticle {
+  title: string;
+  description?: string | null;
+  url: string;
+  source_name: string;
+  published_at?: string | null;
+  image_url?: string | null;
+  category: string;
+  story_id?: string | null;
+}
+
+export interface NewsStoryGroup {
+  story_id: string;
+  title: string;
+  category: string;
+  primary_article: NewsArticle;
+  related_articles: NewsArticle[];
+  coverage_count: number;
+  key_entities: string[];
+  last_updated?: string | null;
+}
+
+export interface OfficialSource {
+  name: string;
+  url: string;
+  description: string;
+}
+
+export interface NewsResponse {
+  category: string;
+  total: number;
+  articles: NewsArticle[];
+  stories?: NewsStoryGroup[];
+  official_sources: OfficialSource[];
+  disclaimer: string;
+  cached: boolean;
+  fetched_at?: string | null;
+}
+
+/**
+ * Fetch Indian legal news and official court sources.
+ * @param category - 'all' | 'supreme-court' | 'high-courts' | 'legal' | 'government'
+ * @param limit - 1 to 20
+ */
+export async function fetchLegalNews(
+  category: string = 'all',
+  limit: number = 10
+): Promise<NewsResponse> {
+  const params = new URLSearchParams({
+    category: category.toLowerCase().trim(),
+    limit: String(limit),
+  });
+
+  const res = await fetch(`${API_BASE_URL}/api/news?${params.toString()}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || 'Failed to fetch legal news.');
+  }
+  return data;
+}
+
+/**
+ * Fetch available news categories from backend.
+ */
+export async function fetchNewsCategories(): Promise<string[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/news/categories`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) return ['all', 'supreme-court', 'high-courts', 'legal', 'government'];
+    const data = await res.json();
+    return data.categories || ['all', 'supreme-court', 'high-courts', 'legal', 'government'];
+  } catch {
+    return ['all', 'supreme-court', 'high-courts', 'legal', 'government'];
+  }
+}
+

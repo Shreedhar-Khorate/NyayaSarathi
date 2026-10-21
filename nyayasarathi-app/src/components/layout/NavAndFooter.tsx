@@ -29,6 +29,7 @@ export function Navbar() {
     { href: '/contracts',      label: t('nav.contracts') || 'Contract Analyzer' },
     { href: '/legal-research', label: t('nav.research')  },
     { href: '/ocr',            label: t('nav.ocr')       },
+    { href: '/news',           label: 'Legal News'       },
     { href: '/#pipeline',       label: t('nav.howItWorks') },
     { href: '/#capabilities',   label: t('nav.capabilities') },
     { href: '/#workspace',      label: t('nav.workspace')    },

@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from routers import admin, analyze, auth, cases, contracts, drafts, judge, advocate, ocr, qa, search, statutes, translate, war_room
+from routers import admin, analyze, auth, cases, contracts, drafts, judge, advocate, news, ocr, qa, search, statutes, translate, war_room
 from routers import google_oauth, profile
 from services.user_repository import init_user_table
 from services.document_processor import init_document_tables
@@ -206,6 +206,7 @@ app.include_router(war_room.router,    prefix="/api/war-room",   tags=["Legal Wa
 app.include_router(admin.router,         prefix="/api/admin",           tags=["Admin Dashboard"])
 app.include_router(judge.router,         prefix="/api/judge",           tags=["Judge Dashboard"])
 app.include_router(advocate.router,      prefix="/api/advocate",        tags=["Advocate Portal"])
+app.include_router(news.router,          prefix="/api/news",            tags=["Legal News"])
 
 # ── Root & Health ─────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
@@ -251,7 +252,7 @@ async def on_startup():
     )
     log.info(
         "Routes: /api/auth  /api/analyze  /api/cases  /api/contracts  /api/drafts  "
-        "/api/ocr  /api/qa  /api/search  /api/statutes  /api/translate  /api/war-room",
+        "/api/news  /api/ocr  /api/qa  /api/search  /api/statutes  /api/translate  /api/war-room",
         extra={"component": "STARTUP"},
     )
 
