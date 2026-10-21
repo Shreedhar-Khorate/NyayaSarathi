@@ -34,59 +34,7 @@ log = get_logger("nyayasarathi.auth_router")
 
 router = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
-
-
-# ── Dependency: Get Current Authenticated User ──────────────────────────────
-async def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme),
-    authorization: Optional[str] = Header(None)
-) -> Dict[str, Any]:
-    """
-    FastAPI dependency to extract and verify JWT from Bearer header or OAuth2 scheme.
-    """
-    raw_token = token
-    if not raw_token and authorization and authorization.startswith("Bearer "):
-        raw_token = authorization.split(" ")[1]
-
-    if not raw_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication token is missing.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    try:
-        payload = decode_access_token(raw_token)
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token payload.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        user = get_user_by_id(user_id)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User account no longer exists.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return user
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session token has expired. Please log in again.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except jwt.PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+from services.auth_dependencies import get_current_user
 
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
@@ -146,6 +94,13 @@ async def login(req: LoginRequest):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email address or password.",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_role = user.get("role", "USER").upper()
+    if user_role in ("JUDGE", "DEACTIVATED_JUDGE"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The JUDGE role has been deprecated and this account is deactivated.",
         )
 
     token = create_access_token(

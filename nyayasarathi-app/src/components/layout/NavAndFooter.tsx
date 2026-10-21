@@ -161,14 +161,14 @@ export function Navbar() {
                   </Link>
                 )}
 
-                {currentUser.role === 'JUDGE' && (
+                {currentUser.role === 'ADVOCATE' && (
                   <Link
-                    href="/judge/dashboard"
-                    id="nav-judge-portal-btn"
-                    className="flex items-center gap-1.5 rounded-xl border border-[#6E2634] bg-[#6E2634]/30 px-3 py-1.5 font-sans text-xs font-bold text-[#E25C6F] hover:bg-[#6E2634]/60 hover:border-[#E25C6F] transition-all shadow-sm"
+                    href="/advocate/dashboard"
+                    id="nav-advocate-portal-btn"
+                    className="flex items-center gap-1.5 rounded-xl border border-[#B59A68]/50 bg-[#242925] px-3 py-1.5 font-sans text-xs font-bold text-[#B59A68] hover:bg-[#2e3530] hover:border-[#B59A68] transition-all shadow-sm"
                   >
-                    <Scale className="w-3.5 h-3.5 text-[#E25C6F]" />
-                    <span>Judicial Bench</span>
+                    <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
+                    <span>Advocate Portal</span>
                   </Link>
                 )}
 
@@ -326,15 +326,15 @@ export function Navbar() {
                       </Link>
                     )}
 
-                    {currentUser.role === 'JUDGE' && (
+                    {currentUser.role === 'ADVOCATE' && (
                       <Link
-                        href="/judge/dashboard"
-                        id="nav-mobile-judge"
+                        href="/advocate/dashboard"
+                        id="nav-mobile-advocate"
                         onClick={() => setMobileOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 rounded border border-[#6E2634] bg-[#6E2634]/40 px-5 py-2.5 font-sans text-sm font-bold text-[#E25C6F]"
+                        className="w-full flex items-center justify-center gap-2 rounded border border-[#B59A68]/60 bg-[#242925] px-5 py-2.5 font-sans text-sm font-bold text-[#B59A68]"
                       >
-                        <Scale className="w-4 h-4 text-[#E25C6F]" />
-                        <span>Judicial Bench Dashboard</span>
+                        <Scale className="w-4 h-4 text-[#B59A68]" />
+                        <span>Advocate Portal</span>
                       </Link>
                     )}
 

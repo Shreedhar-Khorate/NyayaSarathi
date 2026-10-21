@@ -1,403 +1,549 @@
-# Task: Debug, Fix, and Validate the Contract Red-Flag Analyzer in NyayaSarathi
+# TASK: Completely Remove the JUDGE Role from NyayaSarathi
 
-You are working on my existing **NyayaSarathi** project. Your task is to investigate and fully fix the Contract Red-Flag Analyzer feature, not merely suggest changes.
+## 1. Project Context
 
-## CRITICAL RULE #1 — READ `logs.md` FIRST
+You are working on **NyayaSarathi**, an AI-powered legal-tech platform built with:
 
-Before inspecting, editing, running, or creating any other project file:
+- **Frontend:** React.js + Vite
+- **Backend:** FastAPI + Python
+- **Database:** Inspect the existing configuration and identify whether the application uses SQLite, PostgreSQL, SQLAlchemy, or another persistence layer.
+- **Authentication:** Role-based authentication and authorization.
+- **Documentation:** Maintain a root-level `logs.md` file recording all changes.
 
-1. Locate and read the project's existing `logs.md` from the repository root.
-2. If it is not present at the root, search for it and determine whether an existing project-level log file is used elsewhere. Do not create a duplicate until you have checked.
-3. Read the complete relevant log history, including previous debugging attempts, implementation decisions, known issues, test failures, and unfinished tasks.
-4. Treat the existing logs as project context. Avoid repeating failed approaches or undoing previously completed work.
-5. After reading the logs, append a new timestamped entry to `logs.md` stating the task, investigation plan, and current Git branch. Do not overwrite existing log entries.
-6. Continue updating `logs.md` as the investigation progresses and after each meaningful implementation or testing milestone.
-7. At completion, append a final summary covering the root cause, files changed, fixes implemented, commands executed, test results, unresolved issues, and any remaining manual verification.
+The application currently has four roles:
 
-**Logging requirements:**
-- Use the existing `logs.md` format if one exists.
-- Keep entries concise but sufficiently detailed for another developer to understand the investigation.
-- Record actual outcomes, not planned or assumed outcomes.
-- Never claim a test passed unless you ran it and observed the result.
-- Never record secrets, access tokens, passwords, API keys, JWTs, or sensitive contract contents in logs.
-- Do not replace or delete historical entries.
-- If logging itself fails, report that explicitly and retry safely.
+1. `USER`
+2. `ADVOCATE`
+3. `JUDGE`
+4. `ADMIN`
 
-## CRITICAL RULE #2 — INSPECT BEFORE MODIFYING
+We have decided to remove the `JUDGE` role completely. After this change, the only supported roles must be:
 
-After reading `logs.md`, inspect the repository and understand the existing implementation before making changes.
+- `USER`
+- `ADVOCATE`
+- `ADMIN`
 
-Relevant files include, but are not limited to:
+Your responsibility is to implement this change across the entire repository, including the frontend, backend, authentication, authorization, database schema and records, API routes, dashboards, navigation, configuration, seed data, and tests.
 
-- `backend/routers/contracts.py`
-- `backend/schemas/contracts.py`
-- `backend/services/contracts_service.py`
-- `backend/services/ocr/pdf_extractor.py`
-- `backend/services/user_repository.py`
-- `backend/tests/test_contracts.py`
-- `nyayasarathi-app/src/app/contracts/page.tsx`
-- Any related database models, migrations, configuration, AI prompts, provider integrations, shared components, and existing tests.
+**Do not merely hide the Judge dashboard. Remove the Judge role as an active application capability while preserving all existing functionality for USER, ADVOCATE, and ADMIN.**
 
-Also inspect:
-- The Git working tree, current branch, and recent relevant commits.
-- Existing API request and response schemas.
-- The complete analysis pipeline, including text extraction, document classification, AI-generated findings, quote verification, deterministic heuristics, risk scoring, executive summary generation, persistence, and frontend rendering.
-- Existing error handling, authentication, activity logging, and database fallback behavior.
-- Existing dependencies and test conventions.
+---
 
-Do not assume the described architecture is fully accurate. Verify it against the source code.
+## 2. Mandatory Rules
 
-**Git safety:** Preserve unrelated user changes. Do not reset, clean, force-push, or discard user work. Do not modify unrelated features. Do not commit changes unless explicitly requested.
+Follow these rules throughout the implementation:
 
-## 1. REPRODUCE THE ACTUAL BUG
+1. Inspect the repository before modifying files.
+2. Identify the actual frontend, backend, database, authentication, and routing architecture. Do not assume paths or filenames exist.
+3. Search the entire project for `JUDGE`, `Judge`, `judge`, and related judge-specific identifiers.
+4. Trace each reference to determine whether it is role-specific or shared functionality.
+5. Remove obsolete judge-specific code without deleting unrelated legal functionality.
+6. Preserve existing USER, ADVOCATE, and ADMIN features, permissions, dashboards, and workflows.
+7. Do not rewrite the entire authentication system or introduce a new architecture unnecessarily.
+8. Do not replace the current database, ORM, framework, or authentication library.
+9. Do not create duplicate files, duplicate routes, or redundant authentication logic.
+10. Do not hardcode credentials, secrets, passwords, or database connection strings.
+11. Do not claim that tests passed unless you actually ran them and verified the results.
+12. Do not erase the database, reset production data, or perform destructive migrations without a safe migration strategy.
+13. Preserve existing audit history and unrelated legal records.
+14. Maintain a detailed root-level `logs.md` file throughout the task.
+15. Complete the implementation, not just a plan or a list of suggested changes.
 
-The reported issue is that uploading a Bombay High Court judgment produced:
+If an operation risks losing user data or breaking an existing deployment, implement a safe migration or document the specific blocker rather than performing an unsafe deletion.
 
-- Overall Risk Profile: LOW RISK
-- Generic text claiming the document contains potentially risky indemnification, liability, restrictive covenant, or renewal clauses.
-- High, Medium, and Low finding counts all equal to zero.
-- “No Red Flags Found in this View.”
-- An executive summary that does not correspond to the uploaded document.
+---
 
-The uploaded document was a Bombay High Court judgment titled `Roma_Rajesh_Tiwari_vs_Rajesh_Dinanath_Tiwari_on_12_October_2017.PDF`, concerning interim maintenance under Section 24 of the Hindu Marriage Act.
+## 3. Phase One: Repository Audit
 
-This is a judicial decision, not a commercial contract.
+Before making changes, inspect the project structure and identify:
 
-Investigate why the system classified it as a contract and why the summary, findings, counts, and overall risk profile disagree.
+- Frontend source directory.
+- Backend source directory.
+- Authentication and authorization modules.
+- User, role, and permission models.
+- Database models and schema definitions.
+- Database migration files.
+- Login, registration, and token-generation logic.
+- Frontend route definitions and route guards.
+- Role-specific layouts, navigation, and dashboards.
+- Judge-specific API endpoints and service modules.
+- Database initialization, bootstrap, seed, and demo-account scripts.
+- Tests and test fixtures.
+- Environment variables and configuration.
+- Documentation mentioning the Judge role.
 
-Reproduce the issue using a sanitized fixture or synthetic document where practical. Do not expose private document content in logs.
+Search all relevant source files, not just files with `judge` in their names. A Judge role may be referenced inside shared files such as `auth.py`, `models.py`, `main.py`, `App.jsx`, route configuration, or database initialization scripts.
 
-Trace the actual code path rather than fixing only the displayed badge.
+Create a temporary internal checklist of every identified dependency before modifying the code.
 
-## 2. ADD A DOCUMENT CLASSIFICATION GATE
+Also inspect Git status and existing user changes. **Do not overwrite, revert, or discard unrelated work.**
 
-Implement a reliable classification step before contract-specific risk analysis.
+Update `logs.md` with an initial entry describing the task, the starting architecture, and the scope of the audit.
 
-Support appropriate document types such as:
+---
 
-- Commercial contract or agreement
-- Employment agreement
-- Non-disclosure agreement
-- Service or vendor agreement
-- Lease or rental agreement
-- Court judgment or judicial order
-- Legal notice
-- Legal opinion or legal memorandum
-- Other legal document
-- Unknown or insufficient content
+## 4. Phase Two: Remove Judge Authentication and Role Assignment
 
-Use a combination of document structure, extracted text, relevant legal terminology, and AI classification if the existing architecture supports it.
+Inspect all authentication and user-management code.
 
-Examples of judicial-document indicators include:
-- Court or tribunal name and case number
-- Petitioner/respondent or appellant/respondent headings
-- Judgment, order, writ petition, or appeal terminology
-- Coram, judicial reasoning, and operative order sections
+### Backend requirements
 
-Do not classify a document as a contract simply because it contains legal language, statutory references, parties' names, monetary amounts, or words such as “agreement” in an unrelated context.
+- Remove `JUDGE` from the application's supported role definitions and enumerations.
+- Update role validation and serialization.
+- Remove Judge-specific login handling, if it exists separately.
+- Remove Judge registration or account-creation options.
+- Remove Judge role assignment from registration, admin user-management forms, bootstrap scripts, and seed data.
+- Remove judge-specific account creation and judge-role elevation workflows.
+- Update role validation so new users cannot register or be assigned the removed role.
+- Preserve the existing authentication mechanism, password hashing, session/token handling, and login behavior for the remaining three roles.
+- Ensure role values are validated on the backend rather than trusting a role supplied by the frontend.
+- Inspect JWT claims, token refresh, current-user responses, dependencies, decorators, and permission checks for Judge-specific logic.
+- Ensure unsupported or legacy Judge accounts cannot continue using privileged Judge endpoints through an existing token.
 
-The classifier must return a structured result with:
-- Document type
-- Classification confidence, if supportable
-- Brief evidence for the classification
-- Whether contract risk analysis is applicable
+If authentication uses a shared role-based login flow, preserve that flow and remove only the Judge-specific branches.
 
-Do not fabricate confidence scores. If classification is uncertain, use an explicit unknown or review-required state.
+### Frontend requirements
 
-### Required audit statuses
+- Remove Judge from role selectors, registration forms, login options, onboarding screens, and account-management forms.
+- Remove Judge-specific redirects and dashboard routing logic.
+- Remove Judge-only UI conditions and role-selection labels.
+- Preserve login and registration for USER, ADVOCATE, and ADMIN.
+- Make sure no Judge role is assigned by frontend defaults, cached state, or fallback logic.
 
-Introduce compatible, explicit statuses such as:
+Do not create a separate login implementation for the remaining roles unless the current architecture already requires it.
 
-- `COMPLETED`
-- `DOCUMENT_TYPE_MISMATCH`
-- `INSUFFICIENT_CONTENT`
-- `PARTIAL_ANALYSIS`
-- `FAILED`
+---
 
-Adapt these to existing project conventions rather than introducing unnecessary duplicate models.
+## 5. Phase Three: Remove Judge Dashboards, Pages, and Components
 
-### Expected behavior for a court judgment
+Search for every Judge-specific frontend page, component, layout, hook, context, and supporting asset.
 
-The API should return a valid, structured response that the frontend can render, with semantics equivalent to:
+Examples of possible filenames or routes include:
 
-- Document type: Court Judgment
-- Contract audit status: Not applicable
-- Overall risk profile: Not assessed
-- Findings: None generated by contract-specific analysis
-- Explanation: The uploaded document is a judicial decision rather than a commercial agreement.
-- Next action: Upload a contract or agreement to perform a contract risk audit.
+- `JudgeDashboard`
+- `JudgeLayout`
+- `JudgeCases`
+- `JudgeCaseDetails`
+- `JudgeHearingSchedule`
+- `JudgePrivateNotes`
+- `JudgePrecedents`
+- `/judge/dashboard`
+- `/judge/cases`
+- `/judge/*`
 
-Do not label this document LOW RISK.
+These are examples only. Discover the actual files and routes before acting.
 
-Do not treat zero findings as proof that the document is safe.
+### Required actions
 
-Do not run contract-specific heuristics on a judicial decision merely because the AI classifier is uncertain.
+1. Remove Judge-specific page components that have no remaining legitimate use.
+2. Remove Judge-only layouts, sidebars, navigation menus, widgets, and dashboard cards.
+3. Remove imports and exports that reference deleted files.
+4. Remove Judge-specific frontend routes.
+5. Remove Judge-only route guards and redirect branches.
+6. Remove Judge-specific API client functions and hooks when they are no longer used.
+7. Remove Judge-only state management and menu configuration.
+8. Remove Judge-specific links from shared navigation and dashboards.
+9. Remove unused Judge-specific assets if they have no other references.
+10. Update frontend tests and route configuration tests.
 
-If classification is ambiguous, return an explicit review-required or insufficient-content result rather than a misleading risk assessment.
+Check for broken imports, stale lazy-loaded routes, dead navigation links, and references to deleted components.
 
-## 3. FIX THE COMPLETE BACKEND PIPELINE
+**Important:** Do not delete shared legal research, case search, precedent lookup, OCR, contract analysis, news, or other general legal tools simply because they were accessible from the Judge dashboard.
 
-Inspect and correct the flow in `contracts_service.py` and its dependencies.
+If a component contains both shared and Judge-specific functionality, extract or preserve the shared functionality before removing the Judge-specific parts.
 
-### A. Ingestion and extraction
+---
 
-Preserve existing PDF, DOCX, TXT, and OCR support.
+## 6. Phase Four: Remove Judge Backend Routes, Services, and Permissions
 
-Verify:
-- Empty and unreadable documents are rejected or reported clearly.
-- Scanned PDFs are handled through the existing OCR pipeline.
-- Page-level extracted text is preserved where available.
-- Original page numbers and clause locations remain accurate.
-- Extraction failures are distinguishable from a genuine document with no risky clauses.
+Inspect all FastAPI routers, endpoints, services, dependencies, schemas, and authorization checks.
 
-Do not introduce a new OCR provider or dependency without a demonstrated need.
+Possible examples include:
 
-### B. Classification before analysis
+- `judge.py`
+- `judge_router.py`
+- `judge_service.py`
+- Judge dashboard APIs.
+- Assigned-docket APIs.
+- Judge-only case-management endpoints.
+- Hearing scheduling endpoints.
+- Private judicial notes endpoints.
+- Judge-only precedent-management endpoints.
 
-Run document classification after sufficient text extraction and before the contract-specific AI audit or heuristic engine.
+Again, these names are illustrative; inspect the real repository.
 
-Do not allow downstream code to overwrite a mismatch status with `COMPLETED` or LOW RISK.
+### Required actions
 
-### C. AI findings and evidence grounding
+- Remove Judge-only routers from the FastAPI application.
+- Remove their `include_router()` registrations.
+- Remove Judge-specific endpoints and their associated service code if no longer needed.
+- Remove Judge-only request and response schemas when unused.
+- Remove Judge-only permission dependencies.
+- Remove Judge-specific authorization branches from shared APIs where they are no longer relevant.
+- Remove Judge-only WebSocket handlers, event subscriptions, background tasks, or notifications if present.
+- Remove frontend and backend references to obsolete endpoint paths.
+- Update OpenAPI documentation automatically through the existing FastAPI configuration.
+- Update tests that expect Judge routes or permissions.
 
-Preserve and strengthen the existing verbatim-grounding checks.
+### Authorization safety
 
-Every finding must be tied to evidence in the actual uploaded document.
+Do not assume that deleting the frontend route makes the API inaccessible.
 
-Validate:
-- The quoted text exists in the extracted document, using an appropriately normalized comparison where necessary.
-- The quote identifies the correct clause or page when available.
-- The explanation actually relates to the cited text.
-- The statutory provision or precedent is relevant to the alleged issue.
-- Recommendations are connected to the finding.
-- Invalid or unsupported findings are rejected or marked for review, with useful internal diagnostics.
+Verify that every remaining endpoint still enforces the appropriate role permissions. USER must not gain ADVOCATE or ADMIN permissions because a Judge permission branch was removed.
 
-Do not silently turn a document with rejected AI findings into a “safe” document.
+If an endpoint is shared by multiple roles, retain it and adjust its authorization rules deliberately.
 
-If all proposed findings are rejected, determine whether the analysis can be completed reliably using existing deterministic checks. Otherwise return an explicit partial-analysis or review-required status.
+If a Judge-specific endpoint is removed, verify that it no longer appears in the registered application routes and that direct requests to its former URL do not execute the old functionality.
 
-Do not fabricate clauses, legal authorities, citations, page numbers, or legal conclusions.
+Do not leave obsolete endpoints accessible just because their frontend pages have been deleted.
 
-### D. Indian-law heuristic engine
+---
 
-Review the existing heuristics for these categories:
+## 7. Phase Five: Database Cleanup and Migration
 
-1. Indemnity and allocation of liability
-2. Post-termination restraints and non-compete provisions
-3. Liquidated damages and penalties
-4. Asymmetric limitations of liability
-5. Unilateral modifications
-6. Arbitrator appointment and dispute resolution
-7. Unilateral termination and cure periods
-8. Automatic renewal and lock-in
-9. Payment terms and late-payment penalties
-10. Intellectual property and confidentiality
+This phase requires special care.
 
-Improve only what the investigation shows to be incorrect or incomplete.
+First, identify the actual database engine, ORM, schema, migrations, and current role representation. Determine whether roles are stored as strings, database enums, check constraints, separate role tables, or a combination of these.
 
-Important legal safeguards:
-- Do not treat every indemnity, termination-for-convenience clause, renewal clause, or liability cap as inherently unlawful.
-- Distinguish commercial risk from legal invalidity.
-- For Section 27 of the Indian Contract Act, 1872, distinguish post-contract restraints from potentially permissible restrictions during a contract and account for applicable legal exceptions and context.
-- For Section 74, do not assert that proof of actual loss is invariably required in every case. Analyze reasonable compensation and the applicable legal principles.
-- For arbitration provisions, assess the actual appointment mechanism and relevant statutory principles and precedent instead of relying only on keywords.
-- Do not declare a clause void or unenforceable solely because a regex matched it.
-- Where the law or its application is uncertain or fact-dependent, state the uncertainty.
+### A. Remove Judge from the supported schema
 
-Treat the analyzer as assistive legal intelligence, not a substitute for advice from a qualified advocate.
+Update the appropriate schema definitions to allow only:
 
-### E. Risk calculation and calibration
+- `USER`
+- `ADVOCATE`
+- `ADMIN`
 
-Trace the exact function that determines the overall risk profile.
+Inspect and update, where applicable:
 
-Ensure:
-- The score is based on validated findings from the current document.
-- Unsupported or rejected findings do not inflate the score.
-- A document mismatch cannot receive a LOW, MEDIUM, or HIGH contract-risk label.
-- An extraction failure cannot be interpreted as zero risk.
-- An incomplete analysis cannot silently become a completed low-risk assessment.
-- No findings means “No red flags detected in the analyzed content,” not “This contract is safe.”
-- Any numeric scoring, thresholds, or severity weighting remain consistent with the project's existing design and are documented.
+- Python enums and constants.
+- SQLAlchemy models.
+- Database enum types.
+- CHECK constraints.
+- Role lookup tables.
+- Pydantic validation schemas.
+- Database initialization scripts.
+- Migration files.
+- Test fixtures and factories.
+- Seed and demo data.
 
-Do not invent a new scoring model without first understanding the current one.
+Do not create a new schema or replace the current database merely to remove a role.
 
-### F. Executive summary
+### B. Inspect existing Judge records
 
-Generate the executive summary from the final validated analysis result.
+Identify all database records associated with the Judge role and determine whether they are:
 
-It must never use generic text that mentions categories not found in the document or findings that were not validated.
+- Demo accounts.
+- Test fixtures.
+- Real user accounts.
+- Related case assignments or other domain records.
+- Audit history or historical events.
 
-For mismatch, insufficient content, partial analysis, or failed analysis, show an appropriate status-specific explanation.
+Do not automatically delete every row containing `JUDGE`.
 
-For completed audits, summarize actual findings, important limitations, and the analyzed scope.
+### C. Apply a safe migration
 
-## 4. KEEP THE API SCHEMA AND FRONTEND CONSISTENT
+Create a migration compatible with the existing migration framework.
 
-Inspect `backend/schemas/contracts.py`, `backend/routers/contracts.py`, and the frontend together before changing response fields.
+The migration must:
 
-Make backward-compatible changes where practical.
+1. Preserve all USER, ADVOCATE, and ADMIN records.
+2. Preserve unrelated legal documents, cases, and research data.
+3. Preserve audit logs and historical records.
+4. Prevent future assignment of the removed Judge role.
+5. Handle existing Judge accounts explicitly.
+6. Update database constraints and enum definitions safely.
+7. Avoid orphaned records and broken foreign-key relationships.
+8. Support the database engine actually used by the project.
+9. Have a documented rollback or recovery strategy wherever feasible.
 
-The response should clearly distinguish:
-- Document classification
-- Audit status
-- Overall risk profile
-- Validated findings
-- Severity counts
-- Executive summary
-- Limitations or warnings
-- Recommended next action
+If the database contains Judge accounts, do not automatically promote them to ADMIN or ADVOCATE.
 
-In `nyayasarathi-app/src/app/contracts/page.tsx`:
+Use a safe, explicit strategy appropriate to the application. For example, deactivate legacy Judge accounts or require a reviewed account migration, preserving their identity and historical records. If accounts must be removed, first verify the relationship and retention requirements for their associated records.
 
-1. Display the document type and audit status.
-2. Display “Not Assessed” instead of a risk badge when the audit is not applicable or not completed.
-3. Show a clear explanation when a court judgment, legal notice, or other non-contract document is uploaded.
-4. Provide a useful next action, such as uploading an appropriate agreement.
-5. Keep severity filters and counts synchronized with the validated findings.
-6. Avoid showing “No Red Flags Found” when analysis failed, was incomplete, or was not applicable.
-7. Show “No red flags detected in the analyzed content” only for a successfully completed analysis with zero validated findings.
-8. Remove unsupported generic executive-summary language.
-9. Preserve upload functionality, authentication, progress indicators, search, copy controls, and other working UI behavior.
-10. Handle older API responses gracefully if backward compatibility is necessary.
+If the project has no migration framework, introduce only the smallest safe migration mechanism appropriate to the existing architecture.
 
-Ensure frontend state is reset appropriately when a new document is selected or an analysis fails, so results from a previous upload are not displayed for the new document.
+### D. Validate the migration
 
-## 5. VERIFY ACTIVITY LOGGING AND PERSISTENCE
+After applying the migration in an appropriate development or test environment, verify:
 
-Inspect `backend/services/user_repository.py`, the actual `user_activity_history` schema, and all code paths that write contract-analysis activity.
+- No active account can authenticate with the removed Judge role.
+- The supported role schema accepts USER, ADVOCATE, and ADMIN.
+- Invalid role assignment is rejected.
+- Existing non-Judge users remain intact.
+- Foreign keys remain valid.
+- Historical audit data remains available.
+- Application startup works against the migrated schema.
 
-Confirm exactly which fields are stored and whether both Supabase and SQLite are genuinely supported fallbacks.
+Do not delete or recreate the production database to achieve this.
 
-Ensure the activity log records the correct analysis outcome, including:
-- Document filename, when appropriate
-- Document type
-- Audit status
-- Overall risk profile only when assessed
-- Validated red-flag count
-- Creation timestamp
+---
 
-A mismatch or failed analysis must not be recorded as a successful LOW RISK audit.
+## 8. Phase Six: Admin and User Management
 
-Avoid persisting the full uploaded document or unnecessary sensitive contract text in activity metadata.
+Inspect the Admin dashboard and all user-management workflows.
 
-Preserve existing user isolation, authentication, database behavior, and fallback logic. Do not invent database columns or claim a migration exists unless it has actually been implemented.
+Update them to support exactly three active roles:
 
-If a schema change is required, implement the appropriate migration or backward-compatible storage strategy and document it.
+- USER
+- ADVOCATE
+- ADMIN
 
-## 6. ADD REGRESSION TESTS
+Remove:
 
-Inspect the existing test suite before editing it. Preserve useful tests and conventions.
+- Judge role options.
+- Judge account creation.
+- Judge role assignment and promotion.
+- Judge-specific filters or status labels that are no longer meaningful.
+- Judge-only account-management actions.
+- Judge-only dashboard statistics and navigation.
 
-Add or update tests for at least these scenarios:
+Preserve unrelated Admin functionality, including user management, security controls, audit logs, and system monitoring.
 
-1. **Court judgment uploaded as a contract**
-   - Classified as a court judgment.
-   - Returns `DOCUMENT_TYPE_MISMATCH` or the project's equivalent.
-   - Overall contract risk is not assessed.
-   - No fabricated contract findings are returned.
-   - The executive summary explains the mismatch.
+If existing Judge accounts remain in the database as disabled legacy records, handle them consistently in Admin interfaces. Do not silently mislabel them as USER or ADVOCATE.
 
-2. **Valid commercial contract with no detected red flags**
-   - Returns a completed audit only when analysis actually completes successfully.
-   - Zero findings does not imply guaranteed legal safety.
+Ensure that ordinary users cannot assign themselves ADMIN or ADVOCATE permissions, and that role changes continue to be protected by the existing authorization system.
 
-3. **Explicit unilateral termination clause**
-   - The actual clause is cited.
-   - Severity and legal reasoning are supported by the text.
+---
 
-4. **Broad indemnity clause**
-   - Evidence grounding is verified.
-   - The analysis distinguishes commercial exposure from automatic legal invalidity.
+## 9. Phase Seven: Database and Business Logic Reference Audit
 
-5. **Post-termination non-compete**
-   - The analysis considers Section 27 and applicable context without making unsupported blanket conclusions.
+Perform a second repository-wide search after the implementation.
 
-6. **Unreadable, empty, or incomplete PDF**
-   - Returns a meaningful error, insufficient-content, or partial-analysis result.
-   - Never returns LOW RISK simply because extraction failed.
+Search for variations including:
 
-7. **Scanned PDF**
-   - Tests the existing OCR path or mocks it appropriately.
+- `JUDGE`
+- `Judge`
+- `judge`
+- `judge_id`
+- `judgeId`
+- `judge_role`
+- `judge_dashboard`
+- `/judge`
+- `assigned_judge`
+- Judge-specific table names and foreign keys.
+- Judge-specific environment variables and feature flags.
+- Judge-specific tests, seed data, and documentation.
 
-8. **AI returns fabricated clause quotes**
-   - Unsupported findings are rejected.
-   - The resulting status and summary remain accurate.
+For every remaining match, classify it as one of the following:
 
-9. **AI provider failure**
-   - Existing fallback behavior works correctly, or the API reports a clear partial/failure status.
+1. Obsolete code that must be removed.
+2. Historical data or migration logic that must remain.
+3. Shared functionality that must remain.
+4. Documentation that must be updated.
+5. An unrelated reference that does not need changing.
 
-10. **Frontend severity counts and filters**
-    - Counts match the validated findings.
-    - Mismatch and failure states do not show misleading empty-risk messages.
+Do not blindly replace every occurrence of the word `judge`. A historical audit entry, legal case document, or ordinary legal-domain reference must not be deleted merely because it contains that word.
 
-11. **Activity history**
-    - The stored status matches the actual result.
-    - Mismatch or failed analysis is not logged as LOW RISK.
+Remove obsolete code and update relevant documentation. Retain any necessary legacy migration logic and historical data handling, and explain these remaining references in `logs.md`.
 
-12. **Mixed or ambiguous legal document**
-    - Classification uncertainty is handled explicitly.
+---
 
-Use mocks or fixtures where necessary to keep tests deterministic and avoid live AI-provider calls. Do not require external API keys for ordinary unit tests.
+## 10. Phase Eight: Tests and Verification
 
-Run the existing relevant test suite and any additional checks practical for the changed code.
+Run the project's existing tests and available static checks. Inspect the package scripts, Python dependency setup, and test configuration to determine the correct commands.
 
-Fix regressions introduced by your changes.
+Add or update tests for the following.
 
-## 7. IMPLEMENTATION RULES
+### Authentication tests
 
-- Work within the existing project architecture.
-- Read before editing; trace the actual cause before choosing a fix.
-- Avoid unnecessary dependencies and broad refactors.
-- Preserve unrelated user changes.
-- Do not hardcode the sample judgment as a special-case filename or use document-specific text matching as the primary solution.
-- Use general document classification and reliable status handling.
-- Do not fabricate test results, legal authorities, or successful API calls.
-- Do not claim zero-retention unless all relevant temporary files, logs, database records, caches, and provider behavior have been verified.
-- Do not expose contract text or secrets in logs.
-- Update `logs.md` throughout the task.
+- USER login continues to work.
+- ADVOCATE login continues to work.
+- ADMIN login continues to work.
+- The system rejects new assignment of the JUDGE role.
+- Unsupported role values are rejected.
+- Legacy Judge tokens cannot access removed or privileged endpoints.
+- Existing authorization behavior for the remaining roles is preserved.
 
-## 8. REQUIRED EXECUTION ORDER
+### Route tests
 
-Follow this order strictly:
+- The frontend no longer registers Judge-only routes.
+- The backend no longer registers Judge-only routers or endpoints.
+- USER, ADVOCATE, and ADMIN routes remain available.
+- Direct API requests cannot bypass authorization.
 
-1. Read the existing `logs.md` completely.
-2. Append the initial investigation entry to `logs.md`.
-3. Inspect Git status and current branch without modifying user work.
-4. Read the relevant backend, schema, frontend, persistence, OCR, and test files.
-5. Trace and reproduce the incorrect result.
-6. Document the verified root cause in `logs.md`.
-7. Implement document classification and explicit audit statuses.
-8. Fix backend risk scoring, evidence validation, and executive summary consistency.
-9. Fix frontend state handling, risk badges, counts, filters, and mismatch messages.
-10. Correct activity-history persistence if required.
-11. Add regression tests.
-12. Run relevant backend tests, frontend checks, and any available integration tests.
-13. Resolve failures caused by the implementation.
-14. Review the final diff for accidental or unrelated changes.
-15. Append the final results to `logs.md`.
+### Database tests
 
-If a test cannot run because a dependency, service, or environment variable is missing, record the exact blocker. Do not skip reporting it.
+- The migration completes successfully in a disposable test database.
+- Existing USER, ADVOCATE, and ADMIN records are preserved.
+- Legacy Judge accounts are handled according to the chosen migration policy.
+- Audit history and unrelated legal records remain intact.
+- The schema rejects unsupported role assignments.
 
-## 9. FINAL RESPONSE FORMAT
+### Regression tests
 
-When finished, provide:
+Verify the main workflows relevant to the existing application, including as applicable:
 
-### Root Cause
-The actual verified cause of the incorrect risk result.
+- Login and logout.
+- User registration.
+- Role-based dashboard access.
+- Legal research.
+- OCR and document extraction.
+- Contract analysis.
+- War Room.
+- Outcome Predictor.
+- Legal news.
+- Advocate-specific features.
+- Admin user management and audit logs.
 
-### Changes Made
-Files changed and what each change accomplishes.
+Do not create fake test results or disable failing tests merely to make the suite pass.
 
-### Validation
-Commands executed, number of tests passed/failed, and frontend checks performed. Include only observed results.
+If a test cannot run because of missing environment variables, unavailable services, or absent dependencies, document the exact limitation.
 
-### Logging
-Confirm the path to `logs.md` and summarize the entries added.
+---
 
-### Remaining Issues
-Any unresolved problems, limitations, or manual verification still required.
+## 11. Phase Nine: Update `logs.md`
 
-### Git Status
-Current branch and a concise summary of changed files. Do not commit or push unless requested.
+Create or update a file named `logs.md` in the project root.
 
-**Start by reading `logs.md`. Do not edit any other file before doing so. Then continue through the complete workflow and implement the fix.**
+If `logs.md` already exists, append a new dated section. Do not erase earlier development history.
+
+Maintain the log during the task, not just at the end.
+
+Use this structure:
+
+# NyayaSarathi Development Logs
+
+## [Current Date] — Removal of JUDGE Role
+
+### 1. Objective
+Describe the decision to reduce the supported roles from USER, ADVOCATE, JUDGE, and ADMIN to USER, ADVOCATE, and ADMIN.
+
+### 2. Initial Audit
+Record the actual files, modules, routes, models, and database components discovered.
+
+### 3. Files Modified
+For each file, record:
+- File path.
+- What changed.
+- Why the change was required.
+
+### 4. Files Deleted
+For each deleted file, record:
+- File path.
+- Purpose of the file.
+- Why it was safe to remove.
+
+### 5. Authentication and Authorization
+Document changes to role definitions, login, registration, token validation, route guards, and permissions.
+
+### 6. Frontend Changes
+Document removed dashboards, pages, navigation entries, components, and routes.
+
+### 7. Backend Changes
+Document removed routers, endpoints, services, schemas, and permission checks.
+
+### 8. Database Changes
+Document:
+- Database engine and migration framework.
+- Migration filename.
+- Schema and constraint changes.
+- How existing Judge accounts were handled.
+- How related records and audit history were preserved.
+- Backup and rollback or recovery instructions.
+- Whether the migration was actually executed.
+
+Do not include passwords, tokens, secrets, or sensitive user information in the logs.
+
+### 9. Tests and Verification
+For each check, record:
+- Command executed.
+- Actual result.
+- Pass/fail status.
+- Any limitations or skipped checks.
+
+### 10. Remaining References
+List any remaining Judge-related references and explain why they must remain, such as historical migration logic or preserved audit records.
+
+### 11. Known Issues
+Record unresolved problems, environmental blockers, and any migration steps that still require manual execution.
+
+### 12. Final Status
+Summarize the implementation and distinguish between:
+- Completed and verified.
+- Implemented but not verified.
+- Pending manual action.
+
+Include a final checklist confirming the three supported roles and the regression checks performed.
+
+Use actual filenames, actual commands, and actual results. Never invent a file path or claim a successful migration without evidence.
+
+---
+
+## 12. Phase Ten: Final Acceptance Criteria
+
+The task is complete only when all applicable requirements below are satisfied.
+
+### Role architecture
+- [ ] USER remains supported.
+- [ ] ADVOCATE remains supported.
+- [ ] ADMIN remains supported.
+- [ ] JUDGE is no longer a supported active role.
+- [ ] New users cannot register or be assigned the JUDGE role.
+- [ ] Legacy Judge authentication cannot grant access to protected functionality.
+
+### Frontend
+- [ ] Judge login and registration options are removed.
+- [ ] Judge dashboard and Judge-only pages are removed.
+- [ ] Judge frontend routes and navigation entries are removed.
+- [ ] Broken imports and dead links are eliminated.
+- [ ] Remaining dashboards and shared legal tools still work.
+
+### Backend
+- [ ] Judge-only routers and endpoints are removed or safely disabled.
+- [ ] Router registration and authorization checks are updated.
+- [ ] Remaining API permissions are correct.
+- [ ] Obsolete Judge services and schemas are removed where safe.
+- [ ] No hidden Judge-only endpoint remains accessible.
+
+### Database
+- [ ] Schema definitions no longer allow new JUDGE role assignments.
+- [ ] A safe migration exists where required.
+- [ ] Existing non-Judge accounts and unrelated records are preserved.
+- [ ] Legacy Judge records are handled explicitly.
+- [ ] Audit history is preserved.
+- [ ] Migration and recovery instructions are documented.
+
+### Verification and documentation
+- [ ] Repository-wide reference audit is complete.
+- [ ] Relevant tests and checks are executed.
+- [ ] Failed and skipped checks are documented honestly.
+- [ ] Root-level `logs.md` is updated with detailed changes.
+- [ ] Final response lists modified and deleted files, migration details, test results, and remaining manual steps.
+
+---
+
+## 13. Execution Instructions
+
+Work in this order:
+
+1. Inspect the repository and Git status.
+2. Audit every Judge-related dependency.
+3. Write the initial `logs.md` entry.
+4. Implement the smallest coherent set of code changes.
+5. Create and validate the database migration if necessary.
+6. Remove obsolete frontend and backend code.
+7. Update tests, fixtures, seed data, and documentation.
+8. Run the repository-wide reference search again.
+9. Run available tests and startup/build checks.
+10. Update `logs.md` with actual results.
+11. Review the final diff for accidental changes to unrelated functionality.
+
+Do not stop after producing a plan. Proceed with implementation and verification unless a genuine blocker requires clarification.
+
+If a destructive database operation, irreversible data loss, or production migration requires additional authorization, stop before that operation and explain the blocker. Continue with safe, non-destructive work wherever possible.
+
+## 14. Required Final Response
+
+When finished, provide a concise implementation report containing:
+
+1. Summary of the changes.
+2. Important files modified.
+3. Files deleted.
+4. Database migration details and how existing Judge accounts were handled.
+5. Authentication and authorization changes.
+6. Tests executed and their actual outcomes.
+7. Any remaining Judge references and why they remain.
+8. Known issues or manual steps.
+9. Confirmation that `logs.md` was updated, including its exact path.
+
+**Priority:** Keep NyayaSarathi stable. Remove the Judge role thoroughly, preserve USER, ADVOCATE, and ADMIN, protect existing data, and avoid unnecessary refactoring or new features.

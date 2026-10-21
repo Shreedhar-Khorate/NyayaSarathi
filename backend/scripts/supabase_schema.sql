@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT, -- Nullable for Google OAuth users
     full_name TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'USER', -- 'USER', 'JUDGE', 'ADMIN'
+    role TEXT NOT NULL DEFAULT 'USER', -- 'USER', 'ADVOCATE', 'ADMIN'
     avatar_url TEXT,
     organization TEXT,
     designation TEXT,

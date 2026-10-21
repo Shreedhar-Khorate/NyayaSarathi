@@ -2,6 +2,7 @@
 NyayaSarathi Admin Router
 Administrative endpoints for user role management, system metrics, and audit history.
 Protected strictly by server-side ADMIN authorization.
+Supported roles: USER, ADVOCATE, ADMIN.
 """
 
 from typing import Optional, Dict, Any, List
@@ -17,8 +18,6 @@ from schemas.dashboard import (
     RoleUpdateResponse,
     RoleAuditListResponse,
     RoleAuditItem,
-    AssignCaseRequest,
-    JudgeAssignedCaseItem,
 )
 from services.user_repository import (
     get_user_by_id,
@@ -29,11 +28,6 @@ from services.user_repository import (
     count_role_audits,
     get_admin_metrics,
     count_active_admins,
-    create_case_assignment,
-    get_judge_case_assignments,
-    count_judge_case_assignments,
-    get_case_assignment_by_id,
-    delete_case_assignment,
     get_db_connection,
     is_postgres_authoritative,
     get_pg_connection,
@@ -68,7 +62,7 @@ async def get_dashboard_overview(
 @router.get("/users", response_model=AdminUserListResponse)
 async def get_all_users(
     search: Optional[str] = Query(None, description="Search by name or email"),
-    role: Optional[str] = Query(None, description="Filter by role: USER, JUDGE, ADVOCATE, ADMIN"),
+    role: Optional[str] = Query(None, description="Filter by role: USER, ADVOCATE, ADMIN"),
     limit: int = Query(50, ge=1, le=100, description="Page size limit"),
     offset: int = Query(0, ge=0, description="Offset index"),
     current_admin: Dict[str, Any] = Depends(require_admin),
@@ -96,10 +90,11 @@ async def change_user_role(
     """
     Change an eligible user's role and persist a durable audit record.
     Enforces safeguards against self-demotion, last-admin removal, and invalid roles.
+    Allowed active roles: USER, ADVOCATE, ADMIN.
     """
     actor_id = current_admin["id"]
     new_role = req.new_role.strip().upper()
-    valid_roles = {"USER", "JUDGE", "ADVOCATE", "ADMIN"}
+    valid_roles = {"USER", "ADVOCATE", "ADMIN"}
 
     if new_role not in valid_roles:
         raise HTTPException(
@@ -190,122 +185,3 @@ async def get_role_history(
         limit=limit,
         offset=offset,
     )
-
-
-# ── Case Assignment Management (Admin Operations) ─────────────────────────────
-
-@router.post("/cases/assign", response_model=JudgeAssignedCaseItem, status_code=status.HTTP_201_CREATED)
-async def assign_case_to_judge(
-    req: AssignCaseRequest,
-    current_admin: Dict[str, Any] = Depends(require_admin),
-):
-    """
-    Assign a litigation matter or case docket to an eligible judicial bench.
-    Validation: Target user must exist and possess the JUDGE role.
-    """
-    target_judge = get_user_by_id(req.judge_id)
-    if not target_judge:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Target judge with ID '{req.judge_id}' does not exist.",
-        )
-
-    if target_judge.get("role") != "JUDGE":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"User '{target_judge['email']}' has role '{target_judge.get('role')}'. Cases may only be assigned to accounts with the 'JUDGE' role.",
-        )
-
-    assignment = create_case_assignment(
-        case_number=req.case_number,
-        title=req.title,
-        court_name=req.court_name,
-        judge_id=req.judge_id,
-        assigned_by_id=current_admin["id"],
-        case_type=req.case_type,
-        priority=req.priority,
-        filing_date=req.filing_date,
-        hearing_date=req.hearing_date,
-        petitioner=req.petitioner,
-        respondent=req.respondent,
-        notes=req.notes,
-    )
-
-    log.info(
-        f"Admin {current_admin['email']} assigned case {req.case_number} to Judge {target_judge['email']}",
-        extra={"component": "CASE_ASSIGNMENT"}
-    )
-    return JudgeAssignedCaseItem(**assignment)
-
-
-@router.get("/cases", response_model=List[JudgeAssignedCaseItem])
-async def list_all_case_assignments(
-    judge_id: Optional[str] = Query(None, description="Optional judge ID filter"),
-    status: Optional[str] = Query(None, description="Optional status filter"),
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    current_admin: Dict[str, Any] = Depends(require_admin),
-):
-    """List case assignments across all benches (Admin audit view)."""
-    if judge_id:
-        items = get_judge_case_assignments(judge_id=judge_id, status=status, limit=limit, offset=offset)
-    else:
-        # Query all assignments
-        if is_postgres_authoritative():
-            conn = get_pg_connection()
-            try:
-                import psycopg2.extras
-                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                    query = "SELECT * FROM public.judge_case_assignments"
-                    params = []
-                    if status:
-                        query += " WHERE status = %s"
-                        params.append(status.strip().upper())
-                    query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
-                    params.extend([limit, offset])
-                    cur.execute(query, tuple(params))
-                    rows = cur.fetchall()
-                    items = []
-                    for r in rows:
-                        d = dict(r)
-                        for date_field in ["filing_date", "hearing_date", "created_at", "updated_at"]:
-                            if hasattr(d.get(date_field), "isoformat"):
-                                d[date_field] = d[date_field].isoformat()
-                        items.append(d)
-            finally:
-                conn.close()
-        else:
-            with get_db_connection() as conn:
-                cursor = conn.cursor()
-                query = "SELECT * FROM judge_case_assignments"
-                params = []
-                if status:
-                    query += " WHERE status = ?"
-                    params.append(status.strip().upper())
-                query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
-                params.extend([limit, offset])
-                cursor.execute(query, tuple(params))
-                items = [dict(r) for r in cursor.fetchall()]
-
-    return [JudgeAssignedCaseItem(**i) for i in items]
-
-
-@router.delete("/cases/{case_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_case_assignment(
-    case_id: str,
-    current_admin: Dict[str, Any] = Depends(require_admin),
-):
-    """Revoke or delete a case assignment."""
-    case = get_case_assignment_by_id(case_id)
-    if not case:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Case assignment with ID '{case_id}' not found.",
-        )
-    deleted = delete_case_assignment(case_id)
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete case assignment.",
-        )
-

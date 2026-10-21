@@ -11,6 +11,7 @@ Tests:
 """
 
 import os
+import sys
 import io
 import unittest
 from unittest.mock import patch, MagicMock
@@ -18,6 +19,10 @@ from fastapi.testclient import TestClient
 from fastapi import HTTPException
 import pymupdf as fitz
 import docx
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 from main import app
 from schemas.ocr import Block, PageData, OCRDocumentResponse

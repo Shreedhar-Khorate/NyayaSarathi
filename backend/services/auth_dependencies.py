@@ -2,6 +2,7 @@
 NyayaSarathi Authorization & Role Dependencies
 Enforces backend authorization boundaries for protected API endpoints.
 Ensures current role is always evaluated against the database to block stale JWT claims.
+Supported active roles: USER, ADVOCATE, ADMIN.
 """
 
 from typing import Optional, Dict, Any, List, Callable
@@ -45,6 +46,13 @@ async def get_current_user(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        payload_role = str(payload.get("role", "")).upper()
+        if payload_role in ("JUDGE", "DEACTIVATED_JUDGE"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This judicial account has been deactivated following the deprecation of the JUDGE role.",
+            )
+
         # Database check ensures freshest role and prevents stale JWT escalation
         user = get_user_by_id(user_id)
         if not user:
@@ -53,6 +61,14 @@ async def get_current_user(
                 detail="User account no longer exists.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+
+        user_role = user.get("role", "USER").upper()
+        if user_role in ("JUDGE", "DEACTIVATED_JUDGE"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This judicial account has been deactivated following the deprecation of the JUDGE role.",
+            )
+
         return user
 
     except jwt.ExpiredSignatureError:
@@ -85,7 +101,5 @@ def require_role(allowed_roles: List[str]) -> Callable:
 
 # Convenient pre-configured role dependencies
 require_admin = require_role(["ADMIN"])
-require_judge = require_role(["JUDGE"])
-require_judge_or_admin = require_role(["JUDGE", "ADMIN"])
 require_advocate = require_role(["ADVOCATE"])
 require_advocate_or_admin = require_role(["ADVOCATE", "ADMIN"])

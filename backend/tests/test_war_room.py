@@ -3,8 +3,15 @@ Unit & Integration Tests for NyayaSarathi Legal War Room
 Tests session CRUD, analysis operations, caching, usage logging, and report export.
 """
 
+import os
+import sys
 import pytest
 from fastapi.testclient import TestClient
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 from main import app
 from services.war_room_repository import init_war_room_tables
 

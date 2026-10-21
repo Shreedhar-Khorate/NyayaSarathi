@@ -21,12 +21,6 @@ def seed_demo_users():
             "role": "USER",
         },
         {
-            "email": "judge@nyayasarathi.in",
-            "password": "Judge@12345",
-            "full_name": "Hon'ble Justice S. K. Mukherjee",
-            "role": "JUDGE",
-        },
-        {
             "email": "admin@nyayasarathi.in",
             "password": "Admin@12345",
             "full_name": "Judicial System Administrator",

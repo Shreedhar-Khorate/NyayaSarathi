@@ -59,11 +59,11 @@ class TestDurableAuditRetentionAndConsistency(unittest.TestCase):
         res = update_user_role_with_audit(
             target_user_id=self.target["id"],
             actor_user_id=self.admin["id"],
-            new_role="JUDGE",
+            new_role="ADVOCATE",
             reason="Elevated for judicial docket",
         )
         self.assertIsNotNone(res)
-        self.assertEqual(res["new_role"], "JUDGE")
+        self.assertEqual(res["new_role"], "ADVOCATE")
         self.assertEqual(res["old_role"], "USER")
         self.assertEqual(res["target_email"], self.target["email"])
         self.assertEqual(res["actor_email"], self.admin["email"])
@@ -83,7 +83,7 @@ class TestDurableAuditRetentionAndConsistency(unittest.TestCase):
         update_user_role_with_audit(
             target_user_id=self.target["id"],
             actor_user_id=self.admin["id"],
-            new_role="JUDGE",
+            new_role="ADVOCATE",
             reason="Pre-deletion promotion test",
         )
         initial_count = count_role_audits(target_user_id=self.target["id"])
@@ -107,14 +107,14 @@ class TestDurableAuditRetentionAndConsistency(unittest.TestCase):
         self.assertEqual(surviving_record["target_email"], self.target["email"])
         self.assertEqual(surviving_record["actor_email"], self.admin["email"])
         self.assertEqual(surviving_record["old_role"], "USER")
-        self.assertEqual(surviving_record["new_role"], "JUDGE")
+        self.assertEqual(surviving_record["new_role"], "ADVOCATE")
 
     def test_03_audit_survives_actor_admin_deletion(self):
         """CRITICAL: Deleting the acting admin must NOT delete historical role-change records."""
         update_user_role_with_audit(
             target_user_id=self.target["id"],
             actor_user_id=self.admin["id"],
-            new_role="JUDGE",
+            new_role="ADVOCATE",
             reason="Admin deletion survival test",
         )
 
@@ -139,7 +139,7 @@ class TestDurableAuditRetentionAndConsistency(unittest.TestCase):
             update_user_role_with_audit(
                 target_user_id=fake_user_id,
                 actor_user_id=self.admin["id"],
-                new_role="JUDGE",
+                new_role="ADVOCATE",
                 reason="Should fail atomically",
             )
 
@@ -162,11 +162,11 @@ class TestDurableAuditRetentionAndConsistency(unittest.TestCase):
             audit = update_user_role_with_audit(
                 target_user_id=sqlite_user["id"],
                 actor_user_id=self.admin["id"],
-                new_role="JUDGE",
+                new_role="ADVOCATE",
                 reason="SQLite promotion",
             )
             self.assertIsNotNone(audit)
-            self.assertEqual(audit["new_role"], "JUDGE")
+            self.assertEqual(audit["new_role"], "ADVOCATE")
 
             # Delete user in SQLite and verify audit survives
             deleted = delete_user_by_id(sqlite_user["id"])

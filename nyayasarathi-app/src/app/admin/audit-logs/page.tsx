@@ -80,7 +80,7 @@ export default function AdminAuditLogsPage() {
                 Role Mutation Audit Registry
               </h1>
               <p className="font-sans text-sm text-[#A9A49A] mt-1">
-                Forensic record of all judicial clearance elevations, revocations, acting administrators, and reasons.
+                Forensic record of all role clearance elevations, revocations, acting administrators, and reasons.
               </p>
             </div>
 
@@ -160,7 +160,7 @@ export default function AdminAuditLogsPage() {
                     </tr>
                   ) : (
                     logs.map((log) => {
-                      const isPromotion = log.new_role === 'JUDGE' || log.new_role === 'ADMIN';
+                      const isPromotion = log.new_role === 'ADVOCATE' || log.new_role === 'ADMIN';
 
                       return (
                         <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">

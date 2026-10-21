@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
               </div>
             </motion.div>
 
-            {/* Judicial Bench */}
+            {/* Advocate & Counsel Accounts */}
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
@@ -127,17 +127,17 @@ export default function AdminDashboardPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-sans uppercase tracking-wider text-[#A9A49A] font-semibold">
-                  Judicial Officers
+                  Advocates & Counsel
                 </span>
-                <div className="w-10 h-10 rounded-xl bg-[#6E2634]/30 border border-[#6E2634] flex items-center justify-center">
-                  <Scale className="w-5 h-5 text-[#E25C6F]" />
+                <div className="w-10 h-10 rounded-xl bg-[#B59A68]/15 border border-[#B59A68]/30 flex items-center justify-center">
+                  <Scale className="w-5 h-5 text-[#B59A68]" />
                 </div>
               </div>
               <div className="font-display text-3xl font-bold text-[#F4EFE5]">
-                {isLoading ? '...' : (metrics?.role_counts?.JUDGE ?? 0)}
+                {isLoading ? '...' : (metrics?.role_counts?.ADVOCATE ?? 0)}
               </div>
               <div className="mt-2 text-xs text-[#A9A49A]">
-                <span>Elevated judicial clearance</span>
+                <span>Verified bar practitioners</span>
               </div>
             </motion.div>
 
@@ -202,7 +202,7 @@ export default function AdminDashboardPage() {
                   </h3>
                 </div>
                 <p className="font-sans text-xs text-[#A9A49A] leading-relaxed">
-                  Search user directory, filter by role, promote qualified advocates to Judges, and enforce strict role boundaries.
+                  Search user directory, filter by role (USER, ADVOCATE, ADMIN), manage clearance levels, and enforce strict access boundaries.
                 </p>
               </div>
               <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-[#B59A68]">
@@ -233,22 +233,22 @@ export default function AdminDashboardPage() {
             </Link>
 
             <Link
-              href="/judge/dashboard"
+              href="/advocate/dashboard"
               className="group rounded-2xl border border-[#3B3A33] bg-[#1D211F]/50 p-6 hover:bg-[#1D211F] hover:border-[#B59A68]/50 transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Scale className="w-5 h-5 text-[#B59A68]" />
                   <h3 className="font-display text-lg font-semibold text-[#F4EFE5] group-hover:text-[#B59A68] transition-colors">
-                    Judge Dashboard View
+                    Advocate Command View
                   </h3>
                 </div>
                 <p className="font-sans text-xs text-[#A9A49A] leading-relaxed">
-                  Preview judicial case dockets, bench precedents, and legal activity analytics as seen by presiding judges.
+                  Preview research dockets, drafting tools, and legal activity analytics as seen by practicing bar advocates.
                 </p>
               </div>
               <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-[#B59A68]">
-                <span>Switch to Judge View</span>
+                <span>Switch to Advocate View</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>

@@ -8,9 +8,15 @@ Tests:
 5. Citation Verification Engine (Detects fabricated citations and flags verification_required)
 6. Strategy Report 10-section integrity and procedural consistency
 """
-
+import os
+import sys
 import pytest
 from fastapi.testclient import TestClient
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 from main import app
 from services.war_room_repository import init_war_room_tables
 from services.precedent_verification import query_verified_precedents, verify_citation

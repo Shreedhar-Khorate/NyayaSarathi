@@ -31,7 +31,7 @@ import {
   type AdminUserItem,
 } from '@/lib/auth';
 
-const ROLES = ['ALL', 'USER', 'JUDGE', 'ADVOCATE', 'ADMIN'];
+const ROLES = ['ALL', 'USER', 'ADVOCATE', 'ADMIN'];
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserItem[]>([]);
@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
 
   // Modal State for Role Change
   const [targetUser, setTargetUser] = useState<AdminUserItem | null>(null);
-  const [newRole, setNewRole] = useState<string>('JUDGE');
+  const [newRole, setNewRole] = useState<string>('ADVOCATE');
   const [reason, setReason] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -82,11 +82,10 @@ export default function AdminUsersPage() {
 
   const handleOpenRoleModal = (user: AdminUserItem) => {
     setTargetUser(user);
-    // Suggest complementary role transition
-    if (user.role === 'JUDGE') {
-      setNewRole('USER');
+    if (user.role === 'USER') {
+      setNewRole('ADVOCATE');
     } else {
-      setNewRole('JUDGE');
+      setNewRole('USER');
     }
     setReason('');
     setModalError(null);
@@ -145,7 +144,7 @@ export default function AdminUsersPage() {
                 User Role Management
               </h1>
               <p className="font-sans text-sm text-[#A9A49A] mt-1">
-                Assign and revoke judicial credentials, inspect advocate profiles, and maintain platform security.
+                Assign and revoke legal credentials, manage advocate clearances, and maintain platform security.
               </p>
             </div>
 
@@ -252,8 +251,9 @@ export default function AdminUsersPage() {
                   ) : (
                     users.map((u) => {
                       const isSelf = currentAdmin?.id === u.id;
-                      const isJudge = u.role === 'JUDGE';
                       const isAdmin = u.role === 'ADMIN';
+                      const isAdvocate = u.role === 'ADVOCATE';
+                      const isDeactivatedJudge = u.role === 'DEACTIVATED_JUDGE';
 
                       return (
                         <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
@@ -274,12 +274,14 @@ export default function AdminUsersPage() {
                               className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
                                 isAdmin
                                   ? 'bg-[#B59A68]/20 text-[#B59A68] border border-[#B59A68]/40'
-                                  : isJudge
+                                  : isAdvocate
                                   ? 'bg-[#6E2634]/30 text-[#E25C6F] border border-[#6E2634]/50'
+                                  : isDeactivatedJudge
+                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 line-through'
                                   : 'bg-[#242925] text-[#A9A49A] border border-[#3B3A33]'
                               }`}
                             >
-                              {u.role}
+                              {isDeactivatedJudge ? 'Legacy Judge (Inactive)' : u.role}
                             </span>
                           </td>
 
@@ -298,23 +300,10 @@ export default function AdminUsersPage() {
                             ) : (
                               <button
                                 onClick={() => handleOpenRoleModal(u)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all inline-flex items-center gap-1.5 ${
-                                  isJudge
-                                    ? 'bg-[#6E2634]/20 text-[#E25C6F] hover:bg-[#6E2634]/40 border border-[#6E2634]/50'
-                                    : 'bg-[#B59A68]/15 text-[#B59A68] hover:bg-[#B59A68]/30 border border-[#B59A68]/40'
-                                }`}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all inline-flex items-center gap-1.5 bg-[#B59A68]/15 text-[#B59A68] hover:bg-[#B59A68]/30 border border-[#B59A68]/40"
                               >
-                                {isJudge ? (
-                                  <>
-                                    <UserX className="w-3.5 h-3.5" />
-                                    <span>Revoke Judge</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Scale className="w-3.5 h-3.5" />
-                                    <span>Promote to Judge</span>
-                                  </>
-                                )}
+                                <Shield className="w-3.5 h-3.5" />
+                                <span>Modify Role</span>
                               </button>
                             )}
                           </td>
@@ -369,11 +358,11 @@ export default function AdminUsersPage() {
                   <div className="flex items-center justify-between border-b border-[#3B3A33] pb-4">
                     <div className="flex items-center gap-2.5">
                       <div className="w-9 h-9 rounded-xl bg-[#6E2634]/20 border border-[#B59A68]/40 flex items-center justify-center">
-                        <Scale className="w-5 h-5 text-[#B59A68]" />
+                        <Shield className="w-5 h-5 text-[#B59A68]" />
                       </div>
                       <div>
                         <h3 className="font-display text-lg font-bold text-[#F4EFE5]">
-                          Modify Judicial Clearance
+                          Modify User Role Clearance
                         </h3>
                         <p className="text-[11px] text-[#A9A49A]">
                           Action will be immutably recorded in the institutional audit log.
@@ -398,7 +387,7 @@ export default function AdminUsersPage() {
                   {/* Target Details */}
                   <div className="rounded-xl border border-[#3B3A33] bg-[#151716] p-4 space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#A9A49A]">Target Legal Account:</span>
+                      <span className="text-[#A9A49A]">Target Account:</span>
                       <span className="font-semibold text-[#F4EFE5]">{targetUser.full_name || 'Anonymous'}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs font-mono">
@@ -418,25 +407,7 @@ export default function AdminUsersPage() {
                     <label className="text-xs font-semibold text-[#F4EFE5]">
                       Select Desired Role
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setNewRole('JUDGE')}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          newRole === 'JUDGE'
-                            ? 'bg-[#6E2634]/30 border-[#B59A68] text-[#F4EFE5]'
-                            : 'border-[#3B3A33] bg-[#151716] text-[#A9A49A] hover:border-[#B59A68]/40'
-                        }`}
-                      >
-                        <div className="font-semibold text-xs flex items-center gap-1.5">
-                          <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
-                          <span>JUDGE</span>
-                        </div>
-                        <div className="text-[10px] text-[#A9A49A] mt-1">
-                          Grants access to judicial docket, bench cases, and judicial metrics.
-                        </div>
-                      </button>
-
+                    <div className="grid grid-cols-3 gap-2.5">
                       <button
                         type="button"
                         onClick={() => setNewRole('USER')}
@@ -451,7 +422,43 @@ export default function AdminUsersPage() {
                           <span>USER</span>
                         </div>
                         <div className="text-[10px] text-[#A9A49A] mt-1">
-                          Standard research clearance for practicing advocates and researchers.
+                          Standard research clearance for citizens and researchers.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setNewRole('ADVOCATE')}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          newRole === 'ADVOCATE'
+                            ? 'bg-[#6E2634]/30 border-[#B59A68] text-[#F4EFE5]'
+                            : 'border-[#3B3A33] bg-[#151716] text-[#A9A49A] hover:border-[#B59A68]/40'
+                        }`}
+                      >
+                        <div className="font-semibold text-xs flex items-center gap-1.5">
+                          <Briefcase className="w-3.5 h-3.5 text-[#B59A68]" />
+                          <span>ADVOCATE</span>
+                        </div>
+                        <div className="text-[10px] text-[#A9A49A] mt-1">
+                          Practicing counsel clearance for case dockets and filings.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setNewRole('ADMIN')}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          newRole === 'ADMIN'
+                            ? 'bg-[#6E2634]/30 border-[#B59A68] text-[#F4EFE5]'
+                            : 'border-[#3B3A33] bg-[#151716] text-[#A9A49A] hover:border-[#B59A68]/40'
+                        }`}
+                      >
+                        <div className="font-semibold text-xs flex items-center gap-1.5">
+                          <Shield className="w-3.5 h-3.5 text-[#8A3545]" />
+                          <span>ADMIN</span>
+                        </div>
+                        <div className="text-[10px] text-[#A9A49A] mt-1">
+                          Platform administrator clearance with governance access.
                         </div>
                       </button>
                     </div>
@@ -466,7 +473,7 @@ export default function AdminUsersPage() {
                       rows={3}
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      placeholder="e.g. Appointed to High Court Division Bench; Verified Bar Council enrollment."
+                      placeholder="e.g. Verified Bar Council enrollment; Promoted to Senior Legal Counsel."
                       className="w-full rounded-xl border border-[#3B3A33] bg-[#151716] p-3 text-xs text-[#F4EFE5] placeholder-[#A9A49A]/50 focus:border-[#B59A68] focus:outline-none transition-colors"
                     />
                   </div>

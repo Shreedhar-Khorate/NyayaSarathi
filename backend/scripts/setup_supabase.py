@@ -38,13 +38,6 @@ DEMO_ACCOUNTS = [
         "role": "USER",
     },
     {
-        "id": "a18c992d-71b3-4f9e-9d21-432859c71a82",
-        "email": "judge@nyayasarathi.in",
-        "password": _resolve_seed_password("JUDGE"),
-        "full_name": "Hon'ble Justice S. K. Mukherjee",
-        "role": "JUDGE",
-    },
-    {
         "id": "f92d441a-3e11-4b2a-8991-621804b82d99",
         "email": "admin@nyayasarathi.in",
         "password": _resolve_seed_password("ADMIN"),

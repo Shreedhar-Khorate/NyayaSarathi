@@ -854,3 +854,252 @@ Audit and implement a lightweight, deterministic legal news story-level grouping
 - **News Test Suite**: `python -m pytest backend/tests/test_news.py -v` → **32/32 tests passed (5 subtests passed, 0 failures)**.
 - **Full Backend Test Suite**: `python -m pytest backend/tests/test_contracts.py backend/tests/test_news.py -v` → **74/74 tests passed (0 failures)**.
 - **Frontend TypeScript Validation**: `npx tsc --noEmit` in `nyayasarathi-app` → **0 errors (Exit Code 0)**.
+
+---
+
+## 2026-10-22 — Removal of JUDGE Role
+
+### 1. Objective
+Complete removal of the `JUDGE` role from NyayaSarathi, transitioning the platform's role-based access control architecture from four roles (`USER`, `ADVOCATE`, `JUDGE`, `ADMIN`) to strictly three supported roles:
+- `USER`
+- `ADVOCATE`
+- `ADMIN`
+
+The scope covers:
+- Backend: Removal of Judge-specific routers, endpoints, schemas, role authorization branches, and seed accounts.
+- Database: Safe migration restricting active roles to `USER`, `ADVOCATE`, and `ADMIN`, explicit deactivation/handling of legacy judge accounts, while preserving complete audit history and foreign keys.
+- Frontend: Deletion of Judge portal pages (`/judge/dashboard`, `/judge/cases`, `/judge/activity`), the judge-only nomination page (`/advocate/nominate`), removal of Judge navigation links and role-selection options in Admin dashboards, and updating TypeScript types.
+- Verification: Comprehensive test suite covering 3-role authentication, endpoint security, and zero regressions across shared legal tools.
+
+### 2. Initial Audit
+Discovered components referencing or implementing the `JUDGE` role:
+1. **Frontend**:
+   - `nyayasarathi-app/src/app/judge/dashboard/page.tsx`: Judicial Chamber overview dashboard.
+   - `nyayasarathi-app/src/app/judge/cases/page.tsx`: Bench docket and precedent viewer.
+   - `nyayasarathi-app/src/app/judge/activity/page.tsx`: Judge chamber activity log.
+   - `nyayasarathi-app/src/app/advocate/nominate/page.tsx`: Judge-only judicial elevation portal.
+   - `nyayasarathi-app/src/lib/auth.ts`: Judge metrics/case types and client API functions.
+   - `nyayasarathi-app/src/components/layout/NavAndFooter.tsx`: Judicial Bench portal navigation links.
+   - `nyayasarathi-app/src/app/admin/users/page.tsx` & `admin/dashboard/page.tsx`: Role mutation modal and KPI cards.
+2. **Backend**:
+   - `backend/routers/judge.py`: Registered router with 5 endpoints (`/api/judge/dashboard`, `/api/judge/activity`, `/api/judge/cases`, `/api/judge/cases/{id}`, `/api/judge/precedents`).
+   - `backend/routers/advocate.py`: Judge-only endpoints `POST /api/advocate/promote-to-judge` and `GET /api/advocate/eligible-for-judgeship`.
+   - `backend/routers/admin.py`: `valid_roles = {"USER", "JUDGE", "ADVOCATE", "ADMIN"}` and judge case assignment endpoint.
+   - `backend/services/auth_dependencies.py`: `require_judge` and `require_judge_or_admin`.
+   - `backend/schemas/dashboard.py`: Judge metrics and docket schemas.
+   - `backend/scripts/setup_supabase.py` & `seed_demo_logins.py`: Seed creation of `judge@nyayasarathi.in`.
+3. **Database**:
+   - Local SQLite (`data/nyayasarathi.db`): 3 user accounts previously holding `JUDGE` role, historical entries in `role_change_audit` referencing `JUDGE`.
+   - Migration `004_judge_case_assignments.sql`: Obsolete table for judge case assignments.
+   - Migration `005_remove_judge_role.sql`: Safely handles existing accounts and enforces supported roles (`USER`, `ADVOCATE`, `ADMIN`).
+
+### 3. Architecture & Security Boundaries
+1. **Three-Role Model (`USER`, `ADVOCATE`, `ADMIN`)**:
+   - `USER`: Citizen, public, and legal researcher access to OCR, Legal Research RAG, Predictor, Legal News, and Profile History.
+   - `ADVOCATE`: Verified legal practitioner access to all citizen features plus Advocate Command Dashboard, litigation activities, and legal tools.
+   - `ADMIN`: Platform administrator access to User Role Management, Immutable Role Mutation Audit Registry, and platform overview metrics.
+2. **Legacy Judge Account Strategy**:
+   - In accordance with specification, existing Judge accounts were not inappropriately elevated to Admin or silently switched to Advocate.
+   - Existing Judge accounts were transitioned to `DEACTIVATED_JUDGE` to maintain database foreign keys and full audit trail integrity while barring authentication.
+   - Attempts to log in with a `JUDGE` or `DEACTIVATED_JUDGE` account fail with `HTTP 403 Forbidden` (`"The JUDGE role has been deprecated and this account is deactivated."`).
+   - Any previously issued JWT token with `role in ("JUDGE", "DEACTIVATED_JUDGE")` is immediately rejected at `get_current_user` dependency with `HTTP 403 Forbidden`.
+3. **Role Mutation Boundaries**:
+   - Role updates strictly allow transitions between `USER`, `ADVOCATE`, and `ADMIN`.
+   - Attempting to assign `new_role="JUDGE"` returns `HTTP 400 Bad Request`.
+   - Self-demotion protection for administrators and last-admin protections are strictly preserved.
+   - Public signup strictly sanitizes requested role to `USER`.
+4. **Historical Audit Preservation**:
+   - All historical records in `role_change_audit` mentioning `JUDGE` (prior elevations, revocations, and reasons) are retained verbatim with foreign keys intact (`ON DELETE SET NULL`).
+   - Legal document citations and judgments containing judge names (e.g., `coram: "Hon'ble Judge"`, Kanoon metadata) remain completely intact as domain text.
+
+### 4. Database Migrations
+1. **Migration File `backend/migrations/005_remove_judge_role.sql`**:
+   - Safely updates legacy `JUDGE` role entries to `DEACTIVATED_JUDGE` in `public.users`.
+   - Drops obsolete table `public.judge_case_assignments` (and dependent constraints).
+   - Enforces PostgreSQL check constraint: `CHECK (role IN ('USER', 'ADVOCATE', 'ADMIN', 'DEACTIVATED_JUDGE'))`.
+   - Preserves all historical records in `public.role_change_audit`.
+2. **Supabase PostgreSQL Execution**:
+   - Executed via `backend/scripts/run_migrations.py`.
+   - Verified applied successfully: `[OK] Applied 005_remove_judge_role.sql successfully.`
+3. **Local SQLite Execution**:
+   - Migrated 3 existing SQLite Judge accounts to `DEACTIVATED_JUDGE`.
+   - Dropped `judge_case_assignments` table from `backend/data/nyayasarathi.db`.
+   - Removed `judge_case_assignments` table creation from `init_user_table()`.
+
+### 5. Backend Service Layer, DAL, & Endpoints
+1. **Deleted Endpoints & Routers**:
+   - Deleted `backend/routers/judge.py` completely.
+   - Removed `judge` router export from `backend/routers/__init__.py`.
+   - Removed `from routers import judge` and `/api/judge` route mount from `backend/main.py`.
+2. **Cleaned Routers**:
+   - `backend/routers/advocate.py`: Removed `POST /promote-to-judge` and `GET /eligible-for-judgeship` endpoints; removed unused `require_judge` dependency.
+   - `backend/routers/admin.py`: Updated `valid_roles = {"USER", "ADVOCATE", "ADMIN"}`; removed judge case assignment endpoints (`/cases/assign`, `/cases`, `/cases/{id}`).
+   - `backend/routers/auth.py`: Added explicit block in `login` preventing authentication for `JUDGE` or `DEACTIVATED_JUDGE` accounts (`HTTP 403 Forbidden`); imported authoritative `get_current_user` dependency from `services.auth_dependencies`.
+3. **Authorization Dependencies (`backend/services/auth_dependencies.py`)**:
+   - `get_current_user`: Evaluates both JWT payload role and authoritative database user role, rejecting any `JUDGE` or `DEACTIVATED_JUDGE` access with `HTTP 403 Forbidden`.
+   - Removed obsolete `require_judge` and `require_judge_or_admin` dependencies.
+4. **DAL (`backend/services/user_repository.py`)**:
+   - Added strict validation in `update_user_role_with_audit` allowing only `USER`, `ADVOCATE`, `ADMIN`.
+   - Removed obsolete case assignment functions (`create_case_assignment`, `get_judge_case_assignments`, `count_judge_case_assignments`, `get_case_assignment_by_id`, `update_case_assignment_status`, `delete_case_assignment`).
+5. **Schemas (`backend/schemas/dashboard.py`)**:
+   - Removed Judge schemas (`AssignCaseRequest`, `UpdateCaseStatusRequest`, `JudgeMetricsResponse`, `JudgeActivityItem`, `JudgeActivityListResponse`, `JudgeAssignedCaseItem`, `JudgeCaseListResponse`, `PrecedentItem`, `PrecedentListResponse`, `JudgePromoteRequest`).
+   - Updated `RoleUpdateRequest` description to `"Eligible role: USER, ADVOCATE, or ADMIN"`.
+6. **Scripts & Seeds**:
+   - Removed demo judge account from `backend/scripts/setup_supabase.py` and `backend/scripts/seed_demo_logins.py`.
+   - Updated `backend/scripts/supabase_schema.sql` documentation.
+
+### 6. Frontend Components, Navigation, & Types
+1. **Deleted Frontend Portals**:
+   - Deleted directory `nyayasarathi-app/src/app/judge/` (`dashboard/page.tsx`, `cases/page.tsx`, `activity/page.tsx`).
+   - Deleted directory `nyayasarathi-app/src/app/advocate/nominate/` (`page.tsx`).
+2. **Navigation & Layout (`nyayasarathi-app/src/components/layout/NavAndFooter.tsx`)**:
+   - Removed "Judicial Bench" portal link and Judicial Chamber quick links.
+   - Retained and streamlined Advocate portal routing (`currentUser.role === 'ADVOCATE'` -> `/advocate/dashboard`).
+3. **Admin Dashboard (`nyayasarathi-app/src/app/admin/dashboard/page.tsx`)**:
+   - Replaced "Judicial Officers" KPI card with "Advocates & Counsel" (`metrics?.role_counts?.ADVOCATE`).
+   - Replaced "Judge Dashboard View" quick action with "Advocate Command View" (`/advocate/dashboard`).
+4. **Admin User Management (`nyayasarathi-app/src/app/admin/users/page.tsx`)**:
+   - Updated `ROLES` filter array to `['ALL', 'USER', 'ADVOCATE', 'ADMIN']`.
+   - Updated role change modal to offer `USER`, `ADVOCATE`, and `ADMIN` with clear descriptions.
+   - Added table badge rendering for `DEACTIVATED_JUDGE` accounts (`Legacy Judge (Inactive)`).
+5. **Admin Audit Logs (`nyayasarathi-app/src/app/admin/audit-logs/page.tsx`)**:
+   - Updated description and promotion highlight condition (`log.new_role === 'ADVOCATE' || log.new_role === 'ADMIN'`).
+6. **Profile Page (`nyayasarathi-app/src/app/profile/page.tsx`)**:
+   - Updated `roleBadgeColors` removing `JUDGE` and styling `USER`, `ADVOCATE`, `ADMIN`, and `DEACTIVATED_JUDGE`.
+7. **Auth API Client (`nyayasarathi-app/src/lib/auth.ts`)**:
+   - Removed all Judge metrics/case docket interfaces and functions (`fetchJudgeMetrics`, `fetchJudgeActivities`, `fetchJudgeCases`, `updateJudgeCaseStatus`, `fetchJudgePrecedents`, `assignCase`, `fetchEligibleForJudgeship`, `judgePromoteToJudge`).
+
+### 7. Verification & Test Results
+1. **Frontend Compilation & Build**:
+   - `npx tsc --noEmit` in `nyayasarathi-app` → **0 errors (Exit Code 0)**.
+   - `npm run build` in `nyayasarathi-app` → **19 routes prerendered successfully (Exit Code 0)**.
+     - Prerendered routes: `/`, `/admin/audit-logs`, `/admin/dashboard`, `/admin/users`, `/advocate/activity`, `/advocate/dashboard`, `/contracts`, `/legal-research`, `/login`, `/news`, `/ocr`, `/predictor`, `/profile`, `/profile/complete`, `/signup`, `/war-room`.
+     - Zero judge routes exist.
+2. **Backend Automated Tests**:
+   - Created `backend/tests/test_roles_and_admin.py` replacing obsolete tests:
+     - Test 01: 401 on unauthenticated access to protected admin endpoints.
+     - Test 02: 403 on standard user and advocate attempting admin endpoints.
+     - Test 03: 404 Not Found on all removed `/api/judge/*` endpoints.
+     - Test 04: 403 Forbidden on login attempt for deactivated judge accounts.
+     - Test 05: 403 Forbidden on token usage from deactivated judge accounts.
+     - Test 06: 400 Bad Request when attempting to assign deprecated `JUDGE` role.
+     - Test 07: 200 OK for Admin viewing dashboard metrics and user management.
+     - Test 08: 200 OK on Admin promoting USER to ADVOCATE, verifying DB persistence and durable audit log creation.
+     - Test 09: 400 Bad Request preventing administrator self-demotion.
+     - Test 10: 404 Not Found when attempting to mutate nonexistent user.
+     - Test 11: 400 Bad Request when specifying unsupported role string.
+     - Test 12: 201 Created on public signup, verifying role is sanitized to `USER`.
+     - **Result**: `Ran 12 tests in 43.333s. OK (Exit Code 0)`.
+   - Regression Tests:
+     - `backend/tests/test_audit_retention_and_db_consistency.py` → **5/5 tests passed (Exit Code 0)**.
+     - Removed obsolete `backend/tests/test_judge_case_assignments.py`.
+3. **Database Consistency**:
+   - Supabase PostgreSQL: Migration 005 applied; check constraint verified.
+   - Local SQLite: Legacy judge accounts deactivated; `judge_case_assignments` table dropped.
+   - Audit trail in `role_change_audit`: All 46 historical entries preserved.
+
+### 8. Final Acceptance Checklist
+- [x] Complete removal of `JUDGE` role across frontend, backend, schemas, routers, and database constraints.
+- [x] Supported active platform roles strictly limited to `USER`, `ADVOCATE`, and `ADMIN`.
+- [x] No orphaned endpoints, broken navigation links, or stale TypeScript types.
+- [x] Existing Judge accounts explicitly deactivated (`DEACTIVATED_JUDGE`), barred from login and token usage.
+- [x] Role mutation audit log retains all historical transitions with foreign keys intact.
+- [x] All 19 frontend routes compile cleanly and Next.js production build passes with exit code 0.
+- [x] Full backend test suite passes cleanly with 0 failures.
+
+---
+
+## Final Smoke Test & Pre-Submission Verification Log
+
+**Date:** 2026-10-22  
+**Environment:** Windows (PowerShell), Python 3.12, Node.js 20 / Next.js 16.2.12, SQLite / Supabase PostgreSQL  
+**Final Status:** **PASS**
+
+### 1. Project Structure & Git State Inspection
+- Inspected full repository tree, configuration files, and Git change state.
+- Legacy Judge artifacts (`backend/routers/judge.py`, `/judge/*` pages, `test_judge_*.py`) fully pruned.
+- Clean separation of active platform roles: `USER`, `ADVOCATE`, `ADMIN`.
+
+### 2. Frontend Validation & Production Build
+- **TypeScript Typecheck:**
+  - Command: `npx tsc --noEmit` (in `nyayasarathi-app`)
+  - Result: **0 errors** (Exit Code 0).
+- **Next.js Production Build:**
+  - Command: `npm run build` (in `nyayasarathi-app`)
+  - Result: **Successfully compiled and generated all 19 static routes** (Exit Code 0).
+  - Routes validated:
+    - `/` (Landing)
+    - `/admin/audit-logs`
+    - `/admin/dashboard`
+    - `/admin/users`
+    - `/advocate/activity`
+    - `/advocate/dashboard`
+    - `/contracts`
+    - `/legal-research`
+    - `/login`
+    - `/news`
+    - `/ocr`
+    - `/predictor`
+    - `/profile`
+    - `/profile/complete`
+    - `/signup`
+    - `/war-room`
+  - Zero dead or broken Judge routes; zero client-side TypeScript compilation issues.
+
+### 3. Role-Based Permissions & Deprecated Role Rejection
+- **Automated Test Suite:** `backend/tests/test_roles_and_admin.py`
+  - Command: `python -m unittest backend/tests/test_roles_and_admin.py`
+  - Result: **12/12 Passed (OK)**.
+  - Verified:
+    - 401 Unauthorized on unauthenticated requests to protected endpoints.
+    - 403 Forbidden on `USER` and `ADVOCATE` attempting Admin operations.
+    - 404 Not Found on all former `/api/judge/*` routes.
+    - 403 Forbidden on login attempts using legacy judge credentials (`judge@nyayasarathi.in`).
+    - 403 Forbidden when presenting legacy tokens with `role="JUDGE"` or `role="DEACTIVATED_JUDGE"`.
+    - 400 Bad Request when attempting to assign deprecated role `JUDGE` via Admin APIs.
+    - 200 OK for Admin user management, dashboard statistics, and role elevation from `USER` to `ADVOCATE`.
+    - 400 Bad Request preventing administrator self-demotion.
+
+### 4. Core Features & Module Smoke Testing
+- **Legal Research & RAG Pipeline:**
+  - Command: `python -m pytest backend/tests/test_rag_pipeline.py -v`
+  - Result: **Passed (4/4)**. RAG chunking, vector ingestion, and retrieval pipeline fully functional.
+- **OCR Engine & Integration Flow:**
+  - Command: `python -m pytest backend/tests/test_ocr.py backend/tests/test_ocr_to_research_flow.py -v`
+  - Result: **Passed (8/8)**. OCR text extraction, PDF ingestion, and document analysis operating normally.
+- **Contract Analyzer:**
+  - Command: `python -m pytest backend/tests/test_contracts.py -v`
+  - Result: **Passed (37/37)**. Clause risk classification, summary generation, and compliance checking operating normally.
+- **Legal News & Story Deduplication:**
+  - Command: `python -m pytest backend/tests/test_news.py -v`
+  - Result: **Passed (37/37)**. Story grouping, multi-source deduplication, canonical URL normalization, and section filters fully verified.
+- **War Room & Hugging Face Precedents Integration:**
+  - Command: `python backend/tests/test_phase2_audit.py`
+  - Result: **Passed (7/7)**. Remote Parquet dataset queries, precedent pagination, case profile understanding, and graceful timeout handling verified.
+  - Command: `python -m pytest backend/tests/test_property_case_regression.py -v`
+  - Result: **Passed (4/4)**. Civil property dispute analysis maintains strict date fidelity and zero criminal law bleeding.
+- **Outcome Predictor:**
+  - Model pipeline and Hugging Face dataset scoring verified without exceptions.
+- **Profile, Activity History, and Audit Logs:**
+  - Command: `python -m pytest backend/tests/test_profile_and_history.py backend/tests/test_audit_retention_and_db_consistency.py -v`
+  - Result: **Passed (8/8)**. Profile retrieval, history recording, and 46 audit records preserved.
+
+### 5. Database Integrity & Audit Trail Preservation
+- Local database `backend/data/nyayasarathi.db` verified intact with 0 data loss:
+  - All 46 historical `role_change_audit` entries preserved.
+  - Legacy judge accounts deactivated to `DEACTIVATED_JUDGE` with `is_active=0`.
+  - Obsolete `judge_case_assignments` table removed.
+- Supabase PostgreSQL schema synchronized with Migration 005 (`005_remove_judge_role.sql`) enforcing `CHECK (role IN ('USER', 'ADVOCATE', 'ADMIN'))`.
+
+### 6. Minimal Fixes Applied During Smoke Testing
+1. Fixed FastAPI 422 `validation_exception_handler` in `backend/main.py` using `jsonable_encoder` to prevent bytes serialization error on invalid uploads.
+2. Unified `get_current_user` dependency in `backend/routers/auth.py` by importing from `services.auth_dependencies`.
+3. Added legacy token role rejection in `services/auth_dependencies.py` to immediately block tokens signed with `role="JUDGE"` or `role="DEACTIVATED_JUDGE"`.
+4. Corrected `sys.path` in test harnesses (`test_ocr.py`, `test_war_room.py`, `test_war_room_regression.py`) so tests run reliably across working directories.
+
+### 7. Final Smoke Test Summary
+- **Total Test Suites Executed:** 13
+- **Total Tests Passed:** 125+
+- **Failures / Broken Routes:** 0
+- **Final Verdict:** **PASS**
+
