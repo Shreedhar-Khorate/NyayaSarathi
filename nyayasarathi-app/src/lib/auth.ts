@@ -770,6 +770,9 @@ export async function analyzeContract(file: File): Promise<ContractAnalysisResul
 
   const data = await res.json();
   if (!res.ok) {
+    if (res.status === 401) {
+      removeAuth();
+    }
     throw new Error(data.error || data.detail || 'Contract analysis failed.');
   }
   return data;

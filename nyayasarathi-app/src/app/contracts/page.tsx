@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -26,14 +26,103 @@ import {
   Lock,
   Layers,
   ArrowRight,
+  BookOpen,
+  Info,
+  SlidersHorizontal,
+  Eye,
+  EyeOff,
+  Download,
+  Flame,
+  FileSignature,
 } from 'lucide-react';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import {
   analyzeContract,
   getToken,
+  removeAuth,
   type ContractAnalysisResult,
   type ContractRedFlag,
 } from '@/lib/auth';
+
+// ── Realistic Preloaded Indian Legal Sample Contracts ─────────────────────────
+const SAMPLE_CONTRACTS = [
+  {
+    id: 'sample-msa',
+    title: 'Unilateral Master Services Agreement',
+    badge: 'High Risk Archetype',
+    badgeColor: 'text-[#E25C6F] bg-[#6E2634]/30 border-[#8A3545]/60',
+    description: 'Contains uncapped indemnities, 3-year non-compete restraint (Sec 27 ICA), and asymmetric 24-hr unilateral termination.',
+    fileName: 'sample_unilateral_msa.txt',
+    content: `MASTER SERVICES AGREEMENT (MSA)
+This Agreement is entered into on this 15th day of January, 2026 by and between:
+Client Corporation India Pvt. Ltd. ("Client") and Vendor Technical Solutions LLP ("Service Provider").
+
+1. SCOPE OF SERVICES
+The Service Provider agrees to provide specialized cloud development, deployment, and ongoing legal compliance support as detailed in subsequent Statements of Work.
+
+2. UNILATERAL TERMINATION & LOCK-IN
+The Client reserves the absolute and unilateral right to terminate this Agreement or any Statement of Work at any time, with or without cause, upon twenty-four (24) hours prior written notice. The Service Provider shall be subject to a strict mandatory five (5) year lock-in period and shall possess no right to terminate this Agreement for convenience or cause prior to the expiration of said term.
+
+3. UNLIMITED INDEMNIFICATION & CONSEQUENTIAL DAMAGES
+The Service Provider shall defend, indemnify, and hold harmless the Client, its parent companies, affiliates, directors, officers, employees, and agents from and against any and all claims, demands, liabilities, penalties, forfeitures, damages (including indirect, special, punitive, exemplary, and consequential damages), and reasonable legal fees arising directly or indirectly from any act, omission, delay, or alleged breach of this Agreement. This indemnity obligation shall be completely uncapped and shall not be subject to any aggregate limitation of liability.
+
+4. EXCLUSION OF CLIENT LIABILITY
+To the fullest extent permissible by law, the Client's total aggregate liability arising out of or related to this Agreement, whether in contract, tort, or otherwise, shall be strictly capped at INR 1,000 (Indian Rupees One Thousand only).
+
+5. COVENANT IN RESTRAINT OF TRADE (POST-TERMINATION NON-COMPETE)
+The Service Provider and its key personnel agree that during the term of this Agreement and for a mandatory period of three (3) years following the termination or expiration hereof, they shall not directly or indirectly establish, advise, invest in, or provide similar software consultancy services to any competing business entity within the territory of India.
+
+6. RESTRICTION ON LEGAL PROCEEDINGS & FORUM EXCLUSION
+Any dispute or controversy arising under this Agreement shall not be submitted to Indian civil courts. The parties agree that no suit or legal proceeding may be filed by the Service Provider after ninety (90) days from the date the cause of action first arose, after which all rights and remedies shall be deemed permanently extinguished.
+
+7. GOVERNING LAW
+This Agreement shall be governed by and construed in accordance with the substantive laws of India, subject to the exclusive venue provisions herein.`,
+  },
+  {
+    id: 'sample-nda',
+    title: 'Vendor Non-Disclosure Agreement',
+    badge: 'Moderate Risk Archetype',
+    badgeColor: 'text-[#D4AF37] bg-[#B59A68]/20 border-[#B59A68]/40',
+    description: 'Perpetual confidentiality, unilateral injunctive relief with bond waiver, and unilateral IP assignment.',
+    fileName: 'sample_vendor_nda.txt',
+    content: `NON-DISCLOSURE AND CONFIDENTIALITY AGREEMENT
+This Non-Disclosure Agreement ("Agreement") is executed on 10th February, 2026.
+
+1. DEFINITION OF CONFIDENTIAL INFORMATION
+Confidential Information includes all non-public technical, commercial, financial, customer, and marketing data disclosed by Disclosing Party to Receiving Party, whether orally or in writing.
+
+2. PERPETUAL CONFIDENTIALITY OBLIGATION
+The obligations of confidentiality, non-use, and non-disclosure set forth herein shall survive indefinitely and shall remain binding upon Receiving Party perpetually, without any limitation of time.
+
+3. WAIVER OF DEFENSES & AUTOMATIC INJUNCTION
+In the event of any breach or threatened breach by Receiving Party, Disclosing Party shall be entitled to an immediate ex-parte injunction without the necessity of posting any bond, demonstrating irreparable injury, or proving actual monetary damages. Receiving Party irrevocably waives all rights to oppose such emergency relief.
+
+4. IP FORFEITURE & ASSIGNMENT
+All ideas, modifications, improvements, or derivative works conceived by Receiving Party during discussions or evaluation of Confidential Information shall immediately become the sole and exclusive property of Disclosing Party.`,
+  },
+  {
+    id: 'sample-commercial-lease',
+    title: 'Standard Commercial Property Lease',
+    badge: 'Standard Risk Archetype',
+    badgeColor: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/40',
+    description: '36-month lock-in, escalation clause, forfeiture of security deposit upon early exit, and arbitration clause.',
+    fileName: 'sample_commercial_lease.txt',
+    content: `COMMERCIAL LEASE DEED
+This Lease Deed is executed on 1st March 2026 between Landlord Properties Pvt. Ltd. (Lessor) and Tech Innovations Ltd. (Lessee).
+
+1. PREMISES & LEASE TERM
+The Lessor grants on lease Office Unit No. 402, Cyber City, Bangalore for a period of five (5) years commencing April 1, 2026.
+
+2. LOCK-IN PERIOD & SECURITY DEPOSIT FORFEITURE
+Both parties agree to a mandatory lock-in period of thirty-six (36) months. In the event the Lessee vacates the premises prior to completion of the lock-in term, the entire interest-free Security Deposit equivalent to six (6) months rent shall stand absolutely forfeited to the Lessor as liquidated damages.
+
+3. RENT ESCALATION
+The monthly rent shall automatically escalate by fifteen percent (15%) upon completion of every twelve (12) months of occupancy.
+
+4. ARBITRATION & JURISDICTION
+Any dispute arising from this Deed shall be referred to a sole arbitrator appointed mutually under the Arbitration and Conciliation Act, 1996. The seat and venue of arbitration shall be Bengaluru.`,
+  },
+];
 
 export default function ContractsPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -44,13 +133,16 @@ export default function ContractsPage() {
   const [result, setResult] = useState<ContractAnalysisResult | null>(null);
   const [isAuth, setIsAuth] = useState<boolean>(true);
 
-  // Filters & Interactivity
+  // Filters, Search & View Controls
   const [riskFilter, setRiskFilter] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL');
+  const [classificationFilter, setClassificationFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
+  const [allExpanded, setAllExpanded] = useState<boolean>(true);
   const [copiedClauseIdx, setCopiedClauseIdx] = useState<number | null>(null);
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [copiedReport, setCopiedReport] = useState(false);
+  const [activeTab, setActiveTab] = useState<'findings' | 'scorecard' | 'limitations'>('findings');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,6 +191,12 @@ export default function ContractsPage() {
     setFile(f);
   };
 
+  const loadSampleContract = (sample: typeof SAMPLE_CONTRACTS[0]) => {
+    const blob = new Blob([sample.content], { type: 'text/plain' });
+    const sampleFile = new File([blob], sample.fileName, { type: 'text/plain' });
+    validateAndSetFile(sampleFile);
+  };
+
   const handleAnalyze = async () => {
     if (!file) return;
 
@@ -112,9 +210,9 @@ export default function ContractsPage() {
     setResult(null);
     setLoadingStage('Validating contract document structure...');
 
-    // Progress simulation for user engagement
+    // Progress simulation stages
     const stage1 = setTimeout(() => {
-      setLoadingStage('Extracting clauses, paragraphs, and page layout...');
+      setLoadingStage('Parsing document text & performing OCR layout analysis...');
     }, 1200);
 
     const stage2 = setTimeout(() => {
@@ -122,7 +220,7 @@ export default function ContractsPage() {
     }, 3200);
 
     const stage3 = setTimeout(() => {
-      setLoadingStage('Verifying clause citations and grounding quotes...');
+      setLoadingStage('Calculating weighted severity score & grounding clause citations...');
     }, 5500);
 
     try {
@@ -134,11 +232,22 @@ export default function ContractsPage() {
         initialExpanded[idx] = true;
       });
       setExpandedCards(initialExpanded);
+      setAllExpanded(true);
     } catch (err: any) {
       console.error('Contract analysis error:', err);
-      setError(
-        err.message || 'An error occurred while analyzing the contract. Please verify your document and retry.'
-      );
+      const isAuthError =
+        err.message?.toLowerCase().includes('token') ||
+        err.message?.toLowerCase().includes('authentication') ||
+        err.message?.toLowerCase().includes('unauthorized');
+      if (isAuthError) {
+        removeAuth();
+        setIsAuth(false);
+        setError('Your session has expired or is invalid. Please sign in to analyze contracts.');
+      } else {
+        setError(
+          err.message || 'An error occurred while analyzing the contract. Please verify your document and retry.'
+        );
+      }
     } finally {
       clearTimeout(stage1);
       clearTimeout(stage2);
@@ -154,6 +263,7 @@ export default function ContractsPage() {
     setError(null);
     setSearchQuery('');
     setRiskFilter('ALL');
+    setClassificationFilter('ALL');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -164,27 +274,41 @@ export default function ContractsPage() {
     }));
   };
 
+  const toggleExpandAll = () => {
+    if (!result) return;
+    const newState = !allExpanded;
+    setAllExpanded(newState);
+    const updated: Record<number, boolean> = {};
+    result.red_flags.forEach((_, idx) => {
+      updated[idx] = newState;
+    });
+    setExpandedCards(updated);
+  };
+
   const copyClause = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
     setCopiedClauseIdx(idx);
-    setTimeout(() => setCopiedClauseIdx(null), 2000);
+    setTimeout(() => setCopiedClauseIdx(null), 2200);
   };
 
   const copySummaryText = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedSummary(true);
-    setTimeout(() => setCopiedSummary(false), 2000);
+    setTimeout(() => setCopiedSummary(false), 2200);
   };
 
   const copyFullReport = () => {
     if (!result) return;
-    const lines = [
+    const highCount = result.red_flags.filter((rf) => rf.risk_level.toLowerCase() === 'high').length;
+    const medCount = result.red_flags.filter((rf) => rf.risk_level.toLowerCase() === 'medium').length;
+    const lowCount = result.red_flags.filter((rf) => rf.risk_level.toLowerCase() === 'low').length;
+
+    const lines: string[] = [
       `# NYAYASARATHI CONTRACT RED-FLAG AUDIT REPORT`,
-      `Document: ${result.filename || file?.name || 'Contract'}`,
-      `Document Classification: ${result.document_type_label || result.document_type || 'Unknown'}`,
-      ...(result.classification_reason ? [`Classification Reason: ${result.classification_reason}`] : []),
+      `Document: ${result.filename || file?.name || 'Contract Agreement'}`,
+      `Document Classification: ${result.document_type_label || result.document_type || 'Commercial Contract'}`,
       `Audit Status: ${result.audit_status || 'COMPLETED'}`,
-      `Overall Risk Level: ${result.overall_risk_score}`,
+      `Overall Risk Level: ${result.overall_risk_score.toUpperCase()}`,
       ...(result.score_breakdown
         ? [
             `Risk Score: ${result.score_breakdown.numerical_score} pts`,
@@ -259,91 +383,146 @@ export default function ContractsPage() {
     window.print();
   };
 
-  // Filtered red flags
-  const filteredFlags = (result?.red_flags || []).filter((flag) => {
-    const matchesFilter =
-      riskFilter === 'ALL' || flag.risk_level.toUpperCase() === riskFilter;
-    const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      !q ||
-      (flag.clause_text && flag.clause_text.toLowerCase().includes(q)) ||
-      (flag.verbatim_clause && flag.verbatim_clause.toLowerCase().includes(q)) ||
-      (flag.title && flag.title.toLowerCase().includes(q)) ||
-      (flag.explanation && flag.explanation.toLowerCase().includes(q)) ||
-      (flag.legal_explanation && flag.legal_explanation.toLowerCase().includes(q)) ||
-      (flag.risk_category && flag.risk_category.toLowerCase().includes(q)) ||
-      (flag.statutory_provision && flag.statutory_provision.toLowerCase().includes(q)) ||
-      (flag.applicable_law && flag.applicable_law.toLowerCase().includes(q)) ||
-      (flag.risk_classification && flag.risk_classification.toLowerCase().includes(q)) ||
-      (flag.recommendation && flag.recommendation.toLowerCase().includes(q)) ||
-      (flag.recommended_action && flag.recommended_action.toLowerCase().includes(q));
-    return matchesFilter && matchesSearch;
-  });
+  // Severity Counts
+  const highCount = useMemo(() => {
+    return result?.red_flags.filter((rf) => rf.risk_level.toLowerCase() === 'high').length ?? 0;
+  }, [result]);
 
-  const highCount =
-    result?.risk_counts?.high ??
-    (result?.red_flags || []).filter((f) => f.risk_level.toLowerCase() === 'high').length;
-  const medCount =
-    result?.risk_counts?.medium ??
-    (result?.red_flags || []).filter((f) => f.risk_level.toLowerCase() === 'medium').length;
-  const lowCount =
-    result?.risk_counts?.low ??
-    (result?.red_flags || []).filter((f) => f.risk_level.toLowerCase() === 'low').length;
+  const medCount = useMemo(() => {
+    return result?.red_flags.filter((rf) => rf.risk_level.toLowerCase() === 'medium').length ?? 0;
+  }, [result]);
+
+  const lowCount = useMemo(() => {
+    return result?.red_flags.filter((rf) => rf.risk_level.toLowerCase() === 'low').length ?? 0;
+  }, [result]);
+
+  // Filtered Flags with live search
+  const filteredFlags = useMemo(() => {
+    if (!result) return [];
+    return result.red_flags.filter((flag) => {
+      // Severity Filter
+      if (riskFilter !== 'ALL' && flag.risk_level.toUpperCase() !== riskFilter) {
+        return false;
+      }
+      // Classification Filter
+      if (classificationFilter !== 'ALL' && flag.risk_classification !== classificationFilter) {
+        return false;
+      }
+      // Search Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const inTitle = (flag.title || '').toLowerCase().includes(q);
+        const inClause = (flag.verbatim_clause || flag.clause_text || '').toLowerCase().includes(q);
+        const inCat = (flag.risk_category || '').toLowerCase().includes(q);
+        const inStatute = (flag.statutory_provision || '').toLowerCase().includes(q);
+        const inExpl = (flag.legal_explanation || flag.explanation || '').toLowerCase().includes(q);
+        const inAction = (flag.recommended_action || flag.recommendation || '').toLowerCase().includes(q);
+        return inTitle || inClause || inCat || inStatute || inExpl || inAction;
+      }
+      return true;
+    });
+  }, [result, riskFilter, classificationFilter, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#151716] text-[#F4EFE5] flex flex-col selection:bg-[#6E2634]/40 font-sans">
+    <div className="min-h-screen bg-[#151716] text-[#F4EFE5] flex flex-col font-sans selection:bg-[#6E2634]/40">
       <Navbar />
 
-      <main className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        {/* Page Header */}
+      {/* Main Content Area */}
+      <main className="flex-1 pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        {/* Header Hero */}
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#B59A68]/30 bg-[#B59A68]/10 px-3.5 py-1 text-xs font-semibold text-[#B59A68] mb-3">
-            <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
-            <span>Statutory Contract Intelligence</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-medium tracking-wide bg-[#B59A68]/10 text-[#B59A68] border border-[#B59A68]/30 mb-4 shadow-sm">
+            <ShieldAlert className="w-3.5 h-3.5 text-[#B59A68]" />
+            <span>Assistive Legal Tech &bull; Clause-Level Risk Intelligence</span>
           </div>
-          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-[#F4EFE5]">
+
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#F4EFE5] mb-4">
             Contract Red-Flag Analyzer
           </h1>
-          <p className="mt-3 text-stone/80 font-sans text-sm sm:text-base leading-relaxed">
-            Audit commercial and legal contracts against Indian statutory doctrine — identifying
-            unilateral termination, unlimited liability, unconscionable restraints of trade,
-            and jurisdiction traps with grounded clause citations.
+
+          <p className="text-stone text-sm sm:text-base leading-relaxed">
+            Automated statutory risk auditing for commercial agreements, tenders, and NDAs. Grounded in the{' '}
+            <span className="text-[#B59A68] font-medium">Indian Contract Act, 1872</span> and High Court precedent doctrines with explainable 5/3/1 scoring.
           </p>
-          <div className="mt-3 inline-flex items-center gap-2 text-xs text-stone/60 italic border border-[#3B3A33]/60 rounded-full px-3 py-1 bg-[#1A1C1B]">
-            <span>Note: Findings provide assistive statutory intelligence; final negotiation remains subject to advocate review.</span>
+
+          {/* Capability Pills Row */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs text-stone/80">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D211F] border border-[#3B3A33]">
+              <Layers className="w-3 h-3 text-[#B59A68]" />
+              14 Subtype Classification
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D211F] border border-[#3B3A33]">
+              <Scale className="w-3 h-3 text-emerald-400" />
+              Verifiable Statutory Catalog
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D211F] border border-[#3B3A33]">
+              <Flame className="w-3 h-3 text-[#E25C6F]" />
+              Weighted 5/3/1 Scoring Model
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D211F] border border-[#3B3A33]">
+              <FileSignature className="w-3 h-3 text-sky-400" />
+              Verbatim Excerpt Grounding
+            </span>
           </div>
         </div>
 
         {/* Authentication Warning Banner if guest */}
         {!isAuth && (
-          <div className="mb-8 rounded-xl border border-[#B59A68]/40 bg-[#B59A68]/10 p-4 flex items-center justify-between gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 rounded-xl border border-[#B59A68]/40 bg-[#B59A68]/10 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg backdrop-blur-sm"
+          >
             <div className="flex items-center gap-3">
-              <Lock className="w-5 h-5 text-[#B59A68] shrink-0" />
-              <p className="text-xs sm:text-sm text-[#EDE8DC]">
-                <strong className="text-[#B59A68]">Session Required:</strong> Contract document analysis is protected. Please sign in to upload and audit contracts.
-              </p>
+              <div className="w-10 h-10 rounded-lg bg-[#B59A68]/20 border border-[#B59A68]/40 flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-[#B59A68]" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-[#F4EFE5]">Authentication Required</h4>
+                <p className="text-xs text-stone/90 leading-relaxed mt-0.5">
+                  Contract document ingestion and clause audit are protected features. Sign in to analyze your documents or test with demo credentials.
+                </p>
+              </div>
             </div>
             <Link
               href="/login"
-              className="shrink-0 rounded px-3.5 py-1.5 text-xs font-semibold text-[#151716] bg-[#B59A68] hover:bg-[#c9af7e] transition-colors"
+              className="shrink-0 rounded-lg px-4 py-2 text-xs font-semibold text-[#151716] bg-[#B59A68] hover:bg-[#c9af7e] transition-all shadow-md flex items-center gap-1.5"
             >
-              Sign In
+              <span>Sign In with Demo</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
-          </div>
+          </motion.div>
         )}
 
         {/* Workspace: Upload vs Results */}
         {!result ? (
           /* Upload State */
-          <div className="max-w-2xl mx-auto">
-            <div className="ink-panel border border-[#3B3A33] rounded-xl p-6 sm:p-8 shadow-xl bg-[#1A1C1B]">
-              <h2 className="font-display text-lg font-semibold text-[#F4EFE5] mb-2 flex items-center gap-2">
-                <Upload className="w-4 h-4 text-[#B59A68]" />
-                Upload Contract Agreement
-              </h2>
-              <p className="text-xs text-stone/80 mb-5">
-                Ingest digital PDF, scanned PDF (auto-OCR), DOCX, or TXT agreements up to 25 MB.
-              </p>
+          <div className="max-w-3xl mx-auto space-y-8">
+            <div className="ink-panel rounded-2xl p-6 sm:p-8 border border-[#3B3A33] shadow-2xl relative overflow-hidden bg-gradient-to-b from-[#1E2320]/80 via-[#1A1C1B] to-[#151716]">
+              {/* Subtle Ambient Radial Highlight */}
+              <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 bg-[#B59A68]/10 rounded-full blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 -right-24 w-72 h-72 bg-[#6E2634]/15 rounded-full blur-3xl" />
+
+              <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#3B3A33]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#B59A68]/15 border border-[#B59A68]/30 flex items-center justify-center text-[#B59A68]">
+                    <Upload className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-base sm:text-lg font-semibold text-[#F4EFE5]">
+                      Upload Contract Document
+                    </h2>
+                    <p className="text-xs text-stone/80">
+                      Supports digital PDF, scanned PDF (PaddleOCR), DOCX, or TXT agreements up to 25 MB.
+                    </p>
+                  </div>
+                </div>
+                {file && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-mono bg-emerald-950/40 text-emerald-400 border border-emerald-800/50">
+                    <CheckCircle2 className="w-3 h-3" /> Ready
+                  </span>
+                )}
+              </div>
 
               {/* Drag & Drop Zone */}
               <div
@@ -351,10 +530,12 @@ export default function ContractsPage() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
+                className={`relative border-2 border-dashed rounded-xl p-8 sm:p-10 text-center cursor-pointer transition-all duration-300 ${
                   isDragging
-                    ? 'border-[#B59A68] bg-[#B59A68]/10'
-                    : 'border-[#3B3A33] hover:border-[#B59A68]/50 bg-[#151716]'
+                    ? 'border-[#B59A68] bg-[#B59A68]/15 scale-[1.01]'
+                    : file
+                    ? 'border-[#B59A68]/70 bg-[#1D211F]/90 shadow-inner'
+                    : 'border-[#3B3A33] hover:border-[#B59A68]/50 bg-[#151716]/80 hover:bg-[#1A1C1B]'
                 }`}
               >
                 <input
@@ -365,47 +546,63 @@ export default function ContractsPage() {
                   className="hidden"
                 />
 
-                <div className="mx-auto w-12 h-12 rounded-full bg-[#1A1C1B] border border-[#3B3A33] flex items-center justify-center mb-3 text-[#B59A68]">
-                  <FileText className="w-6 h-6" />
+                <div className="mx-auto w-14 h-14 rounded-2xl bg-[#1D211F] border border-[#3B3A33] flex items-center justify-center mb-4 text-[#B59A68] shadow-md group-hover:scale-105 transition-transform">
+                  <FileText className="w-7 h-7" />
                 </div>
 
                 {file ? (
-                  <div>
-                    <p className="text-sm font-semibold text-[#F4EFE5] truncate max-w-sm mx-auto">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-[#F4EFE5] truncate max-w-md mx-auto">
                       {file.name}
                     </p>
-                    <p className="text-xs text-stone/70 mt-1 font-mono">
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB &bull; {file.name.split('.').pop()?.toUpperCase()}
+                    <p className="text-xs text-stone font-mono">
+                      {(file.size / (1024 * 1024)).toFixed(2)} MB &bull; {file.name.split('.').pop()?.toUpperCase()} Document
                     </p>
-                    <p className="text-xs text-[#B59A68] mt-2 font-medium">
+                    <p className="text-xs text-[#B59A68] font-medium pt-2">
                       Click or drag a new file to replace
                     </p>
                   </div>
                 ) : (
-                  <div>
-                    <p className="text-sm font-medium text-stone/90">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-[#F4EFE5]">
                       Drag and drop your contract here, or{' '}
-                      <span className="text-[#B59A68] underline decoration-stone/50 hover:decoration-[#B59A68]">
-                        browse files
+                      <span className="text-[#B59A68] underline decoration-[#B59A68]/40 hover:decoration-[#B59A68] font-semibold">
+                        browse local files
                       </span>
                     </p>
-                    <p className="text-xs text-stone/60 mt-1.5">
-                      PDF, DOCX, TXT &bull; Max 25 MB &bull; Scanned PDFs processed via OCR
+                    <p className="text-xs text-stone/70">
+                      PDF, DOCX, TXT &bull; Max 25 MB &bull; Scanned PDFs processed via high-accuracy OCR
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Error Message */}
+              {/* Error Message Banner */}
               {error && (
-                <div className="mt-4 p-3.5 rounded-lg bg-[#6E2634]/25 border border-[#8A3545]/60 flex items-start gap-2.5 text-xs text-[#E25C6F]">
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-5 p-4 rounded-xl bg-[#6E2634]/25 border border-[#8A3545]/60 flex items-start gap-3 text-xs text-[#E25C6F]"
+                >
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <div className="flex-1 leading-relaxed">{error}</div>
-                </div>
+                  <div className="flex-1 leading-relaxed">
+                    <strong>Audit Notice:</strong> {error}
+                    {!isAuth && (
+                      <div className="mt-2">
+                        <Link
+                          href="/login"
+                          className="inline-flex items-center gap-1 font-semibold text-[#F4EFE5] underline hover:text-[#B59A68]"
+                        >
+                          Sign in with a demo account &rarr;
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
               )}
 
               {/* Action Buttons */}
-              <div className="mt-6 flex items-center justify-between gap-3 pt-4 border-t border-[#3B3A33]/70">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#3B3A33]/70">
                 {file ? (
                   <button
                     type="button"
@@ -415,12 +612,14 @@ export default function ContractsPage() {
                       if (fileInputRef.current) fileInputRef.current.value = '';
                     }}
                     disabled={loading}
-                    className="text-xs text-stone/70 hover:text-stone font-medium px-3 py-2 rounded hover:bg-white/[0.04] transition-colors"
+                    className="text-xs text-stone/80 hover:text-stone font-medium px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
                   >
-                    Remove File
+                    Clear Selected File
                   </button>
                 ) : (
-                  <div />
+                  <div className="text-xs text-stone/60 italic flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5" /> No document selected yet
+                  </div>
                 )}
 
                 <button
@@ -428,8 +627,10 @@ export default function ContractsPage() {
                   id="analyze-contract-btn"
                   onClick={handleAnalyze}
                   disabled={!file || loading}
-                  className={`btn-oxblood group flex items-center justify-center gap-2 rounded px-5 py-2.5 font-sans text-sm font-semibold tracking-wide transition-all ${
-                    !file || loading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+                  className={`flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 font-sans text-sm font-semibold tracking-wide transition-all shadow-lg ${
+                    !file || loading
+                      ? 'bg-[#3B3A33]/40 text-stone/50 cursor-not-allowed border border-transparent'
+                      : 'bg-[#6E2634] hover:bg-[#8A3545] text-[#F4EFE5] border border-[#8A3545]/80 hover:shadow-oxblood active:scale-[0.99]'
                   }`}
                 >
                   {loading ? (
@@ -449,46 +650,101 @@ export default function ContractsPage() {
 
               {/* Loading progress banner */}
               {loading && (
-                <div className="mt-5 p-4 rounded-xl bg-[#151716] border border-[#3B3A33] animate-pulse">
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-5 p-4 rounded-xl bg-[#151716] border border-[#3B3A33]"
+                >
                   <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-[#B59A68]/20 flex items-center justify-center">
-                      <Scale className="w-3 h-3 text-[#B59A68] animate-bounce" />
+                    <div className="w-6 h-6 rounded-full bg-[#B59A68]/20 flex items-center justify-center">
+                      <Scale className="w-3.5 h-3.5 text-[#B59A68] animate-bounce" />
                     </div>
-                    <span className="text-xs font-mono text-[#B59A68]">{loadingStage}</span>
+                    <span className="text-xs font-mono text-[#B59A68] font-medium">{loadingStage}</span>
                   </div>
                   <div className="w-full bg-[#1D211F] rounded-full h-1.5 mt-3 overflow-hidden">
-                    <div className="bg-[#B59A68] h-1.5 rounded-full w-2/3 animate-[shimmer_2s_infinite]" />
+                    <div className="bg-[#B59A68] h-1.5 rounded-full w-2/3 animate-[pulse_1.5s_infinite]" />
                   </div>
-                </div>
+                </motion.div>
               )}
+            </div>
+
+            {/* Quick Test Preloaded Sample Contracts Section */}
+            <div className="ink-panel rounded-2xl p-6 border border-[#3B3A33] bg-[#1A1C1B]">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#3B3A33]">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-[#B59A68]" />
+                  <h3 className="font-display text-sm font-semibold text-[#F4EFE5]">
+                    Quick Test with Preloaded Indian Contract Samples
+                  </h3>
+                </div>
+                <span className="text-[11px] font-mono text-stone/70">1-Click Demonstration</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {SAMPLE_CONTRACTS.map((sample) => (
+                  <div
+                    key={sample.id}
+                    onClick={() => loadSampleContract(sample)}
+                    className="group rounded-xl p-4 bg-[#151716] border border-[#3B3A33] hover:border-[#B59A68]/70 hover:bg-[#1D211F] cursor-pointer transition-all duration-200 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold border ${sample.badgeColor}`}>
+                          {sample.badge}
+                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 text-stone/50 group-hover:text-[#B59A68] group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                      <h4 className="text-xs font-semibold text-[#F4EFE5] group-hover:text-[#B59A68] transition-colors line-clamp-1">
+                        {sample.title}
+                      </h4>
+                      <p className="text-[11px] text-stone/70 mt-1 line-clamp-3 leading-relaxed">
+                        {sample.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-3.5 pt-2.5 border-t border-[#3B3A33]/60 flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-stone/50 truncate min-w-0">
+                        <FileText className="w-3 h-3 shrink-0 text-stone/40" />
+                        <span className="truncate">{sample.fileName}</span>
+                      </div>
+                      <span className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold text-[#151716] bg-[#B59A68] group-hover:bg-[#c9af7e] transition-all shadow-sm">
+                        Load
+                        <ArrowRight className="w-2.5 h-2.5" />
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
-          /* Results View */
-          <div className="space-y-8 animate-fadeIn">
+          /* Results View Dashboard */
+          <div className="space-y-6 animate-fadeIn">
             {/* Top Toolbar / Quick Actions */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-[#1A1C1B] border border-[#3B3A33]">
-              <div className="flex items-center gap-3">
-                <FileCheck2 className="w-5 h-5 text-[#B59A68]" />
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-[#1A1C1B] border border-[#3B3A33] shadow-xl">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-[#B59A68]/15 border border-[#B59A68]/30 flex items-center justify-center text-[#B59A68] shrink-0">
+                  <FileCheck2 className="w-5 h-5" />
+                </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-semibold text-[#F4EFE5]">
-                      {result.filename || file?.name || 'Contract Audit'}
+                    <h3 className="text-sm sm:text-base font-semibold text-[#F4EFE5]">
+                      {result.filename || file?.name || 'Contract Audit Brief'}
                     </h3>
                     {result.document_type_label && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-[#B59A68]/20 text-[#D4AF37] border border-[#B59A68]/40">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-[#B59A68]/15 text-[#D4AF37] border border-[#B59A68]/40">
                         {result.document_type_label}
                       </span>
                     )}
                     {result.classification_confidence !== undefined &&
                       result.classification_confidence !== null && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#151716] text-[#B59A68] border border-[#3B3A33]">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[#151716] text-[#B59A68] border border-[#3B3A33]">
                           {Math.round(result.classification_confidence * 100)}% Conf
                         </span>
                       )}
                     {result.audit_status && (
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase border ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase border ${
                           result.audit_status === 'COMPLETED'
                             ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/50'
                             : result.audit_status === 'DOCUMENT_TYPE_MISMATCH'
@@ -500,9 +756,9 @@ export default function ContractsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-stone/70 mt-0.5">
-                    Extracted via {result.extraction_method || 'PyMuPDF'} &bull;{' '}
-                    {result.total_pages ? `${result.total_pages} pages inspected` : 'Document text processed'}
+                  <p className="text-xs text-stone/70 mt-1">
+                    Processed via <span className="text-[#EDE8DC] font-medium">{result.extraction_method || 'Digital Parser'}</span> &bull;{' '}
+                    {result.total_pages ? `${result.total_pages} pages audited` : 'Extracted clauses verified'}
                     {result.classification_reason ? ` &bull; ${result.classification_reason}` : ''}
                   </p>
                 </div>
@@ -512,62 +768,66 @@ export default function ContractsPage() {
                 <button
                   type="button"
                   onClick={copyFullReport}
-                  className="flex items-center gap-1.5 rounded border border-[#3B3A33] bg-[#151716] px-3 py-1.5 text-xs font-medium text-stone hover:text-ivory hover:border-[#B59A68]/60 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-[#3B3A33] bg-[#151716] px-3.5 py-2 text-xs font-medium text-stone hover:text-ivory hover:border-[#B59A68]/60 transition-colors shadow-sm"
+                  title="Copy formatted markdown report"
                 >
                   {copiedReport ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedReport ? 'Report Copied' : 'Copy Full Report'}</span>
+                  <span>{copiedReport ? 'Report Copied' : 'Copy Brief'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="flex items-center gap-1.5 rounded border border-[#3B3A33] bg-[#151716] px-3 py-1.5 text-xs font-medium text-stone hover:text-ivory hover:border-[#B59A68]/60 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-[#3B3A33] bg-[#151716] px-3.5 py-2 text-xs font-medium text-stone hover:text-ivory hover:border-[#B59A68]/60 transition-colors shadow-sm"
+                  title="Print or export as PDF"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  <span>Print Report</span>
+                  <span>Print / PDF</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="flex items-center gap-1.5 rounded border border-[#6E2634]/70 bg-[#6E2634]/30 px-3 py-1.5 text-xs font-semibold text-[#E25C6F] hover:bg-[#6E2634]/50 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-[#6E2634]/70 bg-[#6E2634]/30 px-3.5 py-2 text-xs font-semibold text-[#E25C6F] hover:bg-[#6E2634]/50 transition-colors shadow-sm"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Analyze Another</span>
+                  <span>Audit Another</span>
                 </button>
               </div>
             </div>
 
             {/* Document Mismatch Dedicated Notification Banner */}
             {result.audit_status === 'DOCUMENT_TYPE_MISMATCH' && (
-              <div className="rounded-xl border border-[#B59A68]/50 bg-[#B59A68]/10 p-5 space-y-3">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
+              <div className="rounded-2xl border border-[#B59A68]/50 bg-[#B59A68]/10 p-6 space-y-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#B59A68]/20 flex items-center justify-center shrink-0 text-[#D4AF37]">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
                   <div className="flex-1 space-y-1">
                     <h4 className="text-sm font-semibold text-[#F4EFE5]">
                       Document Type Mismatch: {result.document_type_label || 'Non-Contract Document'}
                     </h4>
-                    <p className="text-xs text-stone/80 leading-relaxed">
+                    <p className="text-xs text-stone/90 leading-relaxed">
                       {result.summary}
                     </p>
                     {result.recommended_action && (
                       <p className="text-xs text-[#D4AF37] font-medium pt-1">
-                        <strong>Recommended Action:</strong> {result.recommended_action}
+                        <strong>Recommended Next Step:</strong> {result.recommended_action}
                       </p>
                     )}
                   </div>
                 </div>
-                <div className="pt-2 flex flex-wrap gap-2 border-t border-[#B59A68]/20">
+                <div className="pt-3 flex flex-wrap gap-2.5 border-t border-[#B59A68]/20">
                   <Link
                     href="/legal-research"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[#1A1C1B] text-[#D4AF37] border border-[#B59A68]/40 hover:bg-[#B59A68]/20 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#1A1C1B] text-[#D4AF37] border border-[#B59A68]/40 hover:bg-[#B59A68]/20 transition-colors"
                   >
                     <Scale className="w-3.5 h-3.5" />
                     <span>Search Precedents in Legal Research</span>
                   </Link>
                   <Link
                     href="/predictor"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[#1A1C1B] text-[#D4AF37] border border-[#B59A68]/40 hover:bg-[#B59A68]/20 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#1A1C1B] text-[#D4AF37] border border-[#B59A68]/40 hover:bg-[#B59A68]/20 transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Open Case Predictor</span>
@@ -575,7 +835,7 @@ export default function ContractsPage() {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[#6E2634]/30 text-[#E25C6F] border border-[#8A3545]/50 hover:bg-[#6E2634]/50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#6E2634]/30 text-[#E25C6F] border border-[#8A3545]/50 hover:bg-[#6E2634]/50 transition-colors"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Upload a Commercial Contract</span>
@@ -584,11 +844,11 @@ export default function ContractsPage() {
               </div>
             )}
 
-            {/* Risk Assessment Summary Banner */}
+            {/* Risk Assessment Summary Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              {/* Overall Risk Card */}
+              {/* Overall Risk Profile Card */}
               {result.audit_status === 'DOCUMENT_TYPE_MISMATCH' || result.overall_risk_score.toLowerCase() === 'not assessed' ? (
-                <div className="lg:col-span-4 rounded-xl p-6 border bg-[#6E2634]/15 border-[#8A3545]/50 flex flex-col justify-between">
+                <div className="lg:col-span-4 rounded-2xl p-6 border bg-[#6E2634]/15 border-[#8A3545]/50 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs uppercase font-mono tracking-wider text-stone/80 font-bold">
@@ -600,41 +860,42 @@ export default function ContractsPage() {
                       NOT ASSESSED
                     </div>
                     <p className="mt-2 text-xs text-stone/80 leading-relaxed">
-                      Document is identified as a {result.document_type_label || 'non-contract legal document'}. Commercial contract risk profiling is not applicable to judicial decisions or legal notices.
+                      Document is identified as a {result.document_type_label || 'non-contract legal instrument'}. Commercial contract risk profiling is not applicable to court rulings or judgments.
                     </p>
                   </div>
                   <div className="mt-6 pt-4 border-t border-white/[0.08] text-center">
-                    <span className="inline-block text-[11px] font-mono text-[#D4AF37] bg-[#B59A68]/15 px-2.5 py-1 rounded border border-[#B59A68]/30">
+                    <span className="inline-block text-[11px] font-mono text-[#D4AF37] bg-[#B59A68]/15 px-3 py-1 rounded-full border border-[#B59A68]/30">
                       0 Contract Findings Evaluated
                     </span>
                   </div>
                 </div>
               ) : (
                 <div
-                  className={`lg:col-span-4 rounded-xl p-6 border flex flex-col justify-between ${
+                  className={`lg:col-span-4 rounded-2xl p-6 border flex flex-col justify-between shadow-xl ${
                     result.overall_risk_score.toLowerCase() === 'high'
-                      ? 'bg-[#6E2634]/20 border-[#6E2634]/70'
+                      ? 'bg-gradient-to-b from-[#6E2634]/25 to-[#1A1C1B] border-[#6E2634]/80 shadow-oxblood'
                       : result.overall_risk_score.toLowerCase() === 'medium'
-                      ? 'bg-[#B59A68]/15 border-[#B59A68]/60'
-                      : 'bg-emerald-950/25 border-emerald-800/60'
+                      ? 'bg-gradient-to-b from-[#B59A68]/20 to-[#1A1C1B] border-[#B59A68]/70 shadow-brass'
+                      : 'bg-gradient-to-b from-emerald-950/30 to-[#1A1C1B] border-emerald-800/70'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs uppercase font-mono tracking-wider text-stone/80 font-bold">
+                      <span className="text-xs uppercase font-mono tracking-wider text-stone font-bold">
                         Overall Risk Profile
                       </span>
                       {result.overall_risk_score.toLowerCase() === 'high' ? (
-                        <ShieldAlert className="w-5 h-5 text-[#E25C6F]" />
+                        <ShieldAlert className="w-6 h-6 text-[#E25C6F]" />
                       ) : result.overall_risk_score.toLowerCase() === 'medium' ? (
-                        <AlertTriangle className="w-5 h-5 text-[#D4AF37]" />
+                        <AlertTriangle className="w-6 h-6 text-[#D4AF37]" />
                       ) : (
-                        <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                        <ShieldCheck className="w-6 h-6 text-emerald-400" />
                       )}
                     </div>
-                    <div className="flex items-baseline gap-2 mt-1">
+
+                    <div className="flex items-baseline gap-2.5 mt-1">
                       <div
-                        className={`font-display text-3xl font-bold tracking-tight ${
+                        className={`font-display text-3xl sm:text-4xl font-bold tracking-tight ${
                           result.overall_risk_score.toLowerCase() === 'high'
                             ? 'text-[#E25C6F]'
                             : result.overall_risk_score.toLowerCase() === 'medium'
@@ -642,45 +903,46 @@ export default function ContractsPage() {
                             : 'text-emerald-400'
                         }`}
                       >
-                        {result.overall_risk_score.toUpperCase()} RISK
+                        {result.overall_risk_score.toUpperCase()}
                       </div>
                       {result.score_breakdown && (
-                        <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-white/[0.06] border border-white/10 text-stone">
+                        <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-white/[0.08] border border-white/10 text-[#F4EFE5]">
                           {result.score_breakdown.numerical_score} pts
                         </span>
                       )}
                     </div>
-                    <p className="mt-2 text-xs text-stone/80 leading-relaxed">
+
+                    <p className="mt-3 text-xs text-stone/90 leading-relaxed">
                       {result.overall_risk_score.toLowerCase() === 'high'
-                        ? 'Severe contractual imbalances detected. Significant indemnification, liability, or unilateral clauses require legal intervention.'
+                        ? 'Critical contractual imbalances detected. Significant indemnification, uncapped liability, or unilateral covenants require formal legal redlining.'
                         : result.overall_risk_score.toLowerCase() === 'medium'
-                        ? 'Moderate risk exposure identified. Terms contain ambiguous payment, renewal, or dispute resolutions warranting redlines.'
+                        ? 'Moderate exposure identified. Terms contain ambiguous payment, renewal, or dispute resolution mechanisms warranting review.'
                         : 'Standard contractual terms identified with low statutory exposure.'}
                     </p>
                   </div>
 
                   {/* Severity Breakdown Bar */}
-                  <div className="mt-6 pt-4 border-t border-white/[0.08] grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-[#6E2634]/30 rounded-lg p-2 border border-[#6E2634]/40">
-                      <span className="block text-xs font-mono text-[#E25C6F] font-bold">{highCount}</span>
-                      <span className="text-[10px] text-stone/70 uppercase">High</span>
+                  <div className="mt-6 pt-4 border-t border-white/[0.08] grid grid-cols-3 gap-2.5 text-center">
+                    <div className="bg-[#6E2634]/30 rounded-xl p-2.5 border border-[#6E2634]/50">
+                      <span className="block text-sm font-mono text-[#E25C6F] font-bold">{highCount}</span>
+                      <span className="text-[10px] text-stone/80 uppercase font-medium">High (5pt)</span>
                     </div>
-                    <div className="bg-[#B59A68]/20 rounded-lg p-2 border border-[#B59A68]/30">
-                      <span className="block text-xs font-mono text-[#D4AF37] font-bold">{medCount}</span>
-                      <span className="text-[10px] text-stone/70 uppercase">Med</span>
+                    <div className="bg-[#B59A68]/20 rounded-xl p-2.5 border border-[#B59A68]/40">
+                      <span className="block text-sm font-mono text-[#D4AF37] font-bold">{medCount}</span>
+                      <span className="text-[10px] text-stone/80 uppercase font-medium">Med (3pt)</span>
                     </div>
-                    <div className="bg-emerald-950/30 rounded-lg p-2 border border-emerald-800/30">
-                      <span className="block text-xs font-mono text-emerald-400 font-bold">{lowCount}</span>
-                      <span className="text-[10px] text-stone/70 uppercase">Low</span>
+                    <div className="bg-emerald-950/35 rounded-xl p-2.5 border border-emerald-800/40">
+                      <span className="block text-sm font-mono text-emerald-400 font-bold">{lowCount}</span>
+                      <span className="text-[10px] text-stone/80 uppercase font-medium">Low (1pt)</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Executive Summary Box */}
-              <div className="lg:col-span-8 rounded-xl p-6 bg-[#1A1C1B] border border-[#3B3A33] flex flex-col justify-between">
+              {/* Executive Summary Card */}
+              <div className="lg:col-span-8 rounded-2xl p-6 bg-[#1A1C1B] border border-[#3B3A33] flex flex-col justify-between shadow-xl">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#3B3A33]/70">
                     <h3 className="font-display text-base font-semibold text-[#F4EFE5] flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-[#B59A68]" />
                       Executive Legal Summary
@@ -688,10 +950,10 @@ export default function ContractsPage() {
                     <button
                       type="button"
                       onClick={() => copySummaryText(result.summary || '')}
-                      className="text-xs text-stone/70 hover:text-stone flex items-center gap-1 transition-colors"
+                      className="text-xs text-stone/80 hover:text-stone flex items-center gap-1.5 transition-colors px-2 py-1 rounded bg-[#151716] border border-[#3B3A33]"
                     >
-                      {copiedSummary ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedSummary ? 'Copied' : 'Copy'}</span>
+                      {copiedSummary ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSummary ? 'Copied' : 'Copy Summary'}</span>
                     </button>
                   </div>
                   <p className="text-xs sm:text-sm text-[#EDE8DC] leading-relaxed">
@@ -701,11 +963,11 @@ export default function ContractsPage() {
 
                 {/* Audit Limitations Banner if any */}
                 {result.limitations && result.limitations.length > 0 && (
-                  <div className="mt-4 pt-3 border-t border-[#3B3A33]/80">
+                  <div className="mt-5 pt-3 border-t border-[#3B3A33]/80">
                     <span className="text-[11px] font-mono font-bold text-[#B59A68] uppercase block mb-1">
                       Audit Notes & Verification Limitations:
                     </span>
-                    <ul className="text-xs text-stone/70 space-y-0.5 list-disc list-inside">
+                    <ul className="text-xs text-stone/70 space-y-1 list-disc list-inside">
                       {result.limitations.map((lim, i) => (
                         <li key={i}>{lim}</li>
                       ))}
@@ -717,64 +979,65 @@ export default function ContractsPage() {
 
             {/* Score Breakdown & Methodology Card */}
             {result.score_breakdown && (
-              <div className="rounded-xl p-5 bg-[#1A1C1B] border border-[#3B3A33] space-y-3">
+              <div className="rounded-2xl p-5 sm:p-6 bg-[#1A1C1B] border border-[#3B3A33] space-y-3.5 shadow-xl">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#3B3A33]/70 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#B59A68]/20 flex items-center justify-center text-[#B59A68]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#B59A68]/15 border border-[#B59A68]/30 flex items-center justify-center text-[#B59A68]">
                       <Scale className="w-4 h-4" />
                     </div>
                     <div>
                       <h4 className="text-xs sm:text-sm font-semibold text-[#F4EFE5] flex items-center gap-2">
-                        <span>Risk Scoring Methodology & Calculation</span>
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#B59A68]/15 text-[#D4AF37] border border-[#B59A68]/30">
+                        <span>Deterministic Risk Scoring Calculation</span>
+                        <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-[#B59A68]/15 text-[#D4AF37] border border-[#B59A68]/30">
                           {result.score_breakdown.numerical_score} Points Total
                         </span>
                       </h4>
                       <p className="text-[11px] font-mono text-stone/60 mt-0.5">
-                        Model: {result.score_breakdown.scoring_method}
+                        Weighted Severity Model: {result.score_breakdown.scoring_method}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-mono">
-                    <span className="text-[#E25C6F] bg-[#6E2634]/20 border border-[#6E2634]/40 px-2 py-1 rounded">
+                  <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
+                    <span className="text-[#E25C6F] bg-[#6E2634]/20 border border-[#6E2634]/40 px-2.5 py-1 rounded-lg">
                       High: {result.score_breakdown.high_count} &times; 5 = {result.score_breakdown.high_count * 5} pts
                     </span>
-                    <span className="text-[#D4AF37] bg-[#B59A68]/20 border border-[#B59A68]/40 px-2 py-1 rounded">
+                    <span className="text-[#D4AF37] bg-[#B59A68]/20 border border-[#B59A68]/40 px-2.5 py-1 rounded-lg">
                       Med: {result.score_breakdown.medium_count} &times; 3 = {result.score_breakdown.medium_count * 3} pts
                     </span>
-                    <span className="text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 px-2 py-1 rounded">
+                    <span className="text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 px-2.5 py-1 rounded-lg">
                       Low: {result.score_breakdown.low_count} &times; 1 = {result.score_breakdown.low_count * 1} pts
                     </span>
                   </div>
                 </div>
 
-                <p className="text-xs text-stone/80 leading-relaxed">
+                <p className="text-xs text-stone/90 leading-relaxed">
                   <strong className="text-[#F4EFE5]">Score Rationale: </strong>
                   {result.score_breakdown.risk_rationale}
                 </p>
 
                 {result.score_breakdown.scoring_limitations && (
                   <p className="text-[11px] text-stone/60 italic border-t border-[#3B3A33]/50 pt-2">
-                    <strong>Limitations: </strong>
+                    <strong>Statutory Scope: </strong>
                     {result.score_breakdown.scoring_limitations}
                   </p>
                 )}
               </div>
             )}
 
-            {/* Findings Explorer */}
-            <div className="space-y-4">
+            {/* Findings Explorer Workspace */}
+            <div className="space-y-4 pt-2">
               {/* Filter and Search Bar */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-2">
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-4 rounded-2xl bg-[#1A1C1B] border border-[#3B3A33]">
                 {/* Severity Tabs */}
-                <div className="inline-flex rounded-lg border border-[#3B3A33] bg-[#151716] p-1 gap-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-stone/60 font-mono mr-1 hidden sm:inline">Severity:</span>
                   <button
                     type="button"
                     onClick={() => setRiskFilter('ALL')}
-                    className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       riskFilter === 'ALL'
-                        ? 'bg-[#B59A68] text-[#151716]'
-                        : 'text-stone/70 hover:text-ivory'
+                        ? 'bg-[#B59A68] text-[#151716] shadow-sm'
+                        : 'bg-[#151716] text-stone/80 hover:text-ivory border border-[#3B3A33]'
                     }`}
                   >
                     All ({result.red_flags.length})
@@ -782,10 +1045,10 @@ export default function ContractsPage() {
                   <button
                     type="button"
                     onClick={() => setRiskFilter('HIGH')}
-                    className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       riskFilter === 'HIGH'
-                        ? 'bg-[#6E2634] text-[#F4EFE5]'
-                        : 'text-[#E25C6F]/80 hover:text-[#E25C6F]'
+                        ? 'bg-[#6E2634] text-[#F4EFE5] shadow-sm'
+                        : 'bg-[#151716] text-[#E25C6F]/80 hover:text-[#E25C6F] border border-[#3B3A33]'
                     }`}
                   >
                     High ({highCount})
@@ -793,10 +1056,10 @@ export default function ContractsPage() {
                   <button
                     type="button"
                     onClick={() => setRiskFilter('MEDIUM')}
-                    className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       riskFilter === 'MEDIUM'
-                        ? 'bg-[#B59A68]/40 text-[#D4AF37] border border-[#B59A68]/60'
-                        : 'text-[#D4AF37]/80 hover:text-[#D4AF37]'
+                        ? 'bg-[#B59A68]/35 text-[#D4AF37] border border-[#B59A68]/60 shadow-sm'
+                        : 'bg-[#151716] text-[#D4AF37]/80 hover:text-[#D4AF37] border border-[#3B3A33]'
                     }`}
                   >
                     Medium ({medCount})
@@ -804,57 +1067,71 @@ export default function ContractsPage() {
                   <button
                     type="button"
                     onClick={() => setRiskFilter('LOW')}
-                    className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       riskFilter === 'LOW'
-                        ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800'
-                        : 'text-emerald-400/80 hover:text-emerald-400'
+                        ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800 shadow-sm'
+                        : 'bg-[#151716] text-emerald-400/80 hover:text-emerald-400 border border-[#3B3A33]'
                     }`}
                   >
                     Low ({lowCount})
                   </button>
                 </div>
 
-                {/* Keyword Search */}
-                <div className="relative flex-1 sm:max-w-xs">
-                  <Search className="w-3.5 h-3.5 text-stone/50 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search flagged clauses or laws..."
-                    className="w-full bg-[#1A1C1B] border border-[#3B3A33] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#F4EFE5] placeholder:text-stone/50 focus:outline-none focus:border-[#B59A68]"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-stone/50 hover:text-stone"
-                    >
-                      &times;
-                    </button>
-                  )}
+                {/* Search & View Controls */}
+                <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                  {/* Keyword Search */}
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-stone/50 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Filter clauses or statutes..."
+                      className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg pl-8 pr-7 py-1.5 text-xs text-[#F4EFE5] placeholder:text-stone/50 focus:outline-none focus:border-[#B59A68]"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-stone/50 hover:text-stone"
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Expand/Collapse All */}
+                  <button
+                    type="button"
+                    onClick={toggleExpandAll}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#151716] border border-[#3B3A33] text-xs font-medium text-stone hover:text-ivory transition-colors whitespace-nowrap"
+                    title={allExpanded ? 'Collapse All Cards' : 'Expand All Cards'}
+                  >
+                    {allExpanded ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span className="hidden sm:inline">{allExpanded ? 'Collapse All' : 'Expand All'}</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Red Flags List */}
+              {/* Red Flags List Cards */}
               {result.audit_status === 'DOCUMENT_TYPE_MISMATCH' ? (
-                <div className="text-center py-10 px-4 rounded-xl border border-[#3B3A33] bg-[#1A1C1B]">
-                  <AlertCircle className="w-8 h-8 text-[#D4AF37] mx-auto mb-2" />
+                <div className="text-center py-12 px-4 rounded-2xl border border-[#3B3A33] bg-[#1A1C1B]">
+                  <AlertCircle className="w-9 h-9 text-[#D4AF37] mx-auto mb-2.5" />
                   <h4 className="text-sm font-semibold text-[#F4EFE5]">Contract Red-Flag Audit Not Applicable</h4>
                   <p className="text-xs text-stone/70 mt-1 max-w-md mx-auto leading-relaxed">
                     This document was classified as a judicial decision or non-contract instrument. To evaluate contractual risks such as unilateral indemnities, non-compete covenants, or liability caps, please upload a commercial contract.
                   </p>
                 </div>
               ) : filteredFlags.length === 0 ? (
-                <div className="text-center py-12 px-4 rounded-xl border border-[#3B3A33] bg-[#1A1C1B]">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                <div className="text-center py-14 px-4 rounded-2xl border border-[#3B3A33] bg-[#1A1C1B]">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
                   <h4 className="text-sm font-semibold text-[#F4EFE5]">
-                    {searchQuery ? 'No Red Flags Found in this View' : 'No Red Flags Detected in Analyzed Content'}
+                    {searchQuery ? 'No Red Flags Found in this View' : 'No Supported Red Flags Detected in Analyzed Content'}
                   </h4>
                   <p className="text-xs text-stone/70 mt-2 max-w-lg mx-auto leading-relaxed">
                     {searchQuery
                       ? `No flagged clauses matched your search query "${searchQuery}".`
-                      : 'No supported red flags were identified by the current automated analysis. The absence of findings does not establish the absence of contractual risk or guarantee statutory compliance. Formal review by a qualified Indian advocate is recommended prior to signing.'}
+                      : 'No statutory red flags were identified by the automated analysis. The absence of findings does not guarantee full statutory compliance; formal review by a qualified Indian advocate is recommended prior to contract execution.'}
                   </p>
                 </div>
               ) : (
@@ -869,33 +1146,33 @@ export default function ContractsPage() {
                       ? `Page ${flag.source_page}`
                       : flag.page_ref
                       ? `Page ${flag.page_ref}`
-                      : 'Document-wide / Unspecified';
+                      : 'Document-wide';
 
                     return (
                       <div
                         key={idx}
-                        className={`rounded-xl border transition-all ${
+                        className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-lg ${
                           isHigh
-                            ? 'bg-[#1C1416]/90 border-[#6E2634]/60'
+                            ? 'bg-[#1C1517] border-[#6E2634]/70 hover:border-[#8A3545]'
                             : isMed
-                            ? 'bg-[#1C1A16]/90 border-[#B59A68]/40'
-                            : 'bg-[#171A18]/90 border-emerald-900/40'
+                            ? 'bg-[#1B1916] border-[#B59A68]/50 hover:border-[#B59A68]'
+                            : 'bg-[#161917] border-emerald-900/50 hover:border-emerald-700'
                         }`}
                       >
                         {/* Header Bar */}
                         <div
                           onClick={() => toggleExpand(idx)}
-                          className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none"
+                          className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
                         >
-                          <div className="flex items-center gap-2.5 flex-wrap">
+                          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
                             {/* Severity Pill */}
                             <span
-                              className={`px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase tracking-wider ${
+                              className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider ${
                                 isHigh
-                                  ? 'bg-[#6E2634] text-[#F4EFE5]'
+                                  ? 'bg-[#6E2634] text-[#F4EFE5] shadow-sm'
                                   : isMed
-                                  ? 'bg-[#B59A68]/30 text-[#D4AF37] border border-[#B59A68]/50'
-                                  : 'bg-emerald-950/40 text-emerald-400 border border-emerald-800'
+                                  ? 'bg-[#B59A68]/25 text-[#D4AF37] border border-[#B59A68]/50'
+                                  : 'bg-emerald-950/50 text-emerald-400 border border-emerald-800'
                               }`}
                             >
                               {flag.risk_level} Risk
@@ -903,12 +1180,12 @@ export default function ContractsPage() {
 
                             {/* Risk Classification Badge */}
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${
                                 classification === 'potential_commercial_risk'
                                   ? 'bg-amber-950/40 text-amber-300 border-amber-800/40'
                                   : classification === 'possible_legal_concern'
                                   ? 'bg-sky-950/40 text-sky-300 border-sky-800/40'
-                                  : 'bg-[#6E2634]/40 text-[#E25C6F] border-[#8A3545]/60'
+                                  : 'bg-[#6E2634]/35 text-[#E25C6F] border-[#8A3545]/60'
                               }`}
                             >
                               {classification === 'potential_commercial_risk'
@@ -919,13 +1196,13 @@ export default function ContractsPage() {
                             </span>
 
                             {/* Title / Category */}
-                            <span className="text-xs font-semibold text-[#F4EFE5]">
+                            <span className="text-xs sm:text-sm font-semibold text-[#F4EFE5]">
                               {flag.title || (flag.risk_category ? flag.risk_category.replace(/_/g, ' ') : 'Contract Finding')}
                             </span>
 
                             {/* Finding ID chip */}
                             {flag.finding_id && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-stone/50 bg-[#151716] border border-[#3B3A33]">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-stone/60 bg-[#151716] border border-[#3B3A33]">
                                 {flag.finding_id}
                               </span>
                             )}
@@ -939,7 +1216,7 @@ export default function ContractsPage() {
                             {/* Confidence Pill */}
                             {(flag.evidence_confidence !== undefined && flag.evidence_confidence !== null) ||
                             (flag.confidence !== undefined && flag.confidence !== null) ? (
-                              <span className="text-[10px] font-mono text-stone/50">
+                              <span className="text-[10px] font-mono text-stone/50 hidden sm:inline">
                                 {Math.round(((flag.evidence_confidence ?? flag.confidence) || 0) * 100)}% match
                               </span>
                             ) : null}
@@ -952,7 +1229,7 @@ export default function ContractsPage() {
                                 e.stopPropagation();
                                 copyClause(verbatim, idx);
                               }}
-                              className="text-stone/60 hover:text-stone p-1 rounded hover:bg-white/[0.04] transition-colors"
+                              className="text-stone/60 hover:text-[#B59A68] p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"
                               title="Copy verbatim clause"
                             >
                               {copiedClauseIdx === idx ? (
@@ -977,44 +1254,45 @@ export default function ContractsPage() {
                               animate={{ opacity: 1, height: 'auto' }}
                               exit={{ opacity: 0, height: 0 }}
                               transition={{ duration: 0.2 }}
-                              className="border-t border-[#3B3A33]/50 px-4 sm:px-5 pb-5 pt-4 space-y-4"
+                              className="border-t border-[#3B3A33]/50 px-4 sm:px-6 pb-6 pt-4 space-y-4 bg-[#151716]/60"
                             >
                               {/* Verbatim Clause Excerpt */}
                               <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[11px] font-mono uppercase tracking-wider text-stone/60 font-semibold">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[11px] font-mono uppercase tracking-wider text-stone/70 font-semibold flex items-center gap-1.5">
+                                    <FileSignature className="w-3.5 h-3.5 text-[#B59A68]" />
                                     Verbatim Contract Clause
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => copyClause(verbatim, idx)}
-                                    className="text-[11px] text-[#B59A68] hover:underline flex items-center gap-1"
+                                    className="text-[11px] text-[#B59A68] hover:underline flex items-center gap-1 font-medium"
                                   >
                                     {copiedClauseIdx === idx ? 'Copied' : 'Copy Excerpt'}
                                   </button>
                                 </div>
-                                <div className="p-3.5 rounded-lg bg-[#0E100F] border border-[#3B3A33] font-mono text-xs text-[#EDE8DC] leading-relaxed italic select-text">
+                                <div className="p-4 rounded-xl bg-[#0D0F0E] border border-[#3B3A33] font-mono text-xs text-[#EDE8DC] leading-relaxed italic select-text shadow-inner">
                                   &ldquo;{verbatim}&rdquo;
                                 </div>
                               </div>
 
                               {/* Statutory Reference & Verification Status */}
                               {flag.statutory_provision && (
-                                <div className="p-3 rounded-lg bg-[#151716] border border-[#3B3A33]/80 space-y-2">
+                                <div className="p-4 rounded-xl bg-[#1A1C1B] border border-[#3B3A33]/80 space-y-2">
                                   <div className="flex items-center justify-between flex-wrap gap-2">
                                     <div className="flex items-center gap-2">
-                                      <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
-                                      <span className="text-xs font-semibold text-[#EDE8DC]">
+                                      <Scale className="w-4 h-4 text-[#B59A68]" />
+                                      <span className="text-xs sm:text-sm font-semibold text-[#EDE8DC]">
                                         {flag.statutory_provision}
                                       </span>
                                       {flag.applicable_law && (
-                                        <span className="text-xs text-stone/60 font-mono">
+                                        <span className="text-xs text-stone/70 font-mono">
                                           ({flag.applicable_law})
                                         </span>
                                       )}
                                     </div>
                                     <span
-                                      className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
+                                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono border ${
                                         flag.statutory_verification_status === 'verified'
                                           ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
                                           : 'bg-amber-950/40 text-amber-400 border-amber-800/40'
@@ -1027,14 +1305,14 @@ export default function ContractsPage() {
                                   </div>
 
                                   {flag.application_to_clause && (
-                                    <p className="text-xs text-stone/80 leading-relaxed">
-                                      <strong className="text-stone">Application: </strong>
+                                    <p className="text-xs text-stone/90 leading-relaxed">
+                                      <strong className="text-[#F4EFE5]">Statutory Application: </strong>
                                       {flag.application_to_clause}
                                     </p>
                                   )}
 
                                   {flag.uncertainty_or_limitation && (
-                                    <p className="text-[11px] text-stone/60 italic border-t border-[#3B3A33]/50 pt-1.5">
+                                    <p className="text-[11px] text-stone/70 italic border-t border-[#3B3A33]/50 pt-2">
                                       <strong>Limitations & Context: </strong>
                                       {flag.uncertainty_or_limitation}
                                     </p>
@@ -1042,11 +1320,11 @@ export default function ContractsPage() {
                                 </div>
                               )}
 
-                              {/* Legal Exposure Reasoning & Recommendation */}
+                              {/* Legal Exposure Reasoning & Actionable Recommendation */}
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="rounded-lg p-3.5 bg-[#151716] border border-[#3B3A33]/70">
-                                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#E25C6F] mb-1.5">
-                                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                <div className="rounded-xl p-4 bg-[#1A1C1B] border border-[#6E2634]/40">
+                                  <div className="flex items-center gap-2 text-xs font-semibold text-[#E25C6F] mb-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0" />
                                     <span>Statutory Risk & Legal Exposure</span>
                                   </div>
                                   <p className="text-xs text-stone/90 leading-relaxed">
@@ -1056,9 +1334,9 @@ export default function ContractsPage() {
 
                                 {/* Actionable Recommendation */}
                                 {(flag.recommended_action || flag.recommendation) && (
-                                  <div className="rounded-lg p-3.5 bg-[#151716] border border-[#B59A68]/40">
-                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-[#B59A68] mb-1.5">
-                                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                                  <div className="rounded-xl p-4 bg-[#1A1C1B] border border-[#B59A68]/50">
+                                    <div className="flex items-center gap-2 text-xs font-semibold text-[#B59A68] mb-2">
+                                      <Sparkles className="w-4 h-4 shrink-0" />
                                       <span>Recommended Action / Redline</span>
                                     </div>
                                     <p className="text-xs text-[#EDE8DC] leading-relaxed">
