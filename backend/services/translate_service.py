@@ -3,7 +3,9 @@ NyayaSarathi AI Legal Translation Service
 Supports Indic languages (Hindi, Marathi)
 Preserves legal citation formatting (e.g., Section 438 CrPC, BNS §103)
 """
+import os
 import re
+from typing import Optional
 from schemas.translate import TranslationRequest, TranslationResponse
 
 LANGUAGE_NAMES = {
@@ -33,6 +35,21 @@ COMMON_LEGAL_TERMS = {
         (r"\bALLOWED\b", "स्वीकृत (ALLOWED)"),
         (r"\bDISMISSED\b", "खारिज (DISMISSED)"),
         (r"\bBAIL GRANTED\b", "जमानत मंजूर (BAIL GRANTED)"),
+        (r"\bLegal Notice\b", "कानूनी नोटिस (Legal Notice)"),
+        (r"\bBail Application\b", "जमानत याचिका (Bail Application)"),
+        (r"\bPetition\b", "याचिका (Petition)"),
+        (r"\bWritten Statement\b", "लिखित कथन (Written Statement)"),
+        (r"\bReply\b", "प्रत्युत्तर / जवाब (Reply)"),
+        (r"\bStatement of Material Facts\b", "मुख्य तथ्यों का विवरण"),
+        (r"\bParticulars of Breach\b", "उल्लंघन एवं चूक का विवरण"),
+        (r"\bGrounds for Grant of Bail\b", "जमानत मंजूर करने के आधार"),
+        (r"\bPrayer for Relief\b", "राहत के लिए प्रार्थना"),
+        (r"\bVerification & Attestation\b", "सत्यापन एवं साक्ष्यांकन"),
+        (r"\bPreliminary Objections\b", "प्रारंभिक आपत्तियां"),
+        (r"\bPara-wise Specific Denial\b", "प्रत्येक पैरा का विशिष्ट खंडन"),
+        (r"\bSynopsis & Chronological Sequence\b", "संक्षेप एवं कालानुक्रमिक विवरण"),
+        (r"\bAffidavit in Support\b", "समर्थन में शपथ पत्र"),
+        (r"\bPeremptory Demand\b", "अंतिम मांग एवं नोटिस अवधि"),
     ],
     "mr": [
         (r"Historical judicial analysis indicates notable headwinds \((.*?) estimated favorable probability\) for the applicant\.", r"ऐतिहासिक न्यायालयीन विश्लेषण अर्जासाठी प्रतिकूल परिस्थितीचे संकेत (\1 अंदाजित अनुकूल संभाव्यता) देते."),
@@ -53,11 +70,26 @@ COMMON_LEGAL_TERMS = {
         (r"\bALLOWED\b", "मंजूर (ALLOWED)"),
         (r"\bDISMISSED\b", "फेटाळले (DISMISSED)"),
         (r"\bBAIL GRANTED\b", "जामीन मंजूर (BAIL GRANTED)"),
+        (r"\bLegal Notice\b", "कायदेशीर नोटीस (Legal Notice)"),
+        (r"\bBail Application\b", "जामीन अर्ज (Bail Application)"),
+        (r"\bPetition\b", "याचिका (Petition)"),
+        (r"\bWritten Statement\b", "लेखी जबाब (Written Statement)"),
+        (r"\bReply\b", "प्रत्युत्तर / उत्तर (Reply)"),
+        (r"\bStatement of Material Facts\b", "महत्त्वाच्या तथ्यांचे विवरण"),
+        (r"\bParticulars of Breach\b", "उल्लंघन आणि त्रुटींचे तपशील"),
+        (r"\bGrounds for Grant of Bail\b", "जामीन मंजूर करण्याचे आधार"),
+        (r"\bPrayer for Relief\b", "दिलासा मिळण्यासाठी विनंती"),
+        (r"\bVerification & Attestation\b", "पडताळणी आणि साक्षांकन"),
+        (r"\bPreliminary Objections\b", "प्राथमिक आक्षेप"),
+        (r"\bPara-wise Specific Denial\b", "प्रत्येक परिच्छेदाचे विशिष्ट खंडन"),
+        (r"\bSynopsis & Chronological Sequence\b", "संक्षेप आणि कालानुक्रमिक तपशील"),
+        (r"\bAffidavit in Support\b", "समर्थनार्थ शपथपत्र"),
+        (r"\bPeremptory Demand\b", "अंतिम मागणी आणि नोटीस मुदत"),
     ]
 }
 
 
-def translate_legal_text(request: TranslationRequest) -> TranslationResponse:
+def translate_legal_text(request: TranslationRequest, is_drafting_feature: bool = False) -> TranslationResponse:
     text = request.text.strip()
     target_lang = request.target_language.lower()
 
@@ -69,6 +101,7 @@ def translate_legal_text(request: TranslationRequest) -> TranslationResponse:
             provider="Native Engine"
         )
 
+    # Deterministic legal replacement dictionary
     translated = text
     if target_lang in COMMON_LEGAL_TERMS:
         for pattern, repl in COMMON_LEGAL_TERMS[target_lang]:
@@ -85,3 +118,6 @@ def translate_legal_text(request: TranslationRequest) -> TranslationResponse:
         target_language=target_lang,
         provider="NyayaSarathi Legal NLP Engine"
     )
+
+
+

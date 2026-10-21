@@ -44,13 +44,12 @@ class GroqProvider(BaseLLMProvider):
         if not active_key:
             raise ValueError("Groq API key is not configured.")
 
-        preferred_model = (self.model or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")).strip()
+        preferred_model = (self.model or os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")).strip()
         candidate_models = [
             preferred_model,
+            "qwen/qwen3.8-27b",
             "openai/gpt-oss-120b",
             "openai/gpt-oss-20b",
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant",
         ]
         # De-duplicate while preserving order
         unique_models = []

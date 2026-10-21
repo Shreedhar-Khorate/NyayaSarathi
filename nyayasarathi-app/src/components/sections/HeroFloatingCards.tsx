@@ -803,6 +803,8 @@ export default function HeroFloatingCards() {
               {spreadData.map((_, i) => (
                 <button
                   key={i}
+                  type="button"
+                  suppressHydrationWarning
                   onClick={() => scrollToSpread(i)}
                   title={`Jump to ${spreadData[i].badge}`}
                   className={`w-2 h-2 rounded-full transition-all duration-200 ${

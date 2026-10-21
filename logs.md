@@ -503,5 +503,35 @@ Frontend:
 - All 73 existing backend tests still passing (OK, 309s)
 - Backend uvicorn hot-reloaded cleanly after router registration
 
+---
 
+### 2026-10-21 19:48 — Milestone 14: Automated Legal Drafting & Regional Translation Engine
 
+- **Status:** Completed
+- **Changes:**
+  - Implemented end-to-end automated legal drafting module supporting 4 core Indian legal document types: Legal Notice, Bail Application (u/s 439 CrPC / BNSS), Writ Petition (Civil/Criminal under Art. 226/32), and Written Statement / Reply.
+  - Integrated 3-level precedent retrieval engine for live citation injection with authentic verification statuses (`verified_primary_source`, `verification_required`).
+  - Added intelligent fact validation & missing information detection with interactive clarification prompts.
+  - Implemented regional translation engine (`hi` Hindi & `mr` Marathi) preserving legal terminology, section hierarchy, and original draft integrity.
+  - Built section-by-section regeneration and live markdown/structured editing capabilities.
+  - Added export pipeline to formal court-styled PDF and formatted DOCX documents.
+  - Built modern responsive Frontend workbench at `/legal-drafting` (with `/drafting` alias) matching NyayaSarathi's Neo-Classical Legal Design System (`#151716` ink, `#6E2634` oxblood, `#B59A68` brass, `#71877A` verdigris).
+  - Added navigation links, quick launch tools across Advocate/Judge portals, and i18n locale keys (`en`, `hi`, `mr`).
+- **Files:**
+  - `backend/schemas/drafts.py` *(modified/expanded)*
+  - `backend/services/drafts_service.py` *(modified/expanded)*
+  - `backend/services/translate_service.py` *(modified/expanded)*
+  - `backend/services/draft_export.py` *(new)*
+  - `backend/routers/drafts.py` *(modified/expanded)*
+  - `backend/tests/test_drafting_and_translation.py` *(new)*
+  - `nyayasarathi-app/src/app/legal-drafting/page.tsx` *(new)*
+  - `nyayasarathi-app/src/app/drafting/page.tsx` *(new redirect)*
+  - `nyayasarathi-app/src/components/layout/NavAndFooter.tsx` *(modified)*
+  - `nyayasarathi-app/src/i18n/locales/en.json`, `hi.json`, `mr.json` *(modified)*
+- **Database:** No destructive schema changes; local SQLite and cached precedents utilized.
+- **Validation:**
+  - `npx tsc --noEmit` on `nyayasarathi-app` passed with 0 errors.
+  - `pytest backend/tests/test_drafting_and_translation.py` all 15 tests passed.
+  - Existing OCR and OCR-to-Research tests passed without regression.
+- **Issues:** None. LLM rate limits handled gracefully with automatic multi-model fallback and deterministic template synthesis.
+- **Next steps:** Ready for production deployment and user workflow exploration.

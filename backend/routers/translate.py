@@ -12,7 +12,7 @@ router = APIRouter()
 def translate(request: TranslationRequest) -> TranslationResponse:
     """
     Translates legal narrative text into target Indian regional languages (hi, mr, ta, gu, etc.)
-    while preserving standard legal citation formatting and statutory references.
+    with standard legal terminology preservation.
     """
     try:
         return translate_legal_text(request)
