@@ -503,5 +503,159 @@ Frontend:
 - All 73 existing backend tests still passing (OK, 309s)
 - Backend uvicorn hot-reloaded cleanly after router registration
 
+---
 
+### 2026-10-21 15:45 — Milestone 14: Contract Red-Flag Analyzer Investigation & Fix
+
+**Task**
+- Investigate and resolve the defect where non-contract legal documents (specifically court judgments, e.g. Bombay High Court interim maintenance judgment) uploaded to the Contract Red-Flag Analyzer produce an incorrect 'LOW RISK' overall profile, generic heuristic summaries mentioning unverified clause categories, zero finding counts, and inconsistent UI states.
+- Current Git Branch: main.
+
+**Investigation Plan**
+1. Inspect Git status, working tree, and relevant files (backend/routers/contracts.py, backend/schemas/contracts.py, backend/services/contracts_service.py, backend/services/user_repository.py, backend/tests/test_contracts.py, nyayasarathi-app/src/app/contracts/page.tsx).
+2. Reproduce the bug using synthetic / sanitized judicial decision text and trace why the fallback heuristic engine misclassifies zero findings as 'Low' risk with generic summary text.
+3. Design and implement a document classification gate with structured audit statuses (COMPLETED, DOCUMENT_TYPE_MISMATCH, INSUFFICIENT_CONTENT, PARTIAL_ANALYSIS, FAILED).
+4. Prevent non-contracts from being assigned contract risk profiles ('Not Assessed' semantics).
+5. Align schemas, backend router, activity logging, and frontend rendering with accurate status messages, filters, and actionable user guidance.
+**Root Cause Verified**
+1. Absence of Document Classification Gate: `contracts_service.py` passed any extracted PDF/DOCX text directly to contract clause extraction without checking if the document is a commercial agreement or a judicial judgment / order / notice.
+2. Hardcoded Fallback Summary in Heuristic Engine: When zero red flags were found, the heuristic fallback injected a generic summary stating the document contains risky indemnities, liabilities, and restrictive covenants.
+3. Fallback Scoring Flaw: Zero red flags defaulted directly to `overall_score = 'Low'`, mischaracterizing non-contract court judgments as 'Low Risk' contracts.
+4. Schema & Frontend Gap: `ContractAnalysisResponse` and `contracts/page.tsx` lacked `audit_status`, `document_type`, and 'Not Assessed' states, showing contradictory badges and zero-count summaries.
+
+**Changes Implemented**
+1. **Pydantic Schemas (`backend/schemas/contracts.py`)**:
+   - Added `document_type`, `document_type_label`, `audit_status` (`COMPLETED`, `DOCUMENT_TYPE_MISMATCH`, `INSUFFICIENT_CONTENT`, `PARTIAL_ANALYSIS`, `FAILED`), `classification_confidence`, `classification_reason`, and `recommended_action` to `ContractAnalysisResponse`.
+2. **Document Classification Gate (`backend/services/contracts_service.py`)**:
+   - Implemented `classify_document(text, filename)`: recognizes court hierarchy, coram, matter types, petitioner/respondent captions, oral judgments, orders, legal demand notices, legal opinions, vs. bilateral commercial contracts and subtypes (NDAs, employment, leases, SLAs).
+   - Enforced immediate gating in `analyze_contract()`: non-contracts return `audit_status: "DOCUMENT_TYPE_MISMATCH"`, `overall_risk_score: "Not Assessed"`, `red_flags: []`, zero risk counts, explanatory summary, and links to Case Predictor and Legal Research.
+   - Refactored page reference mapping to strictly resolve page numbers via `_find_page_ref(clause, pages_data)` against actual source text.
+   - Fixed summary generator to dynamically construct findings summaries from validated red flags, eliminating fabricated claims.
+   - Added `INSUFFICIENT_CONTENT` handling for unreadable or truncated text snippets (< 60 chars).
+3. **User Activity Logging (`backend/routers/contracts.py`)**:
+   - Non-contract mismatches recorded in `user_activity_history` as `Document Mismatch` with `audit_status: "DOCUMENT_TYPE_MISMATCH"`, `overall_risk_score: "Not Assessed"`, eliminating false "Low Risk" activity history.
+   - Strict ephemeral privacy: no document text or sensitive client excerpts stored in activity metadata.
+4. **Frontend Architecture & UX (`nyayasarathi-app`)**:
+   - Updated TypeScript interface `ContractAnalysisResult` in `src/lib/auth.ts`.
+   - Updated `src/app/contracts/page.tsx`:
+     - Displays `document_type_label` and `audit_status` badges in header.
+     - Renders dedicated "NOT ASSESSED" card (purple/slate styling) when status is `DOCUMENT_TYPE_MISMATCH` or risk is "Not Assessed".
+     - Injects Document Mismatch Banner with direct cross-navigation buttons to Legal Research, Case Predictor, and "Upload Commercial Contract".
+     - Replaces misleading "No Red Flags Found in this View" checkmark with an informational "Contract Red-Flag Audit Not Applicable" panel on document mismatch.
+     - Resets result state (`setResult(null)`) on new file selection.
+5. **Comprehensive Regression Suite (`backend/tests/test_contracts.py`)**:
+   - Added 10 new regression test cases (total 32 tests) covering all 12 scenarios from `F.md` §6:
+     - `test_23_court_judgment_uploaded_as_contract_returns_mismatch`
+     - `test_24_court_judgment_api_endpoint_and_activity_logging`
+     - `test_25_legal_notice_mismatch`
+     - `test_26_valid_commercial_contract_zero_red_flags`
+     - `test_27_explicit_unilateral_termination_clause`
+     - `test_28_broad_indemnity_evidence_grounding`
+     - `test_29_post_termination_non_compete_section_27`
+     - `test_30_insufficient_content_returns_proper_status`
+     - `test_31_ambiguous_or_general_legal_document`
+     - `test_32_classify_document_unit_coverage`
+   - Mocked external AI provider calls to ensure deterministic, offline execution under 12 seconds without live network/API key dependencies.
+
+**Verification & Validation Results**
+- Backend Test Suite: `python -m unittest tests/test_contracts.py` -> **32/32 tests passed (OK in 11.667s)**.
+- Frontend Production Build: `npm run build` in `nyayasarathi-app` -> **Compiled successfully with 0 TypeScript errors (Exit Code 0)**.
+- Sample Judgment Verification:
+  - Input: `Roma_Rajesh_Tiwari_vs_Rajesh_Dinanath_Tiwari_on_12_October_2017.PDF`
+  - Output: `document_type: "court_judgment"`, `audit_status: "DOCUMENT_TYPE_MISMATCH"`, `overall_risk_score: "Not Assessed"`, `red_flags: []`, `risk_counts: {'high': 0, 'medium': 0, 'low': 0, 'total': 0}`.
+  - Zero false-positive warnings, zero claims of "Low Risk", zero fabricated indemnification statements.
+
+---
+
+### Milestone 15: Upgrade NyayaSarathi Contract Red-Flag Analyzer (Evidence-Grounded, Legally Cautious, Explainable Scoring & Subtype Intelligence)
+**Date:** 2026-10-21  
+**Scope:** Full-stack overhaul of Feature 3.7 Contract Red-Flag Analyzer across backend schemas, legal service heuristic engine, document classification, statutory concordance, explainable scoring, UI integration, and regression testing.
+
+**Requirements Addressed**
+1. **Requirement A — Classify Document Subtype Accurately**:
+   - Extended classification to 14 granular legal document types: `tender_rfp`, `draft_agreement`, `executed_contract`, `nda`, `employment_agreement`, `lease_agreement`, `service_agreement`, `procurement_contract`, `legal_notice`, `court_judgment`, `court_order`, `legal_opinion`, `other_legal_document`, `unknown`.
+   - Implemented content-first classification prioritizing operative headings and text over filename.
+   - Accurately distinguishes public tender/RFP documents containing instructions to bidders and EMD from executed contracts, even when tenders contain draft agreement annexures.
+   - Retained non-contract mismatch safeguards: judgments, orders, notices, and opinions are rejected with `DOCUMENT_TYPE_MISMATCH` and `overall_risk_score: "Not Assessed"`.
+
+2. **Requirement B — Ground Every Legal Finding in Evidence**:
+   - Extended response schema with comprehensive legal metadata:
+     - `finding_id`: Unique identifier (e.g., `rf-1`).
+     - `risk_level`: `high` | `medium` | `low`.
+     - `risk_category`: Specific category (`indemnity`, `liability`, `restrictive_covenants`, `procurement_discretion`, etc.).
+     - `risk_classification`: Commercial vs. legal distinction.
+     - `title`: Descriptive finding headline.
+     - `verbatim_clause`: Unaltered extracted quote from source text.
+     - `source_page`: Actual page number from PyMuPDF page metadata (never fabricated).
+     - `clause_location`: e.g., `Page 1`.
+     - `applicable_law`: Verified Indian statute or procurement doctrine.
+     - `statutory_provision`: Section number and act name.
+     - `statutory_verification_status`: `verified` | `unverified` | `not_applicable`.
+     - `legal_explanation`: Grounded statutory exposure rationale.
+     - `application_to_clause`: Specific factual/legal nexus to the drafted clause.
+     - `uncertainty_or_limitation`: Clear material limitations and judicial caveats.
+     - `recommended_action`: Proportional, actionable redline counter-term.
+     - `evidence_confidence`: Verbatim text overlap ratio.
+   - Maintained full backward compatibility with legacy fields (`clause_text`, `page_ref`, `explanation`, `recommendation`, `confidence`).
+   - Integrated statutory concordance catalog (`VERIFIED_STATUTES`) covering Indian Contract Act 1872 (Sections 27, 28, 62, 73, 74, 124, 125), Arbitration & Conciliation Act 1996 (Section 12(5)), Specific Relief Act 1963 (Section 14(d)), and Article 14 / GFR Rule 173. Unmatched references are explicitly labeled `unverified`.
+
+3. **Requirement C — Separate Commercial Risk from Legal Conclusions**:
+   - Introduced consistent risk classification tags:
+     - `potential_commercial_risk`: Financial exposure, operational difficulty, or bargaining power imbalance without legal defect (e.g., discretionary procurement rejection, broad indemnity, unilateral liability caps).
+     - `possible_legal_concern`: Plausible legal issue supported by identifiable legal principle whose enforceability depends on factual context (e.g., liquidated damages under Section 74 ICA, EMD forfeiture).
+     - `legal_conclusion_requiring_review`: Specific legal issue supported by statutory doctrine subject to advocate review (e.g., post-term non-compete covenants under Section 27 ICA, unilateral arbitrator appointment under Section 12(5) A&C Act).
+   - Refrained from labeling commercially unfavorable terms as "illegal" or "void" without established statutory defect.
+
+4. **Requirement D — Fact-Grounded Executive Summaries**:
+   - Removed all generic fallback summaries and checklist-based statements.
+   - Executive summary dynamically derives strictly from validated findings present in the document.
+   - Never references indemnity, liability, or restrictive covenants unless extracted and validated.
+   - Zero-findings state explicitly notes: *"No high-risk, unreciprocal, or statutory red flags were detected in the analyzed text. Note: Absence of detected red flags does not guarantee complete legal suitability, commercial fairness, or statutory enforceability; independent human advocate review is recommended prior to contract execution."*
+
+5. **Requirement E — Calibrate and Explain Overall Risk Score**:
+   - Implemented explainable Weighted Severity Model:
+     - High Severity: 5 points
+     - Medium Severity: 3 points
+     - Low Severity: 1 point
+   - Thresholds: High Risk (high_count >= 1 or numerical_score >= 9); Medium Risk (med_count >= 1 or numerical_score >= 3); Low Risk (0-2 points).
+   - Generated structured `ScoreBreakdown` schema (`numerical_score`, `scoring_method`, `high_count`, `medium_count`, `low_count`, `contributing_findings`, `risk_rationale`, `scoring_limitations`).
+   - In the BIS tender scenario: 3 High findings (15 pts) + 4 Medium findings (12 pts) = 27 points (calculated dynamically from validated findings).
+
+6. **Frontend & Export Integration (`nyayasarathi-app`)**:
+   - Updated TypeScript interfaces in `src/lib/auth.ts` (`ContractRedFlag`, `ScoreContributingFinding`, `ScoreBreakdown`, `ContractAnalysisResult`).
+   - Updated `src/app/contracts/page.tsx`:
+     - Rendered document subtype badge and classification confidence.
+     - Added Score Breakdown & Methodology Card with point totals, point formula chips, and score rationale.
+     - Displayed risk classification badges (`Potential Commercial Risk`, `Possible Legal Concern`, `Legal Conclusion Requiring Review`) with color-coded badges.
+     - Displayed statutory references with `[Statute Verified]` (emerald) or `[Statute Unverified]` (amber) status chips.
+     - Rendered applicability and context limitations inside finding cards.
+     - Enriched `Copy Full Report` to copy classification reason, score breakdown, finding IDs, statutory verification status, applicability, and statutory disclaimers.
+     - Maintained ephemeral privacy: zero persistence of contract text in user activity history.
+
+7. **Regression Test Suite (`backend/tests/test_contracts.py`)**:
+   - Extended test suite from 32 to 42 tests covering:
+     - `test_33_tender_rfp_classification_and_procurement_risk`
+     - `test_34_draft_agreement_vs_executed_contract`
+     - `test_35_filename_contradiction_content_priority`
+     - `test_36_court_order_vs_court_judgment`
+     - `test_37_grounded_finding_schema_and_backward_compatibility`
+     - `test_38_statutory_verification_catalog`
+     - `test_39_commercial_risk_separation_from_legal_conclusions`
+     - `test_40_score_breakdown_calculation_and_bis_scenario`
+     - `test_41_evidence_based_summary_no_hallucinated_indemnity`
+     - `test_42_zero_findings_safety_disclaimer`
+
+**Files Modified**
+- `backend/schemas/contracts.py`: Extended `RedFlag` with grounded legal fields, added `ScoreBreakdown` schema.
+- `backend/services/contracts_service.py`: 14-subtype classifier, `VERIFIED_STATUTES` concordance, deterministic Weighted Severity scoring, evidence-grounded summary generator, heuristic scanner updates.
+- `backend/tests/test_contracts.py`: Added tests 33 to 42 for contract red-flag analyzer regression coverage.
+- `nyayasarathi-app/src/lib/auth.ts`: Added `ScoreBreakdown`, `ScoreContributingFinding`, and updated `ContractRedFlag` and `ContractAnalysisResult` interfaces.
+- `nyayasarathi-app/src/app/contracts/page.tsx`: Subtype pill, score breakdown panel, classification badges, statutory verification chips, enriched copy/print report.
+- `logs.md`: Recorded Milestone 15.
+
+**Verification Results**
+- Backend Test Suite: `python -m unittest tests/test_contracts.py` -> **42/42 tests passed (OK in 18.896s)**.
+- Frontend Production Build: `npm run build` in `nyayasarathi-app` -> **Compiled successfully with 0 errors (Exit Code 0)**.
+- BIS Tender Simulation: 3 High findings (15 pts) + 4 Medium findings (12 pts) = 27 points computed deterministically.
+- All non-contract safeguards preserved.
 

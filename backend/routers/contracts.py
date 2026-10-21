@@ -87,15 +87,27 @@ async def analyze_contract_file(
         if current_user and current_user.get("id"):
             try:
                 from services.user_repository import create_activity
+                if response.audit_status == "COMPLETED":
+                    activity_title = f"Analyzed Contract: {filename[:50]}"
+                    query_summary = f"Contract Risk Analysis: {response.overall_risk_score} Risk ({len(response.red_flags)} red flags)"
+                elif response.audit_status == "DOCUMENT_TYPE_MISMATCH":
+                    activity_title = f"Document Mismatch: {filename[:50]}"
+                    query_summary = f"Classified as {response.document_type_label} (Not a Contract - Audit Not Assessed)"
+                else:
+                    activity_title = f"Contract Audit ({response.audit_status}): {filename[:50]}"
+                    query_summary = f"Status: {response.audit_status} ({response.classification_reason or 'Analysis Incomplete'})"
+
                 create_activity(
                     user_id=current_user["id"],
                     activity_type="CONTRACT_ANALYSIS",
-                    title=f"Analyzed: {filename[:50]}",
-                    query_text=f"Contract Risk Analysis: {response.overall_risk_score} Risk ({len(response.red_flags)} red flags)",
+                    title=activity_title,
+                    query_text=query_summary,
                     metadata={
                         "filename": filename,
                         "overall_risk_score": response.overall_risk_score,
                         "red_flags_count": len(response.red_flags),
+                        "audit_status": response.audit_status,
+                        "document_type": response.document_type,
                     },
                 )
             except Exception as act_err:

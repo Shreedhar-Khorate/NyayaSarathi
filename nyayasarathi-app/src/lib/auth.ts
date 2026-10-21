@@ -683,13 +683,47 @@ export async function judgePromoteToJudge(
 // ── Contract Red-Flag Analysis API Client ───────────────────────────────────
 
 export interface ContractRedFlag {
-  clause_text: string;
+  finding_id?: string;
   risk_level: 'high' | 'medium' | 'low';
-  explanation: string;
-  page_ref?: number | null;
   risk_category?: string;
+  risk_classification?: 'potential_commercial_risk' | 'possible_legal_concern' | 'legal_conclusion_requiring_review' | string;
+  title?: string;
+  verbatim_clause?: string;
+  clause_text: string;
+  source_page?: number | null;
+  page_ref?: number | null;
+  clause_location?: string | null;
+  applicable_law?: string | null;
+  statutory_provision?: string | null;
+  statutory_verification_status?: 'verified' | 'unverified' | 'not_applicable' | string;
+  legal_explanation?: string | null;
+  explanation: string;
+  application_to_clause?: string | null;
+  uncertainty_or_limitation?: string | null;
+  recommended_action?: string | null;
   recommendation?: string | null;
+  evidence_confidence?: number | null;
   confidence?: number | null;
+}
+
+export interface ScoreContributingFinding {
+  finding_id?: string;
+  title?: string;
+  risk_level: string;
+  points: number;
+  risk_classification?: string;
+  statutory_provision?: string;
+}
+
+export interface ScoreBreakdown {
+  numerical_score: number;
+  scoring_method: string;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  contributing_findings: ScoreContributingFinding[];
+  risk_rationale: string;
+  scoring_limitations?: string | null;
 }
 
 export interface ContractRiskCounts {
@@ -701,13 +735,20 @@ export interface ContractRiskCounts {
 
 export interface ContractAnalysisResult {
   filename?: string;
-  overall_risk_score: 'High' | 'Medium' | 'Low' | string;
+  overall_risk_score: 'High' | 'Medium' | 'Low' | 'Not Assessed' | string;
   summary?: string;
   red_flags: ContractRedFlag[];
   risk_counts?: ContractRiskCounts;
+  score_breakdown?: ScoreBreakdown;
   limitations?: string[];
   extraction_method?: string;
   total_pages?: number;
+  document_type?: string;
+  document_type_label?: string;
+  audit_status?: 'COMPLETED' | 'DOCUMENT_TYPE_MISMATCH' | 'INSUFFICIENT_CONTENT' | 'PARTIAL_ANALYSIS' | 'FAILED' | string;
+  classification_confidence?: number | null;
+  classification_reason?: string | null;
+  recommended_action?: string | null;
 }
 
 /** Upload a contract file (PDF, DOCX, TXT) and receive structured red-flag risk analysis. */

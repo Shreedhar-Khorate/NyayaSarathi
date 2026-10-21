@@ -85,6 +85,7 @@ export default function ContractsPage() {
 
   const validateAndSetFile = (f: File) => {
     setError(null);
+    setResult(null);
     const validExtensions = ['.pdf', '.docx', '.doc', '.txt'];
     const ext = '.' + f.name.split('.').pop()?.toLowerCase();
     if (!validExtensions.includes(ext)) {
@@ -180,20 +181,62 @@ export default function ContractsPage() {
     const lines = [
       `# NYAYASARATHI CONTRACT RED-FLAG AUDIT REPORT`,
       `Document: ${result.filename || file?.name || 'Contract'}`,
+      `Document Classification: ${result.document_type_label || result.document_type || 'Unknown'}`,
+      ...(result.classification_reason ? [`Classification Reason: ${result.classification_reason}`] : []),
+      `Audit Status: ${result.audit_status || 'COMPLETED'}`,
       `Overall Risk Level: ${result.overall_risk_score}`,
-      `Total Flagged Clauses: ${result.red_flags.length}`,
+      ...(result.score_breakdown
+        ? [
+            `Risk Score: ${result.score_breakdown.numerical_score} pts`,
+            `Scoring Methodology: ${result.score_breakdown.scoring_method}`,
+            `Risk Rationale: ${result.score_breakdown.risk_rationale}`,
+          ]
+        : []),
+      `Total Flagged Clauses: ${result.red_flags.length} (High: ${highCount}, Medium: ${medCount}, Low: ${lowCount})`,
       `\n## EXECUTIVE SUMMARY`,
       result.summary || 'N/A',
       `\n## IDENTIFIED RED FLAGS`,
     ];
 
     result.red_flags.forEach((rf, i) => {
-      lines.push(`\n### ${i + 1}. [${rf.risk_level.toUpperCase()}] ${rf.risk_category || 'Contract Risk'}`);
-      if (rf.page_ref) lines.push(`Page Reference: Page ${rf.page_ref}`);
-      lines.push(`\nVERBATIM CLAUSE:\n"${rf.clause_text}"`);
-      lines.push(`\nLEGAL EXPOSURE EXPLANATION:\n${rf.explanation}`);
-      if (rf.recommendation) {
-        lines.push(`\nRECOMMENDED REDLINE / ACTION:\n${rf.recommendation}`);
+      const heading = rf.title
+        ? `${i + 1}. [${rf.risk_level.toUpperCase()}] ${rf.title}`
+        : `${i + 1}. [${rf.risk_level.toUpperCase()}] ${rf.risk_category || 'Contract Risk'}`;
+      lines.push(`\n### ${heading}`);
+      if (rf.finding_id) lines.push(`Finding ID: ${rf.finding_id}`);
+      if (rf.risk_classification) {
+        const classLabel =
+          rf.risk_classification === 'potential_commercial_risk'
+            ? 'Potential Commercial Risk'
+            : rf.risk_classification === 'possible_legal_concern'
+            ? 'Possible Legal Concern'
+            : 'Legal Conclusion Requiring Review';
+        lines.push(`Risk Classification: ${classLabel}`);
+      }
+      const pageLoc = rf.source_page
+        ? `Page ${rf.source_page}`
+        : rf.page_ref
+        ? `Page ${rf.page_ref}`
+        : 'Document-wide / Unspecified';
+      lines.push(`Location: ${pageLoc}${rf.clause_location ? ` (${rf.clause_location})` : ''}`);
+      lines.push(`\nVERBATIM CLAUSE:\n"${rf.verbatim_clause || rf.clause_text}"`);
+      if (rf.statutory_provision) {
+        lines.push(
+          `\nAPPLICABLE STATUTE: ${rf.statutory_provision} (${rf.applicable_law || 'Indian Law'}) [${
+            rf.statutory_verification_status === 'verified' ? 'Verified' : 'Unverified'
+          }]`
+        );
+      }
+      lines.push(`\nLEGAL EXPOSURE EXPLANATION:\n${rf.legal_explanation || rf.explanation}`);
+      if (rf.application_to_clause) {
+        lines.push(`\nAPPLICABILITY TO CLAUSE:\n${rf.application_to_clause}`);
+      }
+      if (rf.uncertainty_or_limitation) {
+        lines.push(`\nMATERIAL LIMITATIONS & CONTEXT:\n${rf.uncertainty_or_limitation}`);
+      }
+      const action = rf.recommended_action || rf.recommendation;
+      if (action) {
+        lines.push(`\nRECOMMENDED REDLINE / ACTION:\n${action}`);
       }
     });
 
@@ -201,6 +244,11 @@ export default function ContractsPage() {
       lines.push(`\n## AUDIT LIMITATIONS & NOTES`);
       result.limitations.forEach((lim) => lines.push(`- ${lim}`));
     }
+
+    lines.push(`\n## STATUTORY DISCLAIMER`);
+    lines.push(
+      `This red-flag audit is generated automatically for assistive legal research and risk triage. It does not constitute formal legal advice or create an attorney-client relationship. All findings, statutory interpretations, and redlines must be reviewed by a qualified Indian advocate prior to contract execution.`
+    );
 
     navigator.clipboard.writeText(lines.join('\n'));
     setCopiedReport(true);
@@ -218,10 +266,17 @@ export default function ContractsPage() {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
-      flag.clause_text.toLowerCase().includes(q) ||
-      flag.explanation.toLowerCase().includes(q) ||
+      (flag.clause_text && flag.clause_text.toLowerCase().includes(q)) ||
+      (flag.verbatim_clause && flag.verbatim_clause.toLowerCase().includes(q)) ||
+      (flag.title && flag.title.toLowerCase().includes(q)) ||
+      (flag.explanation && flag.explanation.toLowerCase().includes(q)) ||
+      (flag.legal_explanation && flag.legal_explanation.toLowerCase().includes(q)) ||
       (flag.risk_category && flag.risk_category.toLowerCase().includes(q)) ||
-      (flag.recommendation && flag.recommendation.toLowerCase().includes(q));
+      (flag.statutory_provision && flag.statutory_provision.toLowerCase().includes(q)) ||
+      (flag.applicable_law && flag.applicable_law.toLowerCase().includes(q)) ||
+      (flag.risk_classification && flag.risk_classification.toLowerCase().includes(q)) ||
+      (flag.recommendation && flag.recommendation.toLowerCase().includes(q)) ||
+      (flag.recommended_action && flag.recommended_action.toLowerCase().includes(q));
     return matchesFilter && matchesSearch;
   });
 
@@ -416,12 +471,39 @@ export default function ContractsPage() {
               <div className="flex items-center gap-3">
                 <FileCheck2 className="w-5 h-5 text-[#B59A68]" />
                 <div>
-                  <h3 className="text-sm font-semibold text-[#F4EFE5]">
-                    {result.filename || file?.name || 'Contract Audit'}
-                  </h3>
-                  <p className="text-xs text-stone/70">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-semibold text-[#F4EFE5]">
+                      {result.filename || file?.name || 'Contract Audit'}
+                    </h3>
+                    {result.document_type_label && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-[#B59A68]/20 text-[#D4AF37] border border-[#B59A68]/40">
+                        {result.document_type_label}
+                      </span>
+                    )}
+                    {result.classification_confidence !== undefined &&
+                      result.classification_confidence !== null && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#151716] text-[#B59A68] border border-[#3B3A33]">
+                          {Math.round(result.classification_confidence * 100)}% Conf
+                        </span>
+                      )}
+                    {result.audit_status && (
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase border ${
+                          result.audit_status === 'COMPLETED'
+                            ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/50'
+                            : result.audit_status === 'DOCUMENT_TYPE_MISMATCH'
+                            ? 'bg-[#6E2634]/40 text-[#E25C6F] border-[#8A3545]/60'
+                            : 'bg-amber-950/40 text-amber-400 border-amber-800/50'
+                        }`}
+                      >
+                        {result.audit_status.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone/70 mt-0.5">
                     Extracted via {result.extraction_method || 'PyMuPDF'} &bull;{' '}
                     {result.total_pages ? `${result.total_pages} pages inspected` : 'Document text processed'}
+                    {result.classification_reason ? ` &bull; ${result.classification_reason}` : ''}
                   </p>
                 </div>
               </div>
@@ -456,67 +538,144 @@ export default function ContractsPage() {
               </div>
             </div>
 
+            {/* Document Mismatch Dedicated Notification Banner */}
+            {result.audit_status === 'DOCUMENT_TYPE_MISMATCH' && (
+              <div className="rounded-xl border border-[#B59A68]/50 bg-[#B59A68]/10 p-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-1">
+                    <h4 className="text-sm font-semibold text-[#F4EFE5]">
+                      Document Type Mismatch: {result.document_type_label || 'Non-Contract Document'}
+                    </h4>
+                    <p className="text-xs text-stone/80 leading-relaxed">
+                      {result.summary}
+                    </p>
+                    {result.recommended_action && (
+                      <p className="text-xs text-[#D4AF37] font-medium pt-1">
+                        <strong>Recommended Action:</strong> {result.recommended_action}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="pt-2 flex flex-wrap gap-2 border-t border-[#B59A68]/20">
+                  <Link
+                    href="/legal-research"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[#1A1C1B] text-[#D4AF37] border border-[#B59A68]/40 hover:bg-[#B59A68]/20 transition-colors"
+                  >
+                    <Scale className="w-3.5 h-3.5" />
+                    <span>Search Precedents in Legal Research</span>
+                  </Link>
+                  <Link
+                    href="/predictor"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[#1A1C1B] text-[#D4AF37] border border-[#B59A68]/40 hover:bg-[#B59A68]/20 transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Open Case Predictor</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[#6E2634]/30 text-[#E25C6F] border border-[#8A3545]/50 hover:bg-[#6E2634]/50 transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Upload a Commercial Contract</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Risk Assessment Summary Banner */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
               {/* Overall Risk Card */}
-              <div
-                className={`lg:col-span-4 rounded-xl p-6 border flex flex-col justify-between ${
-                  result.overall_risk_score.toLowerCase() === 'high'
-                    ? 'bg-[#6E2634]/20 border-[#6E2634]/70'
-                    : result.overall_risk_score.toLowerCase() === 'medium'
-                    ? 'bg-[#B59A68]/15 border-[#B59A68]/60'
-                    : 'bg-emerald-950/25 border-emerald-800/60'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs uppercase font-mono tracking-wider text-stone/80 font-bold">
-                      Overall Risk Profile
+              {result.audit_status === 'DOCUMENT_TYPE_MISMATCH' || result.overall_risk_score.toLowerCase() === 'not assessed' ? (
+                <div className="lg:col-span-4 rounded-xl p-6 border bg-[#6E2634]/15 border-[#8A3545]/50 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs uppercase font-mono tracking-wider text-stone/80 font-bold">
+                        Audit Status
+                      </span>
+                      <AlertCircle className="w-5 h-5 text-[#E25C6F]" />
+                    </div>
+                    <div className="font-display text-2xl font-bold tracking-tight text-[#E25C6F]">
+                      NOT ASSESSED
+                    </div>
+                    <p className="mt-2 text-xs text-stone/80 leading-relaxed">
+                      Document is identified as a {result.document_type_label || 'non-contract legal document'}. Commercial contract risk profiling is not applicable to judicial decisions or legal notices.
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-white/[0.08] text-center">
+                    <span className="inline-block text-[11px] font-mono text-[#D4AF37] bg-[#B59A68]/15 px-2.5 py-1 rounded border border-[#B59A68]/30">
+                      0 Contract Findings Evaluated
                     </span>
-                    {result.overall_risk_score.toLowerCase() === 'high' ? (
-                      <ShieldAlert className="w-5 h-5 text-[#E25C6F]" />
-                    ) : result.overall_risk_score.toLowerCase() === 'medium' ? (
-                      <AlertTriangle className="w-5 h-5 text-[#D4AF37]" />
-                    ) : (
-                      <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                    )}
                   </div>
-                  <div
-                    className={`font-display text-3xl font-bold tracking-tight ${
-                      result.overall_risk_score.toLowerCase() === 'high'
-                        ? 'text-[#E25C6F]'
-                        : result.overall_risk_score.toLowerCase() === 'medium'
-                        ? 'text-[#D4AF37]'
-                        : 'text-emerald-400'
-                    }`}
-                  >
-                    {result.overall_risk_score.toUpperCase()} RISK
-                  </div>
-                  <p className="mt-2 text-xs text-stone/80 leading-relaxed">
-                    {result.overall_risk_score.toLowerCase() === 'high'
-                      ? 'Severe contractual imbalances detected. Significant indemnification, liability, or unilateral clauses require legal intervention.'
+                </div>
+              ) : (
+                <div
+                  className={`lg:col-span-4 rounded-xl p-6 border flex flex-col justify-between ${
+                    result.overall_risk_score.toLowerCase() === 'high'
+                      ? 'bg-[#6E2634]/20 border-[#6E2634]/70'
                       : result.overall_risk_score.toLowerCase() === 'medium'
-                      ? 'Moderate risk exposure identified. Terms contain ambiguous payment, renewal, or dispute resolutions warranting redlines.'
-                      : 'Standard contractual terms identified with low statutory exposure.'}
-                  </p>
-                </div>
+                      ? 'bg-[#B59A68]/15 border-[#B59A68]/60'
+                      : 'bg-emerald-950/25 border-emerald-800/60'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs uppercase font-mono tracking-wider text-stone/80 font-bold">
+                        Overall Risk Profile
+                      </span>
+                      {result.overall_risk_score.toLowerCase() === 'high' ? (
+                        <ShieldAlert className="w-5 h-5 text-[#E25C6F]" />
+                      ) : result.overall_risk_score.toLowerCase() === 'medium' ? (
+                        <AlertTriangle className="w-5 h-5 text-[#D4AF37]" />
+                      ) : (
+                        <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <div
+                        className={`font-display text-3xl font-bold tracking-tight ${
+                          result.overall_risk_score.toLowerCase() === 'high'
+                            ? 'text-[#E25C6F]'
+                            : result.overall_risk_score.toLowerCase() === 'medium'
+                            ? 'text-[#D4AF37]'
+                            : 'text-emerald-400'
+                        }`}
+                      >
+                        {result.overall_risk_score.toUpperCase()} RISK
+                      </div>
+                      {result.score_breakdown && (
+                        <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-white/[0.06] border border-white/10 text-stone">
+                          {result.score_breakdown.numerical_score} pts
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-stone/80 leading-relaxed">
+                      {result.overall_risk_score.toLowerCase() === 'high'
+                        ? 'Severe contractual imbalances detected. Significant indemnification, liability, or unilateral clauses require legal intervention.'
+                        : result.overall_risk_score.toLowerCase() === 'medium'
+                        ? 'Moderate risk exposure identified. Terms contain ambiguous payment, renewal, or dispute resolutions warranting redlines.'
+                        : 'Standard contractual terms identified with low statutory exposure.'}
+                    </p>
+                  </div>
 
-                {/* Severity Breakdown Bar */}
-                <div className="mt-6 pt-4 border-t border-white/[0.08] grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-[#6E2634]/30 rounded-lg p-2 border border-[#6E2634]/40">
-                    <span className="block text-xs font-mono text-[#E25C6F] font-bold">{highCount}</span>
-                    <span className="text-[10px] text-stone/70 uppercase">High</span>
-                  </div>
-                  <div className="bg-[#B59A68]/20 rounded-lg p-2 border border-[#B59A68]/30">
-                    <span className="block text-xs font-mono text-[#D4AF37] font-bold">{medCount}</span>
-                    <span className="text-[10px] text-stone/70 uppercase">Med</span>
-                  </div>
-                  <div className="bg-emerald-950/30 rounded-lg p-2 border border-emerald-800/30">
-                    <span className="block text-xs font-mono text-emerald-400 font-bold">{lowCount}</span>
-                    <span className="text-[10px] text-stone/70 uppercase">Low</span>
+                  {/* Severity Breakdown Bar */}
+                  <div className="mt-6 pt-4 border-t border-white/[0.08] grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-[#6E2634]/30 rounded-lg p-2 border border-[#6E2634]/40">
+                      <span className="block text-xs font-mono text-[#E25C6F] font-bold">{highCount}</span>
+                      <span className="text-[10px] text-stone/70 uppercase">High</span>
+                    </div>
+                    <div className="bg-[#B59A68]/20 rounded-lg p-2 border border-[#B59A68]/30">
+                      <span className="block text-xs font-mono text-[#D4AF37] font-bold">{medCount}</span>
+                      <span className="text-[10px] text-stone/70 uppercase">Med</span>
+                    </div>
+                    <div className="bg-emerald-950/30 rounded-lg p-2 border border-emerald-800/30">
+                      <span className="block text-xs font-mono text-emerald-400 font-bold">{lowCount}</span>
+                      <span className="text-[10px] text-stone/70 uppercase">Low</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Executive Summary Box */}
               <div className="lg:col-span-8 rounded-xl p-6 bg-[#1A1C1B] border border-[#3B3A33] flex flex-col justify-between">
@@ -555,6 +714,53 @@ export default function ContractsPage() {
                 )}
               </div>
             </div>
+
+            {/* Score Breakdown & Methodology Card */}
+            {result.score_breakdown && (
+              <div className="rounded-xl p-5 bg-[#1A1C1B] border border-[#3B3A33] space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#3B3A33]/70 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#B59A68]/20 flex items-center justify-center text-[#B59A68]">
+                      <Scale className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-semibold text-[#F4EFE5] flex items-center gap-2">
+                        <span>Risk Scoring Methodology & Calculation</span>
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#B59A68]/15 text-[#D4AF37] border border-[#B59A68]/30">
+                          {result.score_breakdown.numerical_score} Points Total
+                        </span>
+                      </h4>
+                      <p className="text-[11px] font-mono text-stone/60 mt-0.5">
+                        Model: {result.score_breakdown.scoring_method}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-mono">
+                    <span className="text-[#E25C6F] bg-[#6E2634]/20 border border-[#6E2634]/40 px-2 py-1 rounded">
+                      High: {result.score_breakdown.high_count} &times; 5 = {result.score_breakdown.high_count * 5} pts
+                    </span>
+                    <span className="text-[#D4AF37] bg-[#B59A68]/20 border border-[#B59A68]/40 px-2 py-1 rounded">
+                      Med: {result.score_breakdown.medium_count} &times; 3 = {result.score_breakdown.medium_count * 3} pts
+                    </span>
+                    <span className="text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 px-2 py-1 rounded">
+                      Low: {result.score_breakdown.low_count} &times; 1 = {result.score_breakdown.low_count * 1} pts
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-stone/80 leading-relaxed">
+                  <strong className="text-[#F4EFE5]">Score Rationale: </strong>
+                  {result.score_breakdown.risk_rationale}
+                </p>
+
+                {result.score_breakdown.scoring_limitations && (
+                  <p className="text-[11px] text-stone/60 italic border-t border-[#3B3A33]/50 pt-2">
+                    <strong>Limitations: </strong>
+                    {result.score_breakdown.scoring_limitations}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Findings Explorer */}
             <div className="space-y-4">
@@ -631,14 +837,24 @@ export default function ContractsPage() {
               </div>
 
               {/* Red Flags List */}
-              {filteredFlags.length === 0 ? (
+              {result.audit_status === 'DOCUMENT_TYPE_MISMATCH' ? (
+                <div className="text-center py-10 px-4 rounded-xl border border-[#3B3A33] bg-[#1A1C1B]">
+                  <AlertCircle className="w-8 h-8 text-[#D4AF37] mx-auto mb-2" />
+                  <h4 className="text-sm font-semibold text-[#F4EFE5]">Contract Red-Flag Audit Not Applicable</h4>
+                  <p className="text-xs text-stone/70 mt-1 max-w-md mx-auto leading-relaxed">
+                    This document was classified as a judicial decision or non-contract instrument. To evaluate contractual risks such as unilateral indemnities, non-compete covenants, or liability caps, please upload a commercial contract.
+                  </p>
+                </div>
+              ) : filteredFlags.length === 0 ? (
                 <div className="text-center py-12 px-4 rounded-xl border border-[#3B3A33] bg-[#1A1C1B]">
                   <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                  <h4 className="text-sm font-semibold text-[#F4EFE5]">No Red Flags Found in this View</h4>
-                  <p className="text-xs text-stone/70 mt-1 max-w-sm mx-auto">
+                  <h4 className="text-sm font-semibold text-[#F4EFE5]">
+                    {searchQuery ? 'No Red Flags Found in this View' : 'No Red Flags Detected in Analyzed Content'}
+                  </h4>
+                  <p className="text-xs text-stone/70 mt-2 max-w-lg mx-auto leading-relaxed">
                     {searchQuery
                       ? `No flagged clauses matched your search query "${searchQuery}".`
-                      : 'No clauses match the selected severity filter.'}
+                      : 'No supported red flags were identified by the current automated analysis. The absence of findings does not establish the absence of contractual risk or guarantee statutory compliance. Formal review by a qualified Indian advocate is recommended prior to signing.'}
                   </p>
                 </div>
               ) : (
@@ -647,6 +863,13 @@ export default function ContractsPage() {
                     const isExpanded = expandedCards[idx] ?? true;
                     const isHigh = flag.risk_level.toLowerCase() === 'high';
                     const isMed = flag.risk_level.toLowerCase() === 'medium';
+                    const classification = flag.risk_classification || 'potential_commercial_risk';
+                    const verbatim = flag.verbatim_clause || flag.clause_text;
+                    const pageLocation = flag.source_page
+                      ? `Page ${flag.source_page}`
+                      : flag.page_ref
+                      ? `Page ${flag.page_ref}`
+                      : 'Document-wide / Unspecified';
 
                     return (
                       <div
@@ -664,7 +887,7 @@ export default function ContractsPage() {
                           onClick={() => toggleExpand(idx)}
                           className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none"
                         >
-                          <div className="flex items-center gap-3 flex-wrap">
+                          <div className="flex items-center gap-2.5 flex-wrap">
                             {/* Severity Pill */}
                             <span
                               className={`px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase tracking-wider ${
@@ -678,30 +901,48 @@ export default function ContractsPage() {
                               {flag.risk_level} Risk
                             </span>
 
-                            {/* Risk Category Badge */}
-                            {flag.risk_category && (
-                              <span className="px-2 py-0.5 rounded text-[11px] font-mono text-stone/90 bg-[#151716] border border-[#3B3A33]">
-                                {flag.risk_category.replace(/_/g, ' ')}
+                            {/* Risk Classification Badge */}
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                                classification === 'potential_commercial_risk'
+                                  ? 'bg-amber-950/40 text-amber-300 border-amber-800/40'
+                                  : classification === 'possible_legal_concern'
+                                  ? 'bg-sky-950/40 text-sky-300 border-sky-800/40'
+                                  : 'bg-[#6E2634]/40 text-[#E25C6F] border-[#8A3545]/60'
+                              }`}
+                            >
+                              {classification === 'potential_commercial_risk'
+                                ? 'Potential Commercial Risk'
+                                : classification === 'possible_legal_concern'
+                                ? 'Possible Legal Concern'
+                                : 'Legal Conclusion Requiring Review'}
+                            </span>
+
+                            {/* Title / Category */}
+                            <span className="text-xs font-semibold text-[#F4EFE5]">
+                              {flag.title || (flag.risk_category ? flag.risk_category.replace(/_/g, ' ') : 'Contract Finding')}
+                            </span>
+
+                            {/* Finding ID chip */}
+                            {flag.finding_id && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono text-stone/50 bg-[#151716] border border-[#3B3A33]">
+                                {flag.finding_id}
                               </span>
                             )}
 
                             {/* Page Indicator */}
-                            {flag.page_ref !== undefined && flag.page_ref !== null ? (
-                              <span className="text-xs font-mono text-stone/70">
-                                Page {flag.page_ref}
-                              </span>
-                            ) : (
-                              <span className="text-xs font-mono text-stone/50">
-                                Document-wide
-                              </span>
-                            )}
+                            <span className="text-xs font-mono text-stone/60">
+                              {pageLocation}
+                              {flag.clause_location ? ` (${flag.clause_location})` : ''}
+                            </span>
 
-                            {/* Confidence Pill if provided */}
-                            {flag.confidence !== undefined && flag.confidence !== null && (
-                              <span className="text-[10px] font-mono text-stone/60">
-                                {Math.round(flag.confidence * 100)}% match
+                            {/* Confidence Pill */}
+                            {(flag.evidence_confidence !== undefined && flag.evidence_confidence !== null) ||
+                            (flag.confidence !== undefined && flag.confidence !== null) ? (
+                              <span className="text-[10px] font-mono text-stone/50">
+                                {Math.round(((flag.evidence_confidence ?? flag.confidence) || 0) * 100)}% match
                               </span>
-                            )}
+                            ) : null}
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -709,10 +950,10 @@ export default function ContractsPage() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                copyClause(flag.clause_text, idx);
+                                copyClause(verbatim, idx);
                               }}
                               className="text-stone/60 hover:text-stone p-1 rounded hover:bg-white/[0.04] transition-colors"
-                              title="Copy clause"
+                              title="Copy verbatim clause"
                             >
                               {copiedClauseIdx === idx ? (
                                 <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -746,18 +987,62 @@ export default function ContractsPage() {
                                   </span>
                                   <button
                                     type="button"
-                                    onClick={() => copyClause(flag.clause_text, idx)}
+                                    onClick={() => copyClause(verbatim, idx)}
                                     className="text-[11px] text-[#B59A68] hover:underline flex items-center gap-1"
                                   >
                                     {copiedClauseIdx === idx ? 'Copied' : 'Copy Excerpt'}
                                   </button>
                                 </div>
                                 <div className="p-3.5 rounded-lg bg-[#0E100F] border border-[#3B3A33] font-mono text-xs text-[#EDE8DC] leading-relaxed italic select-text">
-                                  &ldquo;{flag.clause_text}&rdquo;
+                                  &ldquo;{verbatim}&rdquo;
                                 </div>
                               </div>
 
-                              {/* Legal Exposure Reasoning */}
+                              {/* Statutory Reference & Verification Status */}
+                              {flag.statutory_provision && (
+                                <div className="p-3 rounded-lg bg-[#151716] border border-[#3B3A33]/80 space-y-2">
+                                  <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
+                                      <span className="text-xs font-semibold text-[#EDE8DC]">
+                                        {flag.statutory_provision}
+                                      </span>
+                                      {flag.applicable_law && (
+                                        <span className="text-xs text-stone/60 font-mono">
+                                          ({flag.applicable_law})
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span
+                                      className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
+                                        flag.statutory_verification_status === 'verified'
+                                          ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
+                                          : 'bg-amber-950/40 text-amber-400 border-amber-800/40'
+                                      }`}
+                                    >
+                                      {flag.statutory_verification_status === 'verified'
+                                        ? 'Statute Verified'
+                                        : 'Statute Unverified / Pending Legal Validation'}
+                                    </span>
+                                  </div>
+
+                                  {flag.application_to_clause && (
+                                    <p className="text-xs text-stone/80 leading-relaxed">
+                                      <strong className="text-stone">Application: </strong>
+                                      {flag.application_to_clause}
+                                    </p>
+                                  )}
+
+                                  {flag.uncertainty_or_limitation && (
+                                    <p className="text-[11px] text-stone/60 italic border-t border-[#3B3A33]/50 pt-1.5">
+                                      <strong>Limitations & Context: </strong>
+                                      {flag.uncertainty_or_limitation}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Legal Exposure Reasoning & Recommendation */}
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="rounded-lg p-3.5 bg-[#151716] border border-[#3B3A33]/70">
                                   <div className="flex items-center gap-1.5 text-xs font-semibold text-[#E25C6F] mb-1.5">
@@ -765,19 +1050,19 @@ export default function ContractsPage() {
                                     <span>Statutory Risk & Legal Exposure</span>
                                   </div>
                                   <p className="text-xs text-stone/90 leading-relaxed">
-                                    {flag.explanation}
+                                    {flag.legal_explanation || flag.explanation}
                                   </p>
                                 </div>
 
                                 {/* Actionable Recommendation */}
-                                {flag.recommendation && (
+                                {(flag.recommended_action || flag.recommendation) && (
                                   <div className="rounded-lg p-3.5 bg-[#151716] border border-[#B59A68]/40">
                                     <div className="flex items-center gap-1.5 text-xs font-semibold text-[#B59A68] mb-1.5">
                                       <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                                      <span>Recommended Redline / Counter</span>
+                                      <span>Recommended Action / Redline</span>
                                     </div>
                                     <p className="text-xs text-[#EDE8DC] leading-relaxed">
-                                      {flag.recommendation}
+                                      {flag.recommended_action || flag.recommendation}
                                     </p>
                                   </div>
                                 )}
