@@ -259,8 +259,8 @@ export function CaseTypeSelect({ value, onChange, required }: CaseTypeSelectProp
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full text-left rounded-lg bg-[#151716] border px-3.5 py-2.5 text-sm transition-all flex items-center justify-between gap-3 group ${isOpen
-            ? 'border-[#B59A68] ring-1 ring-[#B59A68]/30 shadow-lg shadow-black/40'
-            : 'border-[#3B3A33] hover:border-[#B59A68]/60 hover:bg-[#1D211F]/70'
+          ? 'border-[#B59A68] ring-1 ring-[#B59A68]/30 shadow-lg shadow-black/40'
+          : 'border-[#3B3A33] hover:border-[#B59A68]/60 hover:bg-[#1D211F]/70'
           }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
@@ -341,8 +341,8 @@ export function CaseTypeSelect({ value, onChange, required }: CaseTypeSelectProp
                   type="button"
                   onClick={() => setActiveCategory('all')}
                   className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors ${activeCategory === 'all'
-                      ? 'bg-[#B59A68] text-[#151716] font-semibold'
-                      : 'bg-[#242925] text-stone hover:text-[#F4EFE5] border border-[#3B3A33]'
+                    ? 'bg-[#B59A68] text-[#151716] font-semibold'
+                    : 'bg-[#242925] text-stone hover:text-[#F4EFE5] border border-[#3B3A33]'
                     }`}
                 >
                   All ({CASE_CATEGORY_GROUPS.reduce((acc, g) => acc + g.options.length, 0)})
@@ -353,8 +353,8 @@ export function CaseTypeSelect({ value, onChange, required }: CaseTypeSelectProp
                     type="button"
                     onClick={() => setActiveCategory(grp.id)}
                     className={`px-2 py-0.5 rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${activeCategory === grp.id
-                        ? 'bg-[#B59A68] text-[#151716] font-semibold'
-                        : 'bg-[#242925] text-stone hover:text-[#F4EFE5] border border-[#3B3A33]'
+                      ? 'bg-[#B59A68] text-[#151716] font-semibold'
+                      : 'bg-[#242925] text-stone hover:text-[#F4EFE5] border border-[#3B3A33]'
                       }`}
                   >
                     <span>{grp.iconEmoji}</span>
@@ -418,22 +418,22 @@ export function CaseTypeSelect({ value, onChange, required }: CaseTypeSelectProp
                               setIsOpen(false);
                             }}
                             className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-all flex items-center justify-between gap-2 group/item ${isSelected
-                                ? 'bg-[#B59A68]/20 text-[#F4EFE5] font-medium border border-[#B59A68]/40 shadow-sm'
-                                : 'text-stone hover:text-[#F4EFE5] hover:bg-[#242925] hover:border hover:border-[#3B3A33]'
+                              ? 'bg-[#B59A68]/20 text-[#F4EFE5] font-medium border border-[#B59A68]/40 shadow-sm'
+                              : 'text-stone hover:text-[#F4EFE5] hover:bg-[#242925] hover:border hover:border-[#3B3A33]'
                               }`}
                           >
                             <div className="flex items-center gap-2 min-w-0">
                               {/* Sub-section indicator dot or check */}
                               <div
                                 className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isSelected
-                                    ? 'bg-[#B59A68] ring-2 ring-[#B59A68]/40'
-                                    : 'bg-stone/40 group-hover/item:bg-[#B59A68]'
+                                  ? 'bg-[#B59A68] ring-2 ring-[#B59A68]/40'
+                                  : 'bg-stone/40 group-hover/item:bg-[#B59A68]'
                                   }`}
                               />
                               <span
                                 className={`truncate ${isSelected
-                                    ? 'text-[#F4EFE5] font-semibold'
-                                    : 'group-hover/item:text-[#F4EFE5]'
+                                  ? 'text-[#F4EFE5] font-semibold'
+                                  : 'group-hover/item:text-[#F4EFE5]'
                                   }`}
                               >
                                 {option.label}
@@ -444,8 +444,8 @@ export function CaseTypeSelect({ value, onChange, required }: CaseTypeSelectProp
                               {option.statuteTag && (
                                 <span
                                   className={`text-[10px] px-1.5 py-0.5 rounded font-mono transition-colors ${isSelected
-                                      ? 'bg-[#B59A68]/30 text-[#F4EFE5] border border-[#B59A68]/50'
-                                      : 'bg-[#151716] text-stone/70 border border-[#3B3A33] group-hover/item:text-stone/90'
+                                    ? 'bg-[#B59A68]/30 text-[#F4EFE5] border border-[#B59A68]/50'
+                                    : 'bg-[#151716] text-stone/70 border border-[#3B3A33] group-hover/item:text-stone/90'
                                     }`}
                                 >
                                   {option.statuteTag}

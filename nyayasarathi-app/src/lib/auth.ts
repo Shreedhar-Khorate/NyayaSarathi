@@ -679,3 +679,58 @@ export async function judgePromoteToJudge(
   }
   return data;
 }
+
+// ── Contract Red-Flag Analysis API Client ───────────────────────────────────
+
+export interface ContractRedFlag {
+  clause_text: string;
+  risk_level: 'high' | 'medium' | 'low';
+  explanation: string;
+  page_ref?: number | null;
+  risk_category?: string;
+  recommendation?: string | null;
+  confidence?: number | null;
+}
+
+export interface ContractRiskCounts {
+  high: number;
+  medium: number;
+  low: number;
+  total: number;
+}
+
+export interface ContractAnalysisResult {
+  filename?: string;
+  overall_risk_score: 'High' | 'Medium' | 'Low' | string;
+  summary?: string;
+  red_flags: ContractRedFlag[];
+  risk_counts?: ContractRiskCounts;
+  limitations?: string[];
+  extraction_method?: string;
+  total_pages?: number;
+}
+
+/** Upload a contract file (PDF, DOCX, TXT) and receive structured red-flag risk analysis. */
+export async function analyzeContract(file: File): Promise<ContractAnalysisResult> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_BASE_URL}/api/contracts/analyze`, {
+    method: 'POST',
+    headers, // Browser automatically sets Content-Type with multipart boundary
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || data.detail || 'Contract analysis failed.');
+  }
+  return data;
+}
+

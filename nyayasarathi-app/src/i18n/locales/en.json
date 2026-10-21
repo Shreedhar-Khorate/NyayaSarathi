@@ -1,6 +1,7 @@
 {
   "nav": {
     "predictor": "Judgment Predictor",
+    "contracts": "Contract Analyzer",
     "research": "Legal Research",
     "warRoom": "War Room",
     "ocr": "Legal OCR",

@@ -23,25 +23,31 @@ from services.auth_service import hash_password
 from services.supabase_client import get_supabase_client, normalize_supabase_url
 
 
+import secrets
+
+def _resolve_seed_password(role: str) -> str:
+    env_key = f"SEED_{role.upper()}_PASSWORD"
+    return os.getenv(env_key) or os.getenv("DEFAULT_SEED_PASSWORD") or secrets.token_urlsafe(14)
+
 DEMO_ACCOUNTS = [
     {
         "id": "e43b171f-0e42-45e0-b6f2-7104b2a472c3",
         "email": "user@nyayasarathi.in",
-        "password": "User@12345",
+        "password": _resolve_seed_password("USER"),
         "full_name": "Adv. Rohan Verma",
         "role": "USER",
     },
     {
         "id": "a18c992d-71b3-4f9e-9d21-432859c71a82",
         "email": "judge@nyayasarathi.in",
-        "password": "Judge@12345",
+        "password": _resolve_seed_password("JUDGE"),
         "full_name": "Hon'ble Justice S. K. Mukherjee",
         "role": "JUDGE",
     },
     {
         "id": "f92d441a-3e11-4b2a-8991-621804b82d99",
         "email": "admin@nyayasarathi.in",
-        "password": "Admin@12345",
+        "password": _resolve_seed_password("ADMIN"),
         "full_name": "Judicial System Administrator",
         "role": "ADMIN",
     },

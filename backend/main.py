@@ -242,9 +242,11 @@ async def on_startup():
     except Exception as e:
         log.error(f"Failed to initialize war room database tables: {e}", extra={"component": "STARTUP"})
 
+    import os
+    port = int(os.environ.get("PORT", 8001))
     log.info(
         f"\033[1m\033[92mNyayaSarathi API\033[0m  "
-        f"\033[90mv1.0.0 · http://0.0.0.0:8000 · docs -> /docs\033[0m",
+        f"\033[90mv1.0.0 · http://0.0.0.0:{port} · docs -> /docs\033[0m",
         extra={"component": "STARTUP"},
     )
     log.info(
@@ -260,5 +262,8 @@ async def on_shutdown():
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8001))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+

@@ -15,7 +15,14 @@ from logger import get_logger
 log = get_logger("nyayasarathi.auth_service")
 
 # JWT Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "nyayasarathi_dev_secret_key_8f9a2b4c6d8e0f1a2b3c4d5e")
+# Require JWT_SECRET_KEY from environment. For test suites/local dev without .env, generate an ephemeral runtime secret.
+_configured_jwt_secret = os.getenv("JWT_SECRET_KEY", "").strip()
+if not _configured_jwt_secret:
+    import secrets
+    _configured_jwt_secret = os.environ.get("NYAYASARATHI_EPHEMERAL_JWT_SECRET") or secrets.token_hex(32)
+    os.environ["NYAYASARATHI_EPHEMERAL_JWT_SECRET"] = _configured_jwt_secret
+
+JWT_SECRET_KEY = _configured_jwt_secret
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 
