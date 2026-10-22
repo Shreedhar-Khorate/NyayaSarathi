@@ -204,3 +204,100 @@ Known gaps (non-blocking for core feature):
 - ⚠️ Malware scanning not available
 
 ---
+
+## End-to-End Chat Testing, Debugging & Verification — 2026-10-22
+
+### 1. Phase One — Inspection & Database Mode Discovery
+
+- **Database Mode Discovery:** Verified via `services.user_repository.is_postgres_authoritative()`. Result: `True`.
+- **Target Engine:** Supabase PostgreSQL 17.11 on aarch64-unknown-linux-gnu.
+- **Connection Configuration:** Authenticated via pooled connection `DATABASE_URL` (port 6543) using the administrative owner role `postgres.qdoqptshxmducxrunlnr`.
+- **Supabase Client:** Connected to project `https://qdoqptshxmducxrunlnr.supabase.co` using service-role credentials. Private bucket `chat-attachments` is active.
+
+---
+
+### 2. Phase Two — Supabase Schema & Security Verification
+
+Inspected live schema in PostgreSQL `public` namespace:
+- `chat_conversations`: TEXT id, TEXT user_id, TEXT advocate_id, TEXT status, TIMESTAMPTZ timestamps. Foreign keys to `users(id)` ON DELETE CASCADE. Unique constraint `uq_chat_conv_pair (user_id, advocate_id)`.
+- `chat_messages`: TEXT id, TEXT conversation_id, TEXT sender_id, TEXT body, TEXT idempotency_key, TIMESTAMPTZ created_at. Foreign key to `chat_conversations(id)` ON DELETE CASCADE, foreign key to `users(id)`.
+- `chat_attachments`: TEXT id, TEXT message_id, TEXT conversation_id, TEXT uploaded_by, TEXT storage_key, TEXT original_filename, TEXT content_type, BIGINT size_bytes, TIMESTAMPTZ created_at.
+- `chat_participant_state`: Composite PK `(conversation_id, user_id)`, TEXT last_read_message_id, TIMESTAMPTZ last_read_at, TIMESTAMPTZ updated_at.
+
+**Row Level Security (RLS) Analysis:**
+- RLS is **ENABLED** (`relrowsecurity = True`, `relforcerowsecurity = False`) on all 4 tables with 0 public policies.
+- Direct unauthorized browser requests via PostgREST cannot access any chat records.
+- Backend interacts with the database via privileged administrative connection (`postgres` role) and service-role key, ensuring all access is mediated exclusively through FastAPI role-based access checks.
+
+**Critical Schema Bug Discovered & Resolved:**
+- **Issue:** `uq_chat_msg_idempotency` was defined as `DEFERRABLE INITIALLY DEFERRED`. In PostgreSQL, `ON CONFLICT` rejects deferrable unique constraints with `psycopg2.errors.ObjectNotInPrerequisiteState: ON CONFLICT does not support deferrable unique constraints/exclusion constraints as arbiters`.
+- **Fix:** Executed `ALTER TABLE public.chat_messages DROP CONSTRAINT uq_chat_msg_idempotency; ALTER TABLE public.chat_messages ADD CONSTRAINT uq_chat_msg_idempotency UNIQUE (conversation_id, idempotency_key);` and updated `backend/migrations/006_chat_tables.sql`.
+
+---
+
+### 3. Phase Three — Automated Test Suite Results
+
+1. **Pytest Chat Repository & API Suite:**
+   ```bash
+   cd backend && python -m pytest tests/test_chat.py tests/test_chat_api.py -v
+   ```
+   - `test_chat.py`: **26 passed, 0 failed** (Dual-mode repository units, cursors, pagination, read state).
+   - `test_chat_api.py`: **15 passed, 0 failed** (FastAPI TestClient end-to-end endpoints, RBAC, token validation, cross-conversation isolation, size/MIME rejection, idempotency, download authorization).
+   - **Total:** **41 passed, 0 failed** in 10.47s.
+
+2. **Frontend Type Check:**
+   ```bash
+   cd nyayasarathi-app && npx tsc --noEmit
+   ```
+   - **Result:** Exit code `0`, **0 errors**.
+
+---
+
+### 4. Phase Four — Real Supabase Integration Verification
+
+Ran automated live integration script `test_live_supabase_e2e.py` against production Supabase PostgreSQL and Storage:
+
+1. **Synthetic Account Seeding:** Created temporary test users (`e2e-user-*`, `e2e-adv-*`, `e2e-unrelated-*`) in Supabase PostgreSQL.
+2. **Conversation Creation:** Created conversation via `POST /api/chat/conversations` (HTTP 201).
+3. **Message Persistence:** Sent unique test message via `POST /api/chat/conversations/{id}/messages` (HTTP 201).
+4. **Independent PostgreSQL Verification:** Queried PostgreSQL table directly using raw psycopg2 cursor; confirmed message row, conversation ID, and text body matched.
+5. **API Retrieval:** Fetched message via `GET /api/chat/conversations/{id}/messages` as advocate; confirmed returned body and sender identity.
+6. **Read State & Unread Counts:** Verified unread count = 1 -> marked as read -> verified unread count = 0.
+7. **Private Storage Upload:** Uploaded test document via `POST /api/chat/conversations/{id}/attachments` (HTTP 201).
+8. **Private Storage Presence:** Listed `chat-attachments` private bucket via Supabase Storage client; verified file exists under private path.
+9. **Unauthorized Download Denied:** Unrelated user requested download via `GET /api/chat/attachments/{id}` -> returned HTTP 404 (not found/access denied).
+10. **Authorized Download via Signed URL:** Advocate requested download -> returned HTTP 302 Redirect to signed URL (containing short-lived 60s HMAC token).
+11. **Content Integrity:** Followed signed URL; downloaded bytes matched uploaded synthetic document byte-for-byte.
+12. **Clean-up:** Deleted test storage object, cascading conversation record, and synthetic test users.
+
+---
+
+### 5. Phase Five — Real-Time Delivery & Recovery
+
+- **Bug Discovered:** `supabase-py` sync client raised `NotImplementedError` on `sb.channel().send_broadcast()`.
+- **Fix:** Switched backend broadcast in `_publish_realtime_event` to Supabase Realtime REST broadcast endpoint (`POST /realtime/v1/api/broadcast`), returning HTTP 202 Accepted.
+- **Frontend Fallback & Recovery:** Polling fallback (`createChatPoller`) and `visibilitychange` recovery are active in `nyayasarathi-app/src/app/chat/page.tsx`, ensuring message recovery across tabs, mobile suspend, and SQLite/PostgreSQL modes.
+
+---
+
+### 6. Summary of Bugs Fixed
+
+| # | Bug | Root Cause | Fix Applied |
+|---|---|---|---|
+| 1 | `ON CONFLICT` failure on message insert | `uq_chat_msg_idempotency` had `DEFERRABLE INITIALLY DEFERRED` | Converted to standard non-deferrable unique constraint in database and migration `006_chat_tables.sql` |
+| 2 | `NotImplementedError` on Realtime publish | Sync `supabase-py` does not implement `channel()` | Replaced with Supabase Realtime REST broadcast endpoint (`/realtime/v1/api/broadcast`) |
+| 3 | Error response assertion mismatch in tests | `main.py` uses `{"error": ...}` response envelope | Updated `test_chat_api.py` helper to parse both `error` and `detail` |
+| 4 | Untracked test files in git | Temporary uploads in `backend/data/` | Added `backend/data/chat_uploads/` and related directories to `.gitignore` |
+
+---
+
+### 7. Final Status
+
+**PASS**
+
+- All automated tests passing: 41 pytest tests passed (0 failures), 0 TypeScript compiler errors.
+- Real Supabase PostgreSQL persistence and live private Supabase Storage verified end-to-end.
+- Role-based access control, participant isolation, and download authorizations verified with synthetic accounts.
+- Clean-up verified: all synthetic test data and storage objects safely removed.
+
+---

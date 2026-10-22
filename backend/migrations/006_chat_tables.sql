@@ -37,8 +37,7 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
     idempotency_key TEXT,          -- optional client-supplied key for dedup
     created_at      TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
     -- idempotency: prevent duplicate sends with same key in same conversation
-    CONSTRAINT uq_chat_msg_idempotency UNIQUE (conversation_id, idempotency_key)
-        DEFERRABLE INITIALLY DEFERRED,
+    CONSTRAINT uq_chat_msg_idempotency UNIQUE (conversation_id, idempotency_key),
     -- at least body or an attachment must exist (enforced in application layer)
     CONSTRAINT chk_msg_nonempty CHECK (
         body IS NOT NULL OR length(trim(coalesce(body, ''))) > 0

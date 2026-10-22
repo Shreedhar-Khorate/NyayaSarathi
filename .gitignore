@@ -57,6 +57,9 @@ env/
 **/.db/
 .db
 backend/data/*.db
+backend/data/chat_uploads/
+backend/data/temp_ocr/
+backend/data/uploads/
 
 # Editor & OS files
 .vscode/

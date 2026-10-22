@@ -122,26 +122,44 @@ def _publish_realtime_event(conversation_id: str, message_id: str, created_at: A
         return
 
     try:
-        from services.supabase_client import get_supabase_client
-        sb = get_supabase_client()
-        if not sb:
+        import requests
+        from services.supabase_client import normalize_supabase_url
+        raw_url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+        if not raw_url or not key:
             return
-        channel_name = f"chat:{conversation_id}"
-        # Use Supabase Realtime broadcast channel — server-side publish
-        # The browser listens on this channel name after receiving a token.
-        sb.channel(channel_name).send_broadcast(  # type: ignore[attr-defined]
-            "new_message",
-            {
-                "type": "new_message",
-                "conversation_id": conversation_id,
-                "message_id": message_id,
-                "created_at": str(created_at),
-            },
-        )
-        log.debug(
-            f"Published Realtime event for conversation {conversation_id} msg {message_id}",
-            extra={"component": "CHAT_ROUTER"},
-        )
+        clean_url = normalize_supabase_url(raw_url)
+        broadcast_url = f"{clean_url}/realtime/v1/api/broadcast"
+        headers = {
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        }
+        body = {
+            "messages": [
+                {
+                    "topic": f"realtime:chat:{conversation_id}",
+                    "event": "new_message",
+                    "payload": {
+                        "type": "new_message",
+                        "conversation_id": conversation_id,
+                        "message_id": message_id,
+                        "created_at": str(created_at),
+                    },
+                }
+            ]
+        }
+        resp = requests.post(broadcast_url, headers=headers, json=body, timeout=2.0)
+        if resp.status_code == 202:
+            log.debug(
+                f"Published Realtime event for conversation {conversation_id} msg {message_id}",
+                extra={"component": "CHAT_ROUTER"},
+            )
+        else:
+            log.warning(
+                f"Realtime broadcast returned {resp.status_code}: {resp.text}",
+                extra={"component": "CHAT_ROUTER"},
+            )
     except Exception as exc:
         # Event publication failure must NOT roll back the persisted message.
         log.warning(
