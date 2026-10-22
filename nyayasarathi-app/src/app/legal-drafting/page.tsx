@@ -25,9 +25,7 @@ import {
   Plus,
   X,
   FileCheck,
-  AlertCircle,
-  UploadCloud,
-  Paperclip
+  AlertCircle
 } from 'lucide-react';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import { API_BASE_URL } from '@/lib/config';
@@ -73,14 +71,6 @@ interface DraftResponseData {
   draft_text?: string;
   translated_text?: string;
   citations_used?: string[];
-}
-
-interface UploadedDocument {
-  id: string;
-  title: string;
-  filename: string;
-  file_type: string;
-  total_pages: number;
 }
 
 const DOCUMENT_TYPES = [
@@ -169,14 +159,6 @@ export default function LegalDraftingPage() {
   const [datesList, setDatesList] = useState<string[]>([]);
   const [newDateInput, setNewDateInput] = useState('');
 
-  // Supporting Documents
-  const [availableDocs, setAvailableDocs] = useState<UploadedDocument[]>([]);
-  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState(false);
-  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
-  const [uploadDocError, setUploadDocError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Citation control
   const [includeCitations, setIncludeCitations] = useState(true);
 
@@ -202,29 +184,6 @@ export default function LegalDraftingPage() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
 
-  // Fetch existing uploaded documents on mount for RAG selection
-  useEffect(() => {
-    async function fetchDocs() {
-      setLoadingDocs(true);
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/qa/documents`, {
-          headers: getAuthHeaders(),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setAvailableDocs(data);
-          }
-        }
-      } catch (err) {
-        console.warn('Could not load user documents for RAG selection', err);
-      } finally {
-        setLoadingDocs(false);
-      }
-    }
-    fetchDocs();
-  }, []);
-
   // Handle unsaved changes warning before unload
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -247,74 +206,6 @@ export default function LegalDraftingPage() {
 
   const handleRemoveDate = (index: number) => {
     setDatesList(datesList.filter((_, i) => i !== index));
-  };
-
-  const toggleDocSelection = (docId: string) => {
-    setSelectedDocIds((prev) =>
-      prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]
-    );
-  };
-
-  const handleUploadSupportingDoc = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowed = ['.pdf', '.docx', '.doc', '.txt'];
-    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-    if (!allowed.includes(ext)) {
-      setUploadDocError(`Unsupported file format '${ext}'. Please upload PDF, DOCX, or TXT.`);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    if (file.size > 30 * 1024 * 1024) {
-      setUploadDocError('File size exceeds the 30 MB limit.');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
-    setIsUploadingDoc(true);
-    setUploadDocError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
-
-      const token = typeof window !== 'undefined' ? localStorage.getItem('nyayasarathi_jwt_token') : null;
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch(`${API_BASE_URL}/api/qa/documents/upload`, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.detail || data.error || 'Failed to upload document.');
-      }
-
-      const newDoc: UploadedDocument = {
-        id: data.id,
-        title: data.title || file.name,
-        filename: data.filename || file.name,
-        file_type: data.file_type || ext,
-        total_pages: data.total_pages || 1,
-      };
-
-      setAvailableDocs((prev) => [newDoc, ...prev]);
-      setSelectedDocIds((prev) => Array.from(new Set([newDoc.id, ...prev])));
-    } catch (err: any) {
-      console.error('Doc upload error:', err);
-      setUploadDocError(err.message || 'Failed to upload and index document.');
-    } finally {
-      setIsUploadingDoc(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
   };
 
   // ── GENERATE DRAFT ──────────────────────────────────────────────────────────
@@ -378,7 +269,6 @@ export default function LegalDraftingPage() {
       facts: facts.trim(),
       requested_relief: requestedRelief.trim() || undefined,
       applicable_sections: parsedSections.length > 0 ? parsedSections : undefined,
-      supporting_document_ids: selectedDocIds.length > 0 ? selectedDocIds : undefined,
     };
 
     try {
@@ -1106,101 +996,6 @@ export default function LegalDraftingPage() {
                     className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
                   />
                 </div>
-              </div>
-
-              {/* Supporting Documents / RAG Upload & Selection */}
-              <div className="pt-3 border-t border-[#3B3A33]/50 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-stone-300 flex items-center gap-1.5">
-                    <Paperclip className="w-3.5 h-3.5 text-[#B59A68]" />
-                    <span>Supporting Documents for RAG Evidence Grounding (Optional)</span>
-                  </label>
-                  {availableDocs.length > 0 && (
-                    <span className="text-[10px] text-stone-400">
-                      {selectedDocIds.length} of {availableDocs.length} selected
-                    </span>
-                  )}
-                </div>
-
-                <p className="text-[11px] text-stone-400 leading-relaxed">
-                  Upload contracts, agreements, FIRs, or legal notices to extract facts and ground drafted clauses in verified case evidence.
-                </p>
-
-                {/* Hidden file input */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleUploadSupportingDoc}
-                  accept=".pdf,.docx,.doc,.txt"
-                  className="hidden"
-                />
-
-                {/* Upload Button / Drop Area */}
-                <button
-                  type="button"
-                  disabled={isUploadingDoc}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-lg border border-dashed border-[#B59A68]/40 bg-[#B59A68]/5 hover:bg-[#B59A68]/10 hover:border-[#B59A68] text-xs font-medium text-stone-200 transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {isUploadingDoc ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 text-[#B59A68] animate-spin" />
-                      <span>Indexing document into RAG vector engine...</span>
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud className="w-4 h-4 text-[#B59A68]" />
-                      <span>Upload Supporting Document (PDF, DOCX, TXT)</span>
-                    </>
-                  )}
-                </button>
-
-                {uploadDocError && (
-                  <div className="p-2.5 rounded-lg bg-red-950/40 border border-red-800/60 text-xs text-red-200 flex items-start gap-2">
-                    <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                    <span>{uploadDocError}</span>
-                  </div>
-                )}
-
-                {/* Available Documents List */}
-                {availableDocs.length > 0 && (
-                  <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
-                    {availableDocs.map((doc) => {
-                      const isChecked = selectedDocIds.includes(doc.id);
-                      return (
-                        <div
-                          key={doc.id}
-                          onClick={() => toggleDocSelection(doc.id)}
-                          className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-colors ${
-                            isChecked
-                              ? 'border-[#B59A68]/60 bg-[#B59A68]/10 text-white'
-                              : 'border-[#3B3A33] bg-[#151716] text-stone-300 hover:border-stone-500'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              readOnly
-                              className="w-3.5 h-3.5 accent-[#B59A68] rounded"
-                            />
-                            <span className="truncate">{doc.title}</span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {isChecked && (
-                              <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-[#B59A68]/20 text-[#D4AF37] border border-[#B59A68]/30 font-medium">
-                                Attached
-                              </span>
-                            )}
-                            <span className="text-[10px] text-stone-400 font-mono">
-                              {doc.total_pages} {doc.total_pages === 1 ? 'pg' : 'pgs'}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Generation Button & Inline Validation Error */}
