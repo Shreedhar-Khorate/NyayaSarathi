@@ -4,7 +4,7 @@
 - **Integration Branch:** `merge/drafting-into-main`
 - **Target Branch Baseline:** `origin/main` (`be6e1bc`)
 - **Source Branch:** `origin/drafting` (`c5464fe`)
-- **Merge Commit Hash:** `0cc587c631a02157cb7fe88f28c05763133cbda5`
+- **Merge Commit Hash:** `0cc587c842e94da5d49a9bea02e930e7419b7e4b`
 
 ---
 
