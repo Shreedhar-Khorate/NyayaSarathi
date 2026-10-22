@@ -6,7 +6,6 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scale,
-  Sparkles,
   BookOpen,
   UploadCloud,
   FileText,
@@ -433,16 +432,11 @@ export default function LegalResearchPage() {
         {/* Header Banner */}
         <div className="mb-8 border-b border-[#3B3A33]/70 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#B59A68]/30 bg-[#1D211F]/80 px-3 py-1 text-xs font-medium text-[#B59A68] mb-3">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Evidence-Grounded Legal Research Workspace</span>
-            </div>
             <h1 className="text-3xl sm:text-4xl font-display font-semibold text-[#F4EFE5] tracking-tight">
-              AI Legal Research & Citations
+              Legal Research & Citations
             </h1>
             <p className="mt-2 text-sm text-[#A9A49A] max-w-2xl">
-              Query your indexed judicial records, orders, and contracts with mathematically grounded hybrid retrieval.
-              Every statement is tethered directly to authentic paragraph and page coordinates.
+              Query indexed judicial records, orders, and contracts with paragraph-level verified citations.
             </p>
           </div>
 
@@ -579,7 +573,7 @@ export default function LegalResearchPage() {
                 {/* Sample Prompt Chips */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   <span className="text-[11px] text-[#A9A49A]/70 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-[#B59A68]" /> Suggested:
+                    <Search className="h-3 w-3 text-[#B59A68]" /> Suggested:
                   </span>
                   {SAMPLE_QUESTIONS.map((sq, i) => (
                     <button
@@ -644,14 +638,14 @@ export default function LegalResearchPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-[#3B3A33]/70">
                   <div className="flex items-center gap-2.5">
                     <div className="h-8 w-8 rounded-lg bg-[#B59A68]/15 border border-[#B59A68]/30 flex items-center justify-center text-[#B59A68] shrink-0">
-                      <Sparkles className="h-4 w-4" />
+                      <FileText className="h-4 w-4" />
                     </div>
                     <div>
                       <h2 className="text-sm font-semibold text-[#F4EFE5] tracking-tight">
-                        Final Grounded Answer
+                        Research Findings
                       </h2>
                       <span className="text-[11px] text-[#A9A49A]">
-                        Evidence-grounded judicial synthesis
+                        Verified citations from document corpus
                       </span>
                     </div>
                   </div>

@@ -70,3 +70,8 @@ backend/data/uploads/
 *.njsproj
 *.sln
 *.sw?
+
+# Media & Screen Recordings
+*.mp4
+*.webm
+*.mov

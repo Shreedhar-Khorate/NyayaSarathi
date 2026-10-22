@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Scale, Building2, Briefcase, User, Sparkles, AlertCircle, ArrowRight, Loader2, Upload, Camera } from 'lucide-react';
+import { Scale, Building2, Briefcase, User, AlertCircle, ArrowRight, Loader2, Upload, Camera } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { getUser, completeProfileOnboarding, type UserProfile } from '@/lib/auth';
 

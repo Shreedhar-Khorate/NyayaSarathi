@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   Copy,
   Check,
-  Sparkles,
   Filter,
   Search,
   Printer,
@@ -431,39 +430,14 @@ export default function ContractsPage() {
       <main className="flex-1 pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         {/* Header Hero */}
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-medium tracking-wide bg-[#B59A68]/10 text-[#B59A68] border border-[#B59A68]/30 mb-4 shadow-sm">
-            <ShieldAlert className="w-3.5 h-3.5 text-[#B59A68]" />
-            <span>Assistive Legal Tech &bull; Clause-Level Risk Intelligence</span>
-          </div>
-
-          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#F4EFE5] mb-4">
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#F4EFE5] mb-3">
             Contract Red-Flag Analyzer
           </h1>
 
           <p className="text-stone text-sm sm:text-base leading-relaxed">
-            Automated statutory risk auditing for commercial agreements, tenders, and NDAs. Grounded in the{' '}
-            <span className="text-[#B59A68] font-medium">Indian Contract Act, 1872</span> and High Court precedent doctrines with explainable 5/3/1 scoring.
+            Audit commercial agreements, tenders, and NDAs for high-risk clauses, indemnities, and statutory compliance under the{' '}
+            <span className="text-[#B59A68] font-medium">Indian Contract Act, 1872</span>.
           </p>
-
-          {/* Capability Pills Row */}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs text-stone/80">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D211F] border border-[#3B3A33]">
-              <Layers className="w-3 h-3 text-[#B59A68]" />
-              14 Subtype Classification
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D211F] border border-[#3B3A33]">
-              <Scale className="w-3 h-3 text-emerald-400" />
-              Verifiable Statutory Catalog
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D211F] border border-[#3B3A33]">
-              <Flame className="w-3 h-3 text-[#E25C6F]" />
-              Weighted 5/3/1 Scoring Model
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1D211F] border border-[#3B3A33]">
-              <FileSignature className="w-3 h-3 text-sky-400" />
-              Verbatim Excerpt Grounding
-            </span>
-          </div>
         </div>
 
         {/* Authentication Warning Banner if guest */}
@@ -640,7 +614,7 @@ export default function ContractsPage() {
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4 text-[#B59A68]" />
+                      <ShieldCheck className="w-4 h-4 text-[#B59A68]" />
                       <span>Analyze Red Flags</span>
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                     </>
@@ -829,7 +803,7 @@ export default function ContractsPage() {
                     href="/predictor"
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#1A1C1B] text-[#D4AF37] border border-[#B59A68]/40 hover:bg-[#B59A68]/20 transition-colors"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Scale className="w-3.5 h-3.5" />
                     <span>Open Case Predictor</span>
                   </Link>
                   <button
@@ -944,7 +918,7 @@ export default function ContractsPage() {
                 <div>
                   <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#3B3A33]/70">
                     <h3 className="font-display text-base font-semibold text-[#F4EFE5] flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#B59A68]" />
+                      <FileText className="w-4 h-4 text-[#B59A68]" />
                       Executive Legal Summary
                     </h3>
                     <button
@@ -1336,7 +1310,7 @@ export default function ContractsPage() {
                                 {(flag.recommended_action || flag.recommendation) && (
                                   <div className="rounded-xl p-4 bg-[#1A1C1B] border border-[#B59A68]/50">
                                     <div className="flex items-center gap-2 text-xs font-semibold text-[#B59A68] mb-2">
-                                      <Sparkles className="w-4 h-4 shrink-0" />
+                                      <CheckCircle2 className="w-4 h-4 shrink-0 text-[#B59A68]" />
                                       <span>Recommended Action / Redline</span>
                                     </div>
                                     <p className="text-xs text-[#EDE8DC] leading-relaxed">

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scale,
-  Sparkles,
   ArrowRight,
   ShieldCheck,
   AlertTriangle,
@@ -169,13 +168,9 @@ export default function PredictorPage() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-3xl mx-auto mb-12"
+          className="text-center max-w-3xl mx-auto mb-10"
         >
-          <div className="section-label mx-auto mb-3">
-            <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
-            {t('predictor.badge')}
-          </div>
-          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#F4EFE5] mb-4">
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#F4EFE5] mb-3">
             {t('predictor.title')}
           </h1>
           <p className="text-stone/80 text-sm sm:text-base leading-relaxed">
@@ -222,7 +217,7 @@ export default function PredictorPage() {
                     className="text-left text-xs p-2.5 rounded border border-[#3B3A33] bg-[#242925]/60 hover:bg-[#242925] hover:border-[#B59A68]/50 text-stone hover:text-[#F4EFE5] transition-all flex items-center justify-between group"
                   >
                     <span className="truncate pr-2 font-medium">{sample.title}</span>
-                    <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#B59A68] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0 text-[#B59A68] opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
               </div>
@@ -479,7 +474,7 @@ export default function PredictorPage() {
                   {/* Grounded Plain-Language Takeaway */}
                   <div className="ink-raised rounded-xl p-5 border border-[#3B3A33] space-y-2">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#B59A68]">
-                      <Sparkles className="w-4 h-4" />
+                      <Scale className="w-4 h-4" />
                       {t('predictor.takeawayTitle')}
                     </div>
                     <p className="text-xs sm:text-sm text-[#F4EFE5]/90 leading-relaxed font-legal italic">

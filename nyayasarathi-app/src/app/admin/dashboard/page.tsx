@@ -16,7 +16,6 @@ import {
   AlertCircle,
   RefreshCw,
   Clock,
-  Sparkles,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { fetchAdminMetrics, type AdminMetrics } from '@/lib/auth';

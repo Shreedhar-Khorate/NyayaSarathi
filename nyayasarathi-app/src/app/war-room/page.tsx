@@ -24,7 +24,6 @@ import {
   ChevronDown,
   Layers,
   ArrowRight,
-  Sparkles,
   Info,
   Clock,
   Eye,
@@ -497,10 +496,10 @@ export default function WarRoomPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono tracking-wider uppercase text-brass/90 font-semibold px-2 py-0.5 rounded bg-brass/10 border border-brass/25">
-                  Legal War Room
+                <span className="text-sm font-semibold tracking-wide text-brass font-sans">
+                  Trial Strategy War Room
                 </span>
-                <span className="text-xs text-stone">AI Case Analysis & Adversarial Strategy Workspace</span>
+                <span className="text-xs text-stone">· Adversarial Strategy Workspace</span>
               </div>
               <div className="relative mt-1 flex items-center gap-3">
                 <button
@@ -648,14 +647,14 @@ export default function WarRoomPage() {
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-3 w-3 text-brass" />
+                      <Scale className="h-3 w-3 text-brass" />
                       <span>{lastUsageInfo.tokens_used} tokens ({lastUsageInfo.duration_ms}ms)</span>
                     </>
                   )}
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-stone/60">
-                  <Shield className="h-3 w-3 text-verdigris" /> Grounded Legal Analysis Engine
+                  <Shield className="h-3 w-3 text-verdigris" /> Trial Strategy Simulation
                 </span>
               )}
 

@@ -10,7 +10,6 @@ import {
   Activity,
   Briefcase,
   Search,
-  Sparkles,
   RefreshCw,
   AlertCircle,
   ArrowRight,
@@ -62,7 +61,7 @@ export default function AdvocateDashboardPage() {
         { label: 'Legal Research', value: metrics.legal_research_count, icon: BookOpen, color: '#B59A68' },
         { label: 'Drafts Created', value: metrics.drafts_created, icon: FileText, color: '#A78BFA' },
         { label: 'Docs Analysed', value: metrics.documents_analysed, icon: ScanLine, color: '#6BD28E' },
-        { label: 'AI Predictions', value: metrics.predictions_run, icon: Sparkles, color: '#F97316' },
+        { label: 'Case Analyses', value: metrics.predictions_run, icon: Scale, color: '#F97316' },
       ]
     : [];
 

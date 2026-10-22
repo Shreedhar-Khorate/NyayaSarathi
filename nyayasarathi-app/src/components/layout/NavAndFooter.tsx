@@ -21,7 +21,7 @@ export function Navbar() {
     setCurrentUser(getUser());
   }, [pathname]);
 
-  // All 10 navigation modules directly displayed without hiding any section
+  // All 9 navigation modules directly displayed without hiding any section
   const NAV_LINKS = [
     { href: '/war-room',       label: 'War Room' },
     { href: '/legal-drafting', label: 'Legal Drafting' },
@@ -32,7 +32,6 @@ export function Navbar() {
     { href: '/find-advocate',  label: 'Find Advocate' },
     { href: '/messages',       label: 'Messages' },
     { href: '/news',           label: 'Legal News' },
-    { href: '/#pipeline',      label: t('nav.howItWorks') || 'How It Works' },
   ];
 
   useEffect(() => {

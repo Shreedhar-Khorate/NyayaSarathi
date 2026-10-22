@@ -12,7 +12,6 @@ import {
   Check,
   Download,
   Layers,
-  Sparkles,
   FileCheck,
   Eye,
   RefreshCw,
@@ -221,17 +220,12 @@ export default function OCRPage() {
 
       <main className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="section-label mx-auto mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-[#B59A68]" />
-            <span>Legal Document Intelligence</span>
-          </div>
+        <div className="text-center max-w-3xl mx-auto mb-10">
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-[#F4EFE5]">
             Document OCR & Layout Analysis
           </h1>
           <p className="mt-3 text-stone/80 font-sans text-sm sm:text-base leading-relaxed">
-            Extract text from court filings, judgments, affidavits, and scanned records with
-            PaddleOCR, dual-column layout preservation, and reading-order reconstruction.
+            Extract text, tables, and structured paragraphs from scanned court orders, petitions, and legal filings.
           </p>
         </div>
 

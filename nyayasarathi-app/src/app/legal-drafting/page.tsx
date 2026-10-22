@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scale,
-  Sparkles,
   FileText,
   Copy,
   Check,
@@ -436,17 +435,11 @@ export default function LegalDraftingPage() {
 
         <main className="flex-1 pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto w-full" suppressHydrationWarning>
           <div className="mb-8 border-b border-[#3B3A33]/70 pb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#B59A68]/40 bg-[#B59A68]/10 text-[#B59A68] text-xs font-semibold mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Feature 3.8 • AI Legal Drafting & Regional Translation</span>
-            </div>
             <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-[#F4EFE5]">
-              Legal Drafting & Regional Translation Hub
+              Legal Drafting & Notice Generator
             </h1>
             <p className="text-sm text-stone-400 mt-1 max-w-3xl leading-relaxed">
-              Generate production-quality, court-grounded first drafts of legal documents from facts,
-              cross-referenced against authentic Indian statutes, transitional era rules (IPC vs BNS),
-              and regional Indic languages.
+              Generate court-ready first drafts of legal petitions, bail applications, affidavits, and notices formatted to standard court practice.
             </p>
 
             <div className="mt-4 p-3.5 rounded-xl border border-[#B59A68]/30 bg-[#B59A68]/5 flex items-start gap-3">
@@ -502,17 +495,11 @@ export default function LegalDraftingPage() {
         <div className="mb-8 border-b border-[#3B3A33]/70 pb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#B59A68]/40 bg-[#B59A68]/10 text-[#B59A68] text-xs font-semibold mb-2">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Feature 3.8 • AI Legal Drafting & Regional Translation</span>
-              </div>
               <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-[#F4EFE5]">
-                Legal Drafting & Regional Translation Hub
+                Legal Drafting & Notice Generator
               </h1>
               <p className="text-sm text-stone-400 mt-1 max-w-3xl leading-relaxed">
-                Generate production-quality, court-grounded first drafts of legal documents from facts,
-                cross-referenced against authentic Indian statutes, transitional era rules (IPC vs BNS),
-                and regional Indic languages.
+                Generate court-ready first drafts of legal petitions, bail applications, affidavits, and notices formatted to standard court practice.
               </p>
             </div>
 

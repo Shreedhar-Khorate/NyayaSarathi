@@ -2,6 +2,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import './sketchbook.css';
 
 /* ────────────────────────────────────────────────────────────
    Neo-Classical Legal Palette — Ink, Oxblood & Vellum

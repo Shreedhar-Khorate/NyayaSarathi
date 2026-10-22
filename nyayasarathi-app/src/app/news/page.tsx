@@ -15,7 +15,6 @@ import {
   BookOpen,
   Filter,
   Search,
-  Sparkles,
   CheckCircle2,
   Info,
   Calendar,
@@ -244,10 +243,6 @@ export default function LegalNewsPage() {
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#B59A68]/30 bg-[#B59A68]/10 text-xs font-medium text-[#B59A68] tracking-wider uppercase mb-3">
-                <Sparkles className="w-3.5 h-3.5 text-[#B59A68]" />
-                <span>Live Indian Legal Intelligence</span>
-              </div>
               <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#F4EFE5] leading-[1.15]">
                 Indian Legal & Judiciary News
               </h1>

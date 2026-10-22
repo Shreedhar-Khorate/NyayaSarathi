@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { motion, type Variants } from 'framer-motion';
-import { ArrowUpRight, Upload, Scale } from 'lucide-react';
+import { ArrowUpRight, Upload } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -52,14 +52,6 @@ export default function Hero() {
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-6">
         <motion.div variants={container} initial="hidden" animate="show" className="max-w-4xl">
-
-          {/* Editorial eyebrow label */}
-          <motion.div variants={item} className="mb-8">
-            <span className="section-label border border-[#B59A68]/40 bg-gradient-to-r from-[#6E2634]/30 via-[#242925] to-[#B59A68]/20 text-[#B59A68] shadow-sm">
-              <Scale className="h-3 w-3 text-[#B59A68]" strokeWidth={1.5} />
-              {t('hero.eyebrow')}
-            </span>
-          </motion.div>
 
           {/* Headline — Cormorant Garamond */}
           <h1 className="font-display flex flex-wrap gap-x-3 gap-y-1 text-5xl font-semibold leading-[1.1] text-ivory sm:text-6xl md:text-7xl">
@@ -111,25 +103,6 @@ export default function Hero() {
               <Upload className="h-4 w-4 text-stone transition-colors group-hover:text-ivory" />
               <span>{t('hero.uploadDoc')}</span>
             </Link>
-          </motion.div>
-
-          {/* Stats row */}
-          <motion.div variants={item} className="mt-16 flex flex-wrap items-center gap-6 sm:gap-0">
-            {[
-              [t('hero.stat1Value'), t('hero.stat1Label')],
-              [t('hero.stat2Value'), t('hero.stat2Label')],
-              [t('hero.stat3Value'), t('hero.stat3Label')],
-            ].map(([value, label], i) => (
-              <div
-                key={label}
-                className={`pr-8 sm:pr-10 ${i > 0 ? 'sm:pl-10 sm:border-l sm:border-[#3B3A33]' : ''}`}
-              >
-                <p className="font-display text-3xl font-semibold bg-gradient-to-b from-[#F4EFE5] via-[#B59A68] to-[#8C6F34] bg-clip-text text-transparent">
-                  {value}
-                </p>
-                <p className="mt-1 font-sans text-xs tracking-wide text-stone">{label}</p>
-              </div>
-            ))}
           </motion.div>
         </motion.div>
       </div>

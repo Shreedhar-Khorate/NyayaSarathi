@@ -23,7 +23,6 @@ import {
   Shield,
   ArrowRight,
   User,
-  Sparkles,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { getUser } from '@/lib/auth';
