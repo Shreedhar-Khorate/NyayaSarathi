@@ -148,6 +148,7 @@ class TestDurableAuditRetentionAndConsistency(unittest.TestCase):
 
     def test_05_offline_sqlite_mode_fallback(self):
         """Verify repository behaves consistently in isolated SQLite mode when NYAYASARATHI_USE_SQLITE=1."""
+        prev_sqlite_env = os.environ.get("NYAYASARATHI_USE_SQLITE")
         os.environ["NYAYASARATHI_USE_SQLITE"] = "1"
         try:
             self.assertFalse(is_postgres_authoritative())
@@ -175,7 +176,10 @@ class TestDurableAuditRetentionAndConsistency(unittest.TestCase):
             matching = [a for a in history if a.get("target_email") == sqlite_user["email"]]
             self.assertTrue(len(matching) >= 1)
         finally:
-            del os.environ["NYAYASARATHI_USE_SQLITE"]
+            if prev_sqlite_env is not None:
+                os.environ["NYAYASARATHI_USE_SQLITE"] = prev_sqlite_env
+            else:
+                os.environ.pop("NYAYASARATHI_USE_SQLITE", None)
 
 
 if __name__ == "__main__":

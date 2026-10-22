@@ -535,6 +535,7 @@ def update_user_profile(
         cursor.execute(sql, tuple(values))
         conn.commit()
 
+    invalidate_user_cache(user_id)
     return get_user_by_id(user_id)
 
 
@@ -565,6 +566,7 @@ def delete_user_by_id(user_id: str) -> bool:
         if not is_postgres_authoritative():
             deleted = cursor.rowcount > 0
 
+    invalidate_user_cache(user_id)
     return deleted
 
 
@@ -898,6 +900,7 @@ def update_user_role_with_audit(
                 log.error(f"Failed to update role in SQLite: {exc}", extra={"component": "USER_REPO"})
                 raise exc
 
+    invalidate_user_cache(target_user_id)
     return audit_payload
 
 
