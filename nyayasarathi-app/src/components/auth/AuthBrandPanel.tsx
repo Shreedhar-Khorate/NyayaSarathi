@@ -45,141 +45,152 @@ export function AuthBrandPanel() {
           onMouseLeave={() => setIsHovered(false)}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.035 }}
+          whileHover={{ scale: 1.03 }}
           transition={{ duration: 0.4, ease: EASE }}
           className="relative w-full max-w-[340px] sm:max-w-[420px] md:max-w-[480px] lg:max-w-[520px] xl:max-w-[580px] 2xl:max-w-[640px] aspect-square flex items-center justify-center cursor-pointer select-none"
         >
           <svg
             viewBox="0 0 500 500"
-            className="w-full h-full drop-shadow-[0_20px_60px_rgba(0,0,0,0.9)] transition-all duration-500"
+            className="w-full h-full drop-shadow-[0_24px_64px_rgba(0,0,0,0.95)] transition-all duration-500"
             aria-label="NyayaSarathi Sacred Judicial Insignia"
           >
             <defs>
-              {/* Circular path for outer revolving Sanskrit shloka (radius: 185) */}
+              {/* Circular path for outer revolving Sanskrit shloka (radius: 196) */}
               <path
                 id="shlokaCirclePath"
-                d="M 250, 250 m -185, 0 a 185,185 0 1,1 370,0 a 185,185 0 1,1 -370,0"
+                d="M 250, 250 m -196, 0 a 196,196 0 1,1 392,0 a 196,196 0 1,1 -392,0"
               />
 
               {/* Central Badge Radial Gradient */}
               <radialGradient id="badgeGradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#28302C" />
-                <stop offset="60%" stopColor="#181D1B" />
-                <stop offset="100%" stopColor="#0F1211" />
+                <stop offset="0%" stopColor="#252D29" />
+                <stop offset="65%" stopColor="#151A18" />
+                <stop offset="100%" stopColor="#0B0E0D" />
               </radialGradient>
 
               {/* Metallic Brass Gradients */}
               <linearGradient id="brassMetallic" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#F7EEDC" />
-                <stop offset="25%" stopColor="#B59A68" />
-                <stop offset="70%" stopColor="#7E673B" />
-                <stop offset="100%" stopColor="#E4D2AA" />
+                <stop offset="0%" stopColor="#F9F2E3" />
+                <stop offset="25%" stopColor="#D4BA82" />
+                <stop offset="65%" stopColor="#8A7042" />
+                <stop offset="100%" stopColor="#EAD8B2" />
               </linearGradient>
 
               <linearGradient id="goldBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#B59A68" stopOpacity="0.4" />
-                <stop offset="50%" stopColor="#F4EFE5" stopOpacity="1" />
-                <stop offset="100%" stopColor="#B59A68" stopOpacity="0.4" />
+                <stop offset="0%" stopColor="#B59A68" stopOpacity="0.6" />
+                <stop offset="50%" stopColor="#FFF9EE" stopOpacity="1" />
+                <stop offset="100%" stopColor="#B59A68" stopOpacity="0.6" />
               </linearGradient>
+
+              {/* Medallion Depth Gradient */}
+              <radialGradient id="medallionDepth" cx="50%" cy="45%" r="55%">
+                <stop offset="0%" stopColor="#1E2522" />
+                <stop offset="60%" stopColor="#141816" />
+                <stop offset="100%" stopColor="#0D100F" />
+              </radialGradient>
 
               {/* Subtle Gold Shadow Filter */}
               <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feGaussianBlur stdDeviation="3.5" result="blur" />
                 <feComposite in="SourceGraphic" in2="blur" operator="over" />
               </filter>
             </defs>
 
-            {/* 1. Deep Obsidian Outer Shield Ring with Brass Bevel */}
+            {/* 1. Deep Obsidian Outer Shield Ring with Precision Brass Bevel */}
             <circle
               cx="250"
               cy="250"
-              r="238"
+              r="240"
               fill="url(#badgeGradient)"
               stroke="#B59A68"
               strokeWidth="2.5"
-              strokeOpacity="0.7"
+              strokeOpacity="0.8"
             />
             <circle
               cx="250"
               cy="250"
-              r="228"
+              r="234"
               fill="none"
               stroke="#B59A68"
-              strokeWidth="0.8"
-              strokeDasharray="3 3"
+              strokeWidth="0.75"
+              strokeDasharray="2 3"
               strokeOpacity="0.4"
             />
 
-            {/* 2. Concentric Orbit Lines with subtle rotation on hover */}
-            <g className="transition-transform duration-1000 ease-out">
-              <circle
-                cx="250"
-                cy="250"
-                r="212"
-                fill="none"
-                stroke="#B59A68"
-                strokeWidth="1.2"
-                strokeOpacity="0.5"
-              />
-              <circle
-                cx="250"
-                cy="250"
-                r="160"
-                fill="none"
-                stroke="#6E2634"
-                strokeWidth="1.5"
-                strokeOpacity="0.65"
-              />
-              <circle
-                cx="250"
-                cy="250"
-                r="148"
-                fill="none"
-                stroke="#B59A68"
-                strokeWidth="0.75"
-                strokeDasharray="2 4"
-                strokeOpacity="0.45"
-              />
+            {/* 2. Cardinal Precision Pointers (North, East, South, West) */}
+            <g fill="#B59A68" stroke="#B59A68" strokeWidth="0.8">
+              {/* North */}
+              <polygon points="250,5 255,16 250,13 245,16" />
+              {/* South */}
+              <polygon points="250,495 255,484 250,487 245,484" />
+              {/* East */}
+              <polygon points="495,250 484,255 487,250 484,245" />
+              {/* West */}
+              <polygon points="5,250 16,255 13,250 16,245" />
             </g>
 
-            {/* 3. Outer Continuous Rotating Track: Sacred Sanskrit Shloka */}
-            {/* "यतो धर्मस्ततो जयः" (Where there is Dharma, there is Victory) & "सत्यमेव जयते" (Truth alone triumphs) */}
-            <g className="origin-center animate-[spin_48s_linear_infinite] hover:[animation-play-state:paused]">
+            {/* 3. Orbit Track for Compass Satellite */}
+            <circle
+              cx="250"
+              cy="250"
+              r="224"
+              fill="none"
+              stroke="#B59A68"
+              strokeWidth="0.75"
+              strokeDasharray="3 6"
+              strokeOpacity="0.35"
+            />
+
+            {/* 4. Sanskrit Shloka Track Framing Borders */}
+            <circle
+              cx="250"
+              cy="250"
+              r="214"
+              fill="none"
+              stroke="#B59A68"
+              strokeWidth="1.2"
+              strokeOpacity="0.65"
+            />
+            <circle
+              cx="250"
+              cy="250"
+              r="178"
+              fill="none"
+              stroke="#6E2634"
+              strokeWidth="1.5"
+              strokeOpacity="0.75"
+            />
+
+            {/* 5. Continuous Balanced Sanskrit Shloka Ring */}
+            {/* 4 balanced sacred sutras connected by golden star gems filling the entire 360° circumference */}
+            <g className="origin-center animate-[spin_52s_linear_infinite] hover:[animation-play-state:paused]">
               <text
-                className="fill-[#E4D2AA] font-serif text-[11px] font-semibold tracking-[0.24em] select-none"
-                style={{ textShadow: '0 2px 8px rgba(181,154,104,0.45)' }}
+                className="fill-[#EAD8B2] font-serif text-[11.5px] font-semibold tracking-[0.24em] select-none"
+                style={{ textShadow: '0 2px 8px rgba(212,186,130,0.45)' }}
               >
                 <textPath
                   href="#shlokaCirclePath"
                   startOffset="0%"
                   spacing="auto"
                 >
-                  ॥ यतो धर्मस्ततो जयः ॥ सत्यमेव जयते नानृतम् ॥ न्यायो रक्षति रक्षितः ॥ सर्वजन हिताय सर्वजन सुखाय ॥
+                  ॥ यतो धर्मस्ततो जयः ॥ ❖ ॥ सत्यमेव जयते नानृतम् ॥ ❖ ॥ धर्मो रक्षति रक्षितः ॥ ❖ ॥ सर्वजनहिताय सर्वजनसुखाय ॥ ❖
                 </textPath>
               </text>
             </g>
 
-            {/* 4. Cardinal Decorative Geometric Pointers (North, East, South, West) */}
-            <g stroke="#B59A68" strokeWidth="1" strokeOpacity="0.85" fill="#B59A68">
-              {/* North */}
-              <polygon points="250,22 254,32 250,30 246,32" />
-              {/* South */}
-              <polygon points="250,478 254,468 250,470 246,468" />
-              {/* East */}
-              <polygon points="478,250 468,254 470,250 468,246" />
-              {/* West */}
-              <polygon points="22,250 32,254 30,250 32,246" />
-            </g>
-
-            {/* 5. 24 Radial Precedent Nodes (Ashoka Chakra 24 Spokes Principle) */}
-            <g transform="translate(250, 250)" stroke="#B59A68" strokeOpacity="0.35">
+            {/* 6. 24 Radial Dharmachakra Ray Spokes */}
+            <g transform="translate(250, 250)" stroke="#B59A68">
               {Array.from({ length: 24 }).map((_, i) => {
                 const angle = (i * 360) / 24;
                 const rad = (angle * Math.PI) / 180;
-                const x1 = Math.cos(rad) * 140;
-                const y1 = Math.sin(rad) * 140;
-                const x2 = Math.cos(rad) * 154;
-                const y2 = Math.sin(rad) * 154;
+                const isCardinal = i % 6 === 0;
+                const isMajor = i % 3 === 0;
+                const r1 = 158;
+                const r2 = isCardinal ? 174 : isMajor ? 171 : 167;
+                const x1 = Math.cos(rad) * r1;
+                const y1 = Math.sin(rad) * r1;
+                const x2 = Math.cos(rad) * r2;
+                const y2 = Math.sin(rad) * r2;
                 return (
                   <line
                     key={i}
@@ -187,296 +198,316 @@ export function AuthBrandPanel() {
                     y1={y1}
                     x2={x2}
                     y2={y2}
-                    strokeWidth={i % 3 === 0 ? '1.5' : '0.75'}
-                    stroke={i % 3 === 0 ? '#B59A68' : '#7E673B'}
-                    strokeOpacity={i % 3 === 0 ? 0.75 : 0.35}
+                    strokeWidth={isCardinal ? '1.8' : isMajor ? '1.2' : '0.75'}
+                    stroke={isCardinal ? '#F9F2E3' : isMajor ? '#D4BA82' : '#8A7042'}
+                    strokeOpacity={isCardinal ? 0.9 : isMajor ? 0.65 : 0.35}
                   />
                 );
               })}
             </g>
 
-            {/* 6. Central Inner Sovereign Medallion */}
+            {/* 7. Central Sovereign Medallion (Generous, spacious radius 154) */}
             <circle
               cx="250"
               cy="250"
-              r="132"
-              fill="#181D1B"
+              r="154"
+              fill="url(#medallionDepth)"
               stroke="#B59A68"
-              strokeWidth="2"
+              strokeWidth="2.2"
               filter="url(#goldGlow)"
             />
             <circle
               cx="250"
               cy="250"
-              r="126"
+              r="146"
               fill="none"
               stroke="#6E2634"
               strokeWidth="1.2"
-              strokeOpacity="0.7"
+              strokeOpacity="0.75"
+            />
+            <circle
+              cx="250"
+              cy="250"
+              r="142"
+              fill="none"
+              stroke="#B59A68"
+              strokeWidth="0.6"
+              strokeDasharray="2 3"
+              strokeOpacity="0.3"
             />
 
-            {/* 7. Centerpiece: The Classical Pillars & Scales of Constitutional Justice */}
-            {/* The Central Pillar / Dharma Pillar */}
+            {/* 8. Centerpiece: Classical Pillars & Grand Scales of Justice */}
+            {/* The Central Dharma Pillar Assembly */}
             <g className="transition-transform duration-500">
-              {/* Pillar Base Plinth */}
+              {/* Stepped Architectural Plinth Foundation (Well above the typography) */}
               <rect
-                x="215"
-                y="330"
-                width="70"
+                x="206"
+                y="298"
+                width="88"
                 height="8"
                 rx="2"
                 fill="url(#brassMetallic)"
+                stroke="#4A3B1E"
+                strokeWidth="0.5"
               />
               <rect
-                x="222"
-                y="324"
-                width="56"
-                height="6"
-                rx="1"
+                x="218"
+                y="291"
+                width="64"
+                height="7"
+                rx="1.5"
                 fill="url(#brassMetallic)"
               />
               <rect
                 x="230"
-                y="318"
+                y="285"
                 width="40"
                 height="6"
                 rx="1"
-                fill="#7E673B"
+                fill="#8A7042"
               />
 
-              {/* Central Fluted Column */}
+              {/* Tri-Fluted Classical Column Shaft */}
               <line
-                x1="246"
-                y1="195"
-                x2="246"
-                y2="318"
+                x1="244"
+                y1="180"
+                x2="244"
+                y2="285"
                 stroke="url(#brassMetallic)"
                 strokeWidth="2.5"
               />
               <line
                 x1="250"
-                y1="188"
+                y1="172"
                 x2="250"
-                y2="318"
-                stroke="#F7EEDC"
-                strokeWidth="3.5"
+                y2="285"
+                stroke="#F9F2E3"
+                strokeWidth="4"
               />
               <line
-                x1="254"
-                y1="195"
-                x2="254"
-                y2="318"
+                x1="256"
+                y1="180"
+                x2="256"
+                y2="285"
                 stroke="url(#brassMetallic)"
                 strokeWidth="2.5"
               />
 
               {/* Column Capital */}
               <path
-                d="M 230 195 L 270 195 L 265 188 L 235 188 Z"
+                d="M 226 180 L 274 180 L 268 172 L 232 172 Z"
                 fill="url(#brassMetallic)"
               />
 
-              {/* Central Lion Capitol / Ashoka Chakra Core at Fulcrum */}
+              {/* Central Lion Capitol & Fulcrum Hub */}
               <circle
                 cx="250"
-                cy="184"
-                r="11"
-                fill="#242925"
+                cy="168"
+                r="13"
+                fill="#1E2522"
                 stroke="url(#brassMetallic)"
-                strokeWidth="2"
+                strokeWidth="2.2"
               />
               <circle
                 cx="250"
-                cy="184"
-                r="4.5"
+                cy="168"
+                r="5.5"
                 fill="#6E2634"
-                stroke="#E4D2AA"
+                stroke="#F9F2E3"
                 strokeWidth="1.2"
               />
 
-              {/* Fulcrum Top Finial */}
+              {/* Fulcrum Top Finial Spire */}
               <polygon
-                points="250,166 254,174 246,174"
+                points="250,146 255,156 245,156"
                 fill="url(#brassMetallic)"
               />
             </g>
 
-            {/* 8. Horizontal Balance Beam (Tilt gently with dynamic equilibrium) */}
+            {/* 9. Grand Horizontal Balance Beam & Hanging Pans (Proportional width: 212) */}
             <motion.g
               animate={{
                 rotate: isHovered ? [0, -3.5, 3.5, -1, 1, 0] : [0, -1.2, 1.2, -0.6, 0.6, 0],
               }}
               transition={{
-                duration: isHovered ? 4 : 8,
+                duration: isHovered ? 4.5 : 8.5,
                 repeat: Infinity,
                 ease: 'easeInOut',
               }}
-              style={{ originX: '250px', originY: '184px' }}
+              style={{ originX: '250px', originY: '168px' }}
             >
-              {/* The Balanced Beam Bar */}
+              {/* Arched Balance Beam Bar */}
               <path
-                d="M 162 185 C 190 181 310 181 338 185 L 338 183 C 310 179 190 179 162 183 Z"
+                d="M 144 169 C 180 164 320 164 356 169 L 356 166 C 320 161 180 161 144 166 Z"
                 fill="url(#goldBeam)"
               />
               {/* Beam End Knobs */}
-              <circle cx="162" cy="184" r="3.5" fill="url(#brassMetallic)" />
-              <circle cx="338" cy="184" r="3.5" fill="url(#brassMetallic)" />
+              <circle cx="144" cy="168" r="4" fill="url(#brassMetallic)" stroke="#8A7042" strokeWidth="0.8" />
+              <circle cx="356" cy="168" r="4" fill="url(#brassMetallic)" stroke="#8A7042" strokeWidth="0.8" />
 
-              {/* Left Scale Assembly (Suspension cords + Pan) */}
+              {/* Left Scale Pan Assembly */}
               <g>
                 {/* Suspension Triple Cords */}
                 <line
-                  x1="162"
-                  y1="184"
-                  x2="142"
-                  y2="242"
-                  stroke="#B59A68"
-                  strokeWidth="0.9"
-                  strokeOpacity="0.8"
+                  x1="144"
+                  y1="168"
+                  x2="118"
+                  y2="236"
+                  stroke="#D4BA82"
+                  strokeWidth="1"
+                  strokeOpacity="0.85"
                 />
                 <line
-                  x1="162"
-                  y1="184"
-                  x2="182"
-                  y2="242"
-                  stroke="#B59A68"
-                  strokeWidth="0.9"
-                  strokeOpacity="0.8"
+                  x1="144"
+                  y1="168"
+                  x2="170"
+                  y2="236"
+                  stroke="#D4BA82"
+                  strokeWidth="1"
+                  strokeOpacity="0.85"
                 />
                 <line
-                  x1="162"
-                  y1="184"
-                  x2="162"
-                  y2="242"
-                  stroke="#F7EEDC"
-                  strokeWidth="0.8"
-                  strokeOpacity="0.9"
+                  x1="144"
+                  y1="168"
+                  x2="144"
+                  y2="236"
+                  stroke="#FFF9EE"
+                  strokeWidth="0.9"
+                  strokeOpacity="0.95"
                 />
 
                 {/* Left Pan (Brass Crescent Dish) */}
                 <path
-                  d="M 138 242 C 146 258 178 258 186 242 Z"
+                  d="M 114 236 C 122 256 166 256 174 236 Z"
                   fill="url(#brassMetallic)"
-                  stroke="#F7EEDC"
-                  strokeWidth="1"
+                  stroke="#FFF9EE"
+                  strokeWidth="1.2"
                 />
                 <ellipse
-                  cx="162"
-                  cy="242"
-                  rx="24"
-                  ry="3.5"
-                  fill="#242925"
-                  stroke="#B59A68"
-                  strokeWidth="0.8"
+                  cx="144"
+                  cy="236"
+                  rx="29"
+                  ry="4.5"
+                  fill="#181D1B"
+                  stroke="#D4BA82"
+                  strokeWidth="1"
                 />
 
-                {/* Internal Weight of Precedent / Glowing Sacred Diamond */}
+                {/* Internal Weight of Dharma / Emerald Crystal */}
                 <polygon
-                  points="162,236 166,240 162,244 158,240"
+                  points="144,228 149,233 144,238 139,233"
                   fill="#71877A"
-                  stroke="#E4D2AA"
-                  strokeWidth="0.8"
+                  stroke="#FFF9EE"
+                  strokeWidth="0.9"
                 />
               </g>
 
-              {/* Right Scale Assembly (Suspension cords + Pan) */}
+              {/* Right Scale Pan Assembly */}
               <g>
                 {/* Suspension Triple Cords */}
                 <line
-                  x1="338"
-                  y1="184"
-                  x2="318"
-                  y2="242"
-                  stroke="#B59A68"
-                  strokeWidth="0.9"
-                  strokeOpacity="0.8"
+                  x1="356"
+                  y1="168"
+                  x2="330"
+                  y2="236"
+                  stroke="#D4BA82"
+                  strokeWidth="1"
+                  strokeOpacity="0.85"
                 />
                 <line
-                  x1="338"
-                  y1="184"
-                  x2="358"
-                  y2="242"
-                  stroke="#B59A68"
-                  strokeWidth="0.9"
-                  strokeOpacity="0.8"
+                  x1="356"
+                  y1="168"
+                  x2="382"
+                  y2="236"
+                  stroke="#D4BA82"
+                  strokeWidth="1"
+                  strokeOpacity="0.85"
                 />
                 <line
-                  x1="338"
-                  y1="184"
-                  x2="338"
-                  y2="242"
-                  stroke="#F7EEDC"
-                  strokeWidth="0.8"
-                  strokeOpacity="0.9"
+                  x1="356"
+                  y1="168"
+                  x2="356"
+                  y2="236"
+                  stroke="#FFF9EE"
+                  strokeWidth="0.9"
+                  strokeOpacity="0.95"
                 />
 
                 {/* Right Pan (Brass Crescent Dish) */}
                 <path
-                  d="M 314 242 C 322 258 354 258 362 242 Z"
+                  d="M 326 236 C 334 256 378 256 386 236 Z"
                   fill="url(#brassMetallic)"
-                  stroke="#F7EEDC"
-                  strokeWidth="1"
+                  stroke="#FFF9EE"
+                  strokeWidth="1.2"
                 />
                 <ellipse
-                  cx="338"
-                  cy="242"
-                  rx="24"
-                  ry="3.5"
-                  fill="#242925"
-                  stroke="#B59A68"
-                  strokeWidth="0.8"
+                  cx="356"
+                  cy="236"
+                  rx="29"
+                  ry="4.5"
+                  fill="#181D1B"
+                  stroke="#D4BA82"
+                  strokeWidth="1"
                 />
 
-                {/* Internal Weight of Precedent / Glowing Crimson Ruby */}
+                {/* Internal Weight of Dharma / Crimson Ruby */}
                 <polygon
-                  points="338,236 342,240 338,244 334,240"
+                  points="356,228 361,233 356,238 351,233"
                   fill="#8A3545"
-                  stroke="#E4D2AA"
-                  strokeWidth="0.8"
+                  stroke="#FFF9EE"
+                  strokeWidth="0.9"
                 />
               </g>
             </motion.g>
 
-            {/* 9. Architectural Foundation Plinth Label */}
-            <g transform="translate(250, 356)" className="select-none pointer-events-none">
+            {/* 10. Architectural Medallion Typography (Generously positioned inside the medallion, no overlap) */}
+            <g className="select-none pointer-events-none">
               <text
+                x="250"
+                y="326"
                 textAnchor="middle"
-                className="fill-[#B59A68] font-mono text-[9.5px] uppercase tracking-[0.3em] font-medium"
+                className="fill-[#EAD8B2] font-mono text-[10.5px] uppercase tracking-[0.34em] font-semibold"
+                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}
               >
                 NYAYASARATHI
               </text>
               <line
-                x1="-35"
-                y1="7"
-                x2="35"
-                y2="7"
+                x1="205"
+                y1="333"
+                x2="295"
+                y2="333"
                 stroke="#6E2634"
-                strokeWidth="1"
-                strokeOpacity="0.75"
+                strokeWidth="1.2"
+                strokeOpacity="0.85"
+              />
+              <polygon
+                points="250,331 252,333 250,335 248,333"
+                fill="#D4BA82"
               />
               <text
-                y="18"
+                x="250"
+                y="345"
                 textAnchor="middle"
-                className="fill-[#A9A49A]/80 font-mono text-[7px] uppercase tracking-[0.25em]"
+                className="fill-[#B59A68] font-mono text-[7.5px] uppercase tracking-[0.26em] font-medium"
               >
                 CONSTITUTIONAL JURISPRUDENCE
               </text>
             </g>
 
-            {/* 10. Outer Rotating Compass Diamond Indicator */}
-            <g className="origin-center animate-[spin_60s_linear_infinite_reverse]">
+            {/* 11. Orbiting Satellite Compass Indicator (Smoothly glides along dedicated radius 224 orbit) */}
+            <g className="origin-center animate-[spin_40s_linear_infinite_reverse]">
               <circle
                 cx="250"
                 cy="26"
-                r="3.5"
-                fill="none"
-                stroke="#B59A68"
-                strokeWidth="1"
+                r="4"
+                fill="#151A18"
+                stroke="#D4BA82"
+                strokeWidth="1.2"
               />
               <circle
                 cx="250"
                 cy="26"
-                r="1.2"
+                r="1.6"
                 fill={isHovered ? '#DC3854' : '#8A3545'}
                 className="transition-colors duration-300"
               />
