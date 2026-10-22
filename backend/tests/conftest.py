@@ -269,7 +269,7 @@ def mock_war_room_llm():
                 {"id": 2, "fact": "Applicant seeks anticipatory bail under Section 438 CrPC", "category": "party_allegation"}
             ], "groq(mock)", "test-model", 50, 50
 
-        elif "opposing party" in system_prompt.lower() or "devil's advocate" in system_prompt.lower() or "opposition" in system_prompt.lower() or "hostile" in system_prompt.lower():
+        elif "devil's advocate" in system_prompt.lower() or "opposing party" in system_prompt.lower() or "opposing_claim" in system_prompt.lower():
             return [
                 {
                     "id": "opp-1",
@@ -280,7 +280,7 @@ def mock_war_room_llm():
                 }
             ], "groq(mock)", "test-model", 50, 50
 
-        elif "evidence specialist" in system_prompt.lower() or "evidentiary" in system_prompt.lower() or "evidence" in system_prompt.lower():
+        elif "evidence specialist" in system_prompt.lower() or "evidence_category" in system_prompt.lower() or "exhibit" in system_prompt.lower():
             return [
                 {
                     "id": "ev-1",
