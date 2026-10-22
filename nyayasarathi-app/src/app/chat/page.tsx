@@ -17,7 +17,10 @@ import React, {
   useEffect,
   useRef,
   useState,
+  Suspense,
 } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageCircle,
@@ -32,6 +35,7 @@ import {
   WifiOff,
   ChevronLeft,
   User,
+  Users,
   Loader2,
   FileText,
   Image as ImageIcon,
@@ -99,8 +103,11 @@ function ConvItem({
   onClick: () => void;
 }) {
   const isUser = conv.user_id === currentUserId;
-  const otherId = isUser ? conv.advocate_id : conv.user_id;
-  const label = isUser ? 'Advocate' : 'Client';
+  const displayName = conv.other_party_name || (isUser ? 'Advocate' : 'Client');
+  const subtitle = conv.other_party_designation || (isUser ? 'Counsel' : 'Client');
+  const initials = conv.other_party_name
+    ? conv.other_party_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : null;
 
   return (
     <button
@@ -113,18 +120,19 @@ function ConvItem({
       }`}
     >
       {/* Avatar */}
-      <div className="w-10 h-10 rounded-full bg-[#2A2E2B] border border-[#3B3A33] flex items-center justify-center flex-shrink-0">
-        <User className="w-5 h-5 text-[#A9A49A]" />
+      <div className="w-10 h-10 rounded-full bg-[#2A2E2B] border border-[#3B3A33] flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#F4EFE5]">
+        {initials ? initials : <User className="w-5 h-5 text-[#A9A49A]" />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-[#F4EFE5] truncate">{label}</p>
+          <p className="text-sm font-semibold text-[#F4EFE5] truncate">{displayName}</p>
           {conv.unread_count ? (
             <span className="flex-shrink-0 bg-[#4F8EF7] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
               {conv.unread_count > 9 ? '9+' : conv.unread_count}
             </span>
           ) : null}
         </div>
+        <p className="text-[11px] text-[#A9A49A]/70 truncate">{subtitle}</p>
         <p className="text-xs text-[#A9A49A] truncate mt-0.5">
           {conv.last_message_body ?? 'No messages yet'}
         </p>
@@ -205,8 +213,11 @@ function DateSeparator({ label }: { label: string }) {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-export default function ChatPage() {
+// ── Main Chat Content ────────────────────────────────────────────────────────
+function ChatContent() {
+  const searchParams = useSearchParams();
+  const paramConvId = searchParams?.get('conversationId');
+
   const currentUser = getUser();
   const currentUserId = currentUser?.id ?? '';
   const currentRole = currentUser?.role ?? 'USER';
@@ -245,19 +256,14 @@ export default function ChatPage() {
     try {
       const data = await fetchConversations();
       setConversations(data.conversations);
+      return data.conversations;
     } catch (e: unknown) {
       setConvError(e instanceof Error ? e.message : 'Failed to load conversations.');
+      return [];
     } finally {
       setConvLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    loadConversations();
-    fetchChatHealth()
-      .then((h) => setRealtimeMode(h.chat_db_mode))
-      .catch(() => setRealtimeMode('sqlite'));
-  }, [loadConversations]);
 
   // ── Load messages for active conversation ───────────────────────────────────
   const loadMessages = useCallback(async (convId: string, append = false) => {
@@ -312,6 +318,18 @@ export default function ChatPage() {
     await loadMessages(convId);
     startPolling(convId);
   }, [loadMessages, startPolling]);
+
+  // ── Initial load & searchParam conversation selection ──────────────────────
+  useEffect(() => {
+    loadConversations().then((convs) => {
+      if (paramConvId) {
+        selectConversation(paramConvId);
+      }
+    });
+    fetchChatHealth()
+      .then((h) => setRealtimeMode(h.chat_db_mode))
+      .catch(() => setRealtimeMode('sqlite'));
+  }, [loadConversations, paramConvId, selectConversation]);
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -477,14 +495,27 @@ export default function ChatPage() {
             `}>
               <div className="px-4 py-3 border-b border-[#2A2E2B] flex items-center justify-between">
                 <span className="text-xs font-semibold text-[#A9A49A] uppercase tracking-widest">Conversations</span>
-                <button
-                  id="chat-refresh-convs"
-                  onClick={loadConversations}
-                  className="p-1 rounded-lg hover:bg-[#1D211F] transition-colors"
-                  aria-label="Refresh conversations"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 text-[#A9A49A] ${convLoading ? 'animate-spin' : ''}`} />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {currentRole === 'USER' && (
+                    <Link
+                      href="/find-advocate"
+                      id="chat-find-advocate-sidebar-btn"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#4F8EF7]/15 border border-[#4F8EF7]/30 text-[11px] font-semibold text-[#4F8EF7] hover:bg-[#4F8EF7]/25 transition-colors"
+                      title="Find an Advocate"
+                    >
+                      <Users className="w-3 h-3" />
+                      <span>Find Advocate</span>
+                    </Link>
+                  )}
+                  <button
+                    id="chat-refresh-convs"
+                    onClick={loadConversations}
+                    className="p-1 rounded-lg hover:bg-[#1D211F] transition-colors"
+                    aria-label="Refresh conversations"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#A9A49A] ${convLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -501,10 +532,24 @@ export default function ChatPage() {
                 {!convLoading && conversations.length === 0 && !convError && (
                   <div className="text-center py-10 px-4">
                     <MessageCircle className="w-8 h-8 text-[#3B3A33] mx-auto mb-2" />
-                    <p className="text-xs text-[#A9A49A]">No conversations yet.</p>
-                    {currentRole === 'USER' && (
-                      <p className="text-xs text-[#A9A49A] mt-1">
-                        Contact support to be assigned an advocate.
+                    <p className="text-xs text-[#F4EFE5] font-semibold">No conversations yet.</p>
+                    {currentRole === 'USER' ? (
+                      <div className="mt-2">
+                        <p className="text-xs text-[#A9A49A] mb-3">
+                          Browse verified advocates to initiate a private consultation.
+                        </p>
+                        <Link
+                          href="/find-advocate"
+                          id="chat-empty-find-advocate-btn"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#4F8EF7] text-white text-xs font-bold hover:bg-[#3B7BE5] transition-colors shadow-sm"
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          <span>Find an Advocate</span>
+                        </Link>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#A9A49A] mt-2">
+                        Incoming messages from clients will appear here.
                       </p>
                     )}
                   </div>
@@ -545,15 +590,17 @@ export default function ChatPage() {
                     >
                       <ChevronLeft className="w-4 h-4 text-[#A9A49A]" />
                     </button>
-                    <div className="w-8 h-8 rounded-full bg-[#2A2E2B] border border-[#3B3A33] flex items-center justify-center">
-                      <User className="w-4 h-4 text-[#A9A49A]" />
+                    <div className="w-8 h-8 rounded-full bg-[#2A2E2B] border border-[#3B3A33] flex items-center justify-center font-bold text-xs text-[#F4EFE5]">
+                      {activeConv?.other_party_name
+                        ? activeConv.other_party_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+                        : <User className="w-4 h-4 text-[#A9A49A]" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-[#F4EFE5]">
-                        {activeConv?.user_id === currentUserId ? 'Your Advocate' : 'Client'}
+                        {activeConv?.other_party_name || (activeConv?.user_id === currentUserId ? 'Your Advocate' : 'Client')}
                       </p>
                       <p className="text-[10px] text-[#A9A49A] truncate">
-                        Conversation · {activeConvId.slice(0, 8)}…
+                        {activeConv?.other_party_designation || (activeConv?.user_id === currentUserId ? 'Advocate on Record' : 'Client')} · Thread {activeConvId.slice(0, 8)}…
                       </p>
                     </div>
                     <button
@@ -701,5 +748,19 @@ export default function ChatPage() {
         </div>
       </div>
     </RoleGuard>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#151716] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-[#4F8EF7] animate-spin" />
+        </div>
+      }
+    >
+      <ChatContent />
+    </Suspense>
   );
 }

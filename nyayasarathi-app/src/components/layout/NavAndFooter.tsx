@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scale, Menu, X, ArrowUpRight, Globe, ChevronDown, User } from 'lucide-react';
+import { Scale, Menu, X, ArrowUpRight, Globe, ChevronDown, User, Users, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -29,11 +29,10 @@ export function Navbar() {
     { href: '/contracts',      label: t('nav.contracts') || 'Contract Analyzer' },
     { href: '/legal-research', label: t('nav.research')  },
     { href: '/ocr',            label: t('nav.ocr')       },
+    { href: '/find-advocate',  label: 'Find Advocate'   },
+    { href: '/messages',       label: 'Messages'        },
     { href: '/news',           label: 'Legal News'       },
-    { href: '/chat',           label: 'Chat'             },
-    { href: '/#pipeline',       label: t('nav.howItWorks') },
-    { href: '/#capabilities',   label: t('nav.capabilities') },
-    { href: '/#workspace',      label: t('nav.workspace')    },
+    { href: '/#pipeline',      label: t('nav.howItWorks') },
   ];
 
   useEffect(() => {
@@ -171,6 +170,27 @@ export function Navbar() {
                     <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
                     <span>Advocate Portal</span>
                   </Link>
+                )}
+
+                {currentUser.role === 'USER' && (
+                  <>
+                    <Link
+                      href="/find-advocate"
+                      id="nav-user-find-advocate-btn"
+                      className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#4F8EF7]/40 bg-[#4F8EF7]/10 px-3 py-1.5 font-sans text-xs font-semibold text-[#4F8EF7] hover:bg-[#4F8EF7]/20 transition-all shadow-sm"
+                    >
+                      <Users className="w-3.5 h-3.5 text-[#4F8EF7]" />
+                      <span>Find Advocate</span>
+                    </Link>
+                    <Link
+                      href="/messages"
+                      id="nav-user-messages-btn"
+                      className="flex items-center gap-1.5 rounded-xl border border-[#B59A68]/40 bg-[#B59A68]/10 px-3 py-1.5 font-sans text-xs font-semibold text-[#B59A68] hover:bg-[#B59A68]/20 transition-all shadow-sm"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-[#B59A68]" />
+                      <span>Messages</span>
+                    </Link>
+                  </>
                 )}
 
                 <Link
@@ -337,6 +357,29 @@ export function Navbar() {
                         <Scale className="w-4 h-4 text-[#B59A68]" />
                         <span>Advocate Portal</span>
                       </Link>
+                    )}
+
+                    {currentUser.role === 'USER' && (
+                      <>
+                        <Link
+                          href="/find-advocate"
+                          id="nav-mobile-user-find-advocate"
+                          onClick={() => setMobileOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 rounded border border-[#4F8EF7]/60 bg-[#4F8EF7]/20 px-5 py-2.5 font-sans text-sm font-bold text-[#4F8EF7]"
+                        >
+                          <Users className="w-4 h-4 text-[#4F8EF7]" />
+                          <span>Find an Advocate</span>
+                        </Link>
+                        <Link
+                          href="/messages"
+                          id="nav-mobile-user-messages"
+                          onClick={() => setMobileOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 rounded border border-[#B59A68]/60 bg-[#B59A68]/20 px-5 py-2.5 font-sans text-sm font-bold text-[#B59A68]"
+                        >
+                          <MessageCircle className="w-4 h-4 text-[#B59A68]" />
+                          <span>Messages</span>
+                        </Link>
+                      </>
                     )}
 
                     <Link

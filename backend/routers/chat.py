@@ -47,7 +47,7 @@ from services.chat_repository import (
     list_messages,
     update_read_state,
 )
-from services.user_repository import is_postgres_authoritative
+from services.user_repository import is_postgres_authoritative, list_eligible_advocates
 
 log = get_logger("nyayasarathi.chat_router")
 router = APIRouter()
@@ -169,6 +169,19 @@ def _publish_realtime_event(conversation_id: str, message_id: str, created_at: A
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
+
+# GET /api/chat/advocates
+@router.get("/advocates", tags=["Chat"])
+async def get_advocate_directory(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Return list of eligible advocates for chat initiation.
+    Restricted to authenticated users. Returns only safe public profile fields.
+    """
+    advocates = list_eligible_advocates()
+    return {"advocates": advocates, "total": len(advocates)}
+
 
 # GET /api/chat/conversations
 @router.get("/conversations", tags=["Chat"])

@@ -33,7 +33,7 @@ const TOOLS = [
   { href: '/ocr', icon: ScanLine, label: 'Document OCR', desc: 'Extract text from legal PDFs', color: '#B59A68' },
   { href: '/predictor', icon: TrendingUp, label: 'Judgment Predictor', desc: 'AI-powered case outcome analysis', color: '#6BD28E' },
   { href: '/drafts', icon: FileText, label: 'Draft Generator', desc: 'Generate legal documents & petitions', color: '#A78BFA' },
-  { href: '/chat', icon: MessageCircle, label: 'Client Chat', desc: 'Secure messaging with your clients', color: '#2DD4BF' },
+  { href: '/messages', icon: MessageCircle, label: 'Messages & Client Chat', desc: 'Secure incoming client conversations', color: '#2DD4BF' },
 ];
 
 export default function AdvocateDashboardPage() {

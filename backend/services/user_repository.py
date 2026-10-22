@@ -273,6 +273,36 @@ def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def list_eligible_advocates() -> List[Dict[str, Any]]:
+    """
+    Retrieve all users with role 'ADVOCATE' for directory listing.
+    Returns only safe public profile fields (never password hashes, tokens, or internal metadata).
+    """
+    if is_postgres_authoritative():
+        conn = get_pg_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    """SELECT id, email, full_name, role, avatar_url, organization, designation
+                       FROM public.users
+                       WHERE role = 'ADVOCATE'
+                       ORDER BY full_name ASC"""
+                )
+                return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT id, email, full_name, role, avatar_url, organization, designation
+               FROM users
+               WHERE role = 'ADVOCATE'
+               ORDER BY full_name ASC"""
+        )
+        return [dict(r) for r in cursor.fetchall()]
+
+
 def create_user(
     email: str,
     password_hash: Optional[str] = None,

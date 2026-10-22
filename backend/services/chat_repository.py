@@ -144,6 +144,11 @@ def get_or_create_conversation(
     if user_id == advocate_id:
         raise ValueError("user_id and advocate_id must differ.")
 
+    from services.user_repository import get_user_by_id
+    advocate_user = get_user_by_id(advocate_id)
+    if advocate_user and advocate_user.get("role") != "ADVOCATE":
+        raise ValueError("Selected advocate participant must have role ADVOCATE.")
+
     now = _utcnow()
 
     if is_postgres_authoritative():
@@ -221,6 +226,9 @@ def _pg_list_conversations(uid: str, role: str) -> List[Dict[str, Any]]:
                 cur.execute(f"""
                     SELECT
                         c.*,
+                        u.full_name AS other_party_name,
+                        u.avatar_url AS other_party_avatar,
+                        u.designation AS other_party_designation,
                         m.body AS last_message_body,
                         m.sender_id AS last_message_sender_id,
                         (
@@ -234,6 +242,9 @@ def _pg_list_conversations(uid: str, role: str) -> List[Dict[str, Any]]:
                               )
                         ) AS unread_count
                     FROM public.chat_conversations c
+                    LEFT JOIN public.users u ON u.id = (
+                        CASE WHEN c.user_id = %s THEN c.advocate_id ELSE c.user_id END
+                    )
                     LEFT JOIN public.chat_messages m ON m.id = (
                         SELECT id FROM public.chat_messages
                         WHERE conversation_id = c.id
@@ -242,7 +253,7 @@ def _pg_list_conversations(uid: str, role: str) -> List[Dict[str, Any]]:
                     )
                     WHERE {where_clause}
                     ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
-                """, [uid, uid] + params)
+                """, [uid, uid, uid] + params)
                 return [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
@@ -270,6 +281,9 @@ def _sqlite_list_conversations(uid: str, role: str) -> List[Dict[str, Any]]:
         rows = conn.execute(f"""
             SELECT
                 c.*,
+                u.full_name AS other_party_name,
+                u.avatar_url AS other_party_avatar,
+                u.designation AS other_party_designation,
                 m.body AS last_message_body,
                 m.sender_id AS last_message_sender_id,
                 (
@@ -283,6 +297,9 @@ def _sqlite_list_conversations(uid: str, role: str) -> List[Dict[str, Any]]:
                       )
                 ) AS unread_count
             FROM chat_conversations c
+            LEFT JOIN users u ON u.id = (
+                CASE WHEN c.user_id = ? THEN c.advocate_id ELSE c.user_id END
+            )
             LEFT JOIN chat_messages m ON m.id = (
                 SELECT id FROM chat_messages
                 WHERE conversation_id = c.id
@@ -291,7 +308,7 @@ def _sqlite_list_conversations(uid: str, role: str) -> List[Dict[str, Any]]:
             )
             WHERE {where}
             ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
-        """, [uid, uid, uid] if where != "1=1" else [uid, uid]).fetchall()
+        """, [uid, uid, uid, uid] if where != "1=1" else [uid, uid, uid]).fetchall()
         return [dict(r) for r in rows]
 
 
@@ -313,7 +330,17 @@ def _pg_get_conversation(conv_id: str, uid: str, role: str) -> Optional[Dict[str
         with conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
-                    "SELECT * FROM public.chat_conversations WHERE id=%s", (conv_id,)
+                    """SELECT c.*,
+                              u.full_name AS other_party_name,
+                              u.avatar_url AS other_party_avatar,
+                              u.designation AS other_party_designation,
+                              u.role AS other_party_role
+                       FROM public.chat_conversations c
+                       LEFT JOIN public.users u ON u.id = (
+                           CASE WHEN c.user_id = %s THEN c.advocate_id ELSE c.user_id END
+                       )
+                       WHERE c.id=%s""",
+                    (uid, conv_id),
                 )
                 row = cur.fetchone()
                 if not row:
@@ -328,7 +355,17 @@ def _pg_get_conversation(conv_id: str, uid: str, role: str) -> Optional[Dict[str
 def _sqlite_get_conversation(conv_id: str, uid: str, role: str) -> Optional[Dict[str, Any]]:
     with _sqlite_conn() as conn:
         row = conn.execute(
-            "SELECT * FROM chat_conversations WHERE id=?", (conv_id,)
+            """SELECT c.*,
+                      u.full_name AS other_party_name,
+                      u.avatar_url AS other_party_avatar,
+                      u.designation AS other_party_designation,
+                      u.role AS other_party_role
+               FROM chat_conversations c
+               LEFT JOIN users u ON u.id = (
+                   CASE WHEN c.user_id = ? THEN c.advocate_id ELSE c.user_id END
+               )
+               WHERE c.id=?""",
+            (uid, conv_id),
         ).fetchone()
         if not row:
             return None

@@ -25,6 +25,8 @@ import {
   History,
   Camera,
   Upload,
+  Users,
+  MessageCircle,
 } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import {
@@ -581,6 +583,28 @@ export default function ProfilePage() {
                   Quick Actions
                 </h3>
                 <div className="space-y-2.5">
+                  <Link
+                    href="/find-advocate"
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-[#4F8EF7]/40 bg-[#4F8EF7]/10 hover:bg-[#4F8EF7]/20 hover:border-[#4F8EF7]/60 transition-colors text-xs font-semibold text-[#F4EFE5]"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Users className="w-4 h-4 text-[#4F8EF7]" />
+                      <span>Find an Advocate</span>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-[#4F8EF7]" />
+                  </Link>
+
+                  <Link
+                    href="/messages"
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-[#B59A68]/40 bg-[#B59A68]/10 hover:bg-[#B59A68]/20 hover:border-[#B59A68]/60 transition-colors text-xs font-semibold text-[#F4EFE5]"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <MessageCircle className="w-4 h-4 text-[#B59A68]" />
+                      <span>Messages</span>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-[#B59A68]" />
+                  </Link>
+
                   <Link
                     href="/predictor"
                     className="w-full flex items-center justify-between p-3 rounded-xl border border-[#3B3A33]/70 bg-[#1D211F]/60 hover:bg-[#242925] hover:border-[#B59A68]/40 transition-colors text-xs font-semibold text-[#F4EFE5]"

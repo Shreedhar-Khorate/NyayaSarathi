@@ -20,6 +20,25 @@ export interface ChatConversation {
   last_message_body?: string | null;
   last_message_sender_id?: string | null;
   unread_count?: number;
+  other_party_name?: string | null;
+  other_party_avatar?: string | null;
+  other_party_designation?: string | null;
+  other_party_role?: string | null;
+}
+
+export interface AdvocateProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  avatar_url?: string | null;
+  organization?: string | null;
+  designation?: string | null;
+}
+
+export interface AdvocateListResponse {
+  advocates: AdvocateProfile[];
+  total: number;
 }
 
 export interface ChatAttachmentMeta {
@@ -82,6 +101,10 @@ async function chatFetch<T>(
 }
 
 // ── Conversation API ──────────────────────────────────────────────────────────
+
+export async function fetchAdvocates(): Promise<AdvocateListResponse> {
+  return chatFetch<AdvocateListResponse>('/advocates');
+}
 
 export async function fetchConversations(): Promise<ConversationListResponse> {
   return chatFetch<ConversationListResponse>('/conversations');

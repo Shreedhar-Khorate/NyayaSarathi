@@ -373,3 +373,63 @@ def test_chat_health():
     data = res.json()
     assert "chat_db_mode" in data
     assert "realtime_available" in data
+
+
+def test_advocate_directory_unauthenticated():
+    res = client.get("/api/chat/advocates")
+    assert res.status_code == 401
+
+
+def test_advocate_directory_authenticated_and_safe_fields():
+    u1_headers = auth_headers(USER_1_ID, "USER")
+    res = client.get("/api/chat/advocates", headers=u1_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert "advocates" in data
+    assert "total" in data
+    assert data["total"] >= 2
+    for adv in data["advocates"]:
+        assert adv["role"] == "ADVOCATE"
+        assert "id" in adv
+        assert "full_name" in adv
+        assert "password_hash" not in adv
+        assert "google_sub" not in adv
+
+
+def test_create_conversation_rejects_non_advocate_target():
+    u1_headers = auth_headers(USER_1_ID, "USER")
+    # Attempt to pair USER_1 with USER_2 instead of an ADVOCATE
+    res = client.post(
+        "/api/chat/conversations",
+        json={"user_id": USER_1_ID, "advocate_id": USER_2_ID},
+        headers=u1_headers,
+    )
+    assert res.status_code == 422
+    assert "must have role ADVOCATE" in get_error(res)
+
+
+def test_conversations_list_enriches_other_party_name():
+    u1_headers = auth_headers(USER_1_ID, "USER")
+    adv_headers = auth_headers(ADVOCATE_1_ID, "ADVOCATE")
+
+    # Ensure conversation exists
+    client.post(
+        "/api/chat/conversations",
+        json={"user_id": USER_1_ID, "advocate_id": ADVOCATE_1_ID},
+        headers=u1_headers,
+    )
+
+    # User 1 lists conversations: should see other_party_name == "Adv. Priya"
+    res_u = client.get("/api/chat/conversations", headers=u1_headers)
+    assert res_u.status_code == 200
+    convs_u = res_u.json()["conversations"]
+    target_u = [c for c in convs_u if c["advocate_id"] == ADVOCATE_1_ID][0]
+    assert target_u["other_party_name"] == "Adv. Priya"
+
+    # Advocate 1 lists conversations: should see other_party_name == "Alice User"
+    res_a = client.get("/api/chat/conversations", headers=adv_headers)
+    assert res_a.status_code == 200
+    convs_a = res_a.json()["conversations"]
+    target_a = [c for c in convs_a if c["user_id"] == USER_1_ID][0]
+    assert target_a["other_party_name"] == "Alice User"
+
