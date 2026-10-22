@@ -136,6 +136,12 @@ function StageCard({
     mouseY.set(e.clientY - top);
   };
 
+  const spotlightBg = useTransform(
+    [springX, springY],
+    ([x, y]) =>
+      `radial-gradient(280px circle at ${x}px ${y}px, rgba(110,38,52,0.10), transparent 70%)`
+  );
+
   const Icon = stage.icon;
 
   return (
@@ -190,11 +196,7 @@ function StageCard({
           <motion.div
             className="pointer-events-none absolute inset-0 rounded"
             style={{
-              background: useTransform(
-                [springX, springY],
-                ([x, y]) =>
-                  `radial-gradient(280px circle at ${x}px ${y}px, rgba(110,38,52,0.10), transparent 70%)`
-              ),
+              background: spotlightBg,
               opacity: hovered ? 1 : 0,
               transition: 'opacity 0.4s ease',
             }}

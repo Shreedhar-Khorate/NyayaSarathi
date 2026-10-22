@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, ReactNode, useCallback } from 'react';
 import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, Language } from '../i18n/config';
 import { useTranslationHelper } from '../i18n/useTranslation';
 
@@ -8,46 +8,72 @@ interface LanguageContextType {
   language: string;
   setLanguage: (code: string) => void;
   currentLanguageObj: Language;
-  t: (key: string) => any;
+  t: (key: string, fallback?: string) => any;
+  translateText: (text: string) => Promise<string>;
+  isTranslating: boolean;
 }
+
+const defaultLangObj: Language = SUPPORTED_LANGUAGES[0] || {
+  code: 'en',
+  name: 'English',
+  nativeName: 'English',
+  flag: '🇬🇧',
+  script: 'Latin',
+};
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<string>(DEFAULT_LANGUAGE);
-
-  const DEVANAGARI_CODES = ['hi', 'mr'];
-
-  const applyScriptAttribute = (code: string) => {
-    if (typeof document !== 'undefined') {
-      const isDevanagari = DEVANAGARI_CODES.includes(code);
-      document.documentElement.setAttribute('data-script', isDevanagari ? 'devanagari' : 'latin');
-      document.documentElement.setAttribute('lang', code);
-    }
-  };
+  const language = DEFAULT_LANGUAGE;
+  const currentLanguageObj = defaultLangObj;
+  const { t: staticT } = useTranslationHelper('en');
 
   useEffect(() => {
-    const saved = localStorage.getItem('nyayasarathi_lang');
-    const activeCode = saved && SUPPORTED_LANGUAGES.some((l) => l.code === saved) ? saved : DEFAULT_LANGUAGE;
-    setLanguageState(activeCode);
-    applyScriptAttribute(activeCode);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('nyayasarathi_lang');
+        localStorage.removeItem('nyaya_gemini_tr_hi');
+        localStorage.removeItem('nyaya_gemini_tr_mr');
+      } catch {
+        // ignore
+      }
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('lang', 'en');
+        document.documentElement.setAttribute('data-script', 'latin');
+      }
+    }
   }, []);
 
-  const setLanguage = (code: string) => {
-    if (SUPPORTED_LANGUAGES.some((l) => l.code === code)) {
-      setLanguageState(code);
-      localStorage.setItem('nyayasarathi_lang', code);
-      applyScriptAttribute(code);
-    }
-  };
+  const setLanguage = useCallback((_code: string) => {
+    // English-only application default
+  }, []);
 
-  const currentLanguageObj =
-    SUPPORTED_LANGUAGES.find((l) => l.code === language) || SUPPORTED_LANGUAGES[0];
+  const translateText = useCallback(async (text: string): Promise<string> => {
+    return text;
+  }, []);
 
-  const { t } = useTranslationHelper(language);
+  const t = useCallback(
+    (key: string, fallback?: string): any => {
+      const res = staticT(key);
+      if (res && res !== key) {
+        return res;
+      }
+      return fallback || res || key;
+    },
+    [staticT]
+  );
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, currentLanguageObj, t }}>
+    <LanguageContext.Provider
+      value={{
+        language,
+        setLanguage,
+        currentLanguageObj,
+        t,
+        translateText,
+        isTranslating: false,
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );

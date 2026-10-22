@@ -50,10 +50,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       data-scroll-behavior="smooth"
       className={`${cormorant.variable} ${manrope.variable} ${sourceSerif.variable} ${notoDevanagari.variable}`}
     >
-      <body className="bg-ink text-ivory antialiased">
+      <body className="bg-ink text-ivory antialiased" suppressHydrationWarning>
         <LanguageProvider>
           <AppLoaderWrapper>
             <SmoothScroll>{children}</SmoothScroll>

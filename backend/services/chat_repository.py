@@ -21,6 +21,7 @@ from services.user_repository import (
     get_db_connection as _get_sqlite_conn,
     get_pg_connection,
     pg_connection_scope,
+    init_user_table,
 )
 
 log = get_logger("nyayasarathi.chat_repo")
@@ -56,6 +57,7 @@ def init_chat_tables() -> None:
     Schema mirrors the PostgreSQL migration 006_chat_tables.sql.
     Called from main.py on_startup.
     """
+    init_user_table()
     log.info("Initializing chat tables in SQLite...", extra={"component": "CHAT_REPO"})
     with _sqlite_conn() as conn:
         conn.executescript("""

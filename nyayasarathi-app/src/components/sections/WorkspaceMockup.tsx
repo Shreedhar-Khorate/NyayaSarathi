@@ -58,6 +58,7 @@ export default function WorkspaceMockup() {
             <Search className="h-4 w-4 shrink-0 text-[#B59A68]" strokeWidth={1.5} />
             <input
               readOnly
+              suppressHydrationWarning
               value={t('workspace.searchPlaceholder')}
               className="w-full bg-transparent font-sans text-sm text-ivory outline-none placeholder:text-stone"
             />
@@ -71,6 +72,8 @@ export default function WorkspaceMockup() {
               return (
                 <button
                   key={tag}
+                  type="button"
+                  suppressHydrationWarning
                   onClick={() => toggleFilter(tag)}
                   className={`rounded-sm border px-3 py-1.5 font-sans text-xs font-medium transition-colors duration-200 ${
                     active
@@ -196,6 +199,8 @@ export default function WorkspaceMockup() {
                     <span key={i}>
                       {line.text}
                       <button
+                        type="button"
+                        suppressHydrationWarning
                         onMouseEnter={() => setActiveCite(line.citeId)}
                         onMouseLeave={() => setActiveCite(null)}
                         onClick={() => setActiveCite(line.citeId)}
@@ -253,7 +258,11 @@ export default function WorkspaceMockup() {
                           {CITATIONS.find((c) => c.id === activeCite)?.label} — {t('workspace.sourceHighlighted')}
                         </p>
                       </div>
-                      <button className="font-sans text-[11px] font-semibold text-[#B59A68] hover:text-[#D4AF37] tracking-wide transition-colors">
+                      <button
+                        type="button"
+                        suppressHydrationWarning
+                        className="font-sans text-[11px] font-semibold text-[#B59A68] hover:text-[#D4AF37] tracking-wide transition-colors"
+                      >
                         {t('workspace.viewSource')}
                       </button>
                     </div>
@@ -267,6 +276,7 @@ export default function WorkspaceMockup() {
               <div className="flex items-center gap-3 rounded-sm border border-[#3B3A33] bg-[#1D211F] px-4 py-3">
                 <input
                   readOnly
+                  suppressHydrationWarning
                   placeholder={t('workspace.askFollowUp')}
                   className="w-full bg-transparent font-sans text-sm text-stone outline-none placeholder:text-stone/50"
                 />

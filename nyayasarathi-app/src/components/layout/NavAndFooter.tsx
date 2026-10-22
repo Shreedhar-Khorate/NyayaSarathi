@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scale, Menu, X, ArrowUpRight, Globe, ChevronDown, User, Users, MessageCircle } from 'lucide-react';
+import { Scale, Menu, X, ArrowUpRight, User, Users, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
-import { SUPPORTED_LANGUAGES } from '@/i18n/config';
 import { getUser, type UserProfile } from '@/lib/auth';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -15,9 +14,8 @@ export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled]     = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const { language, setLanguage, currentLanguageObj, t } = useLanguage();
+  const { t } = useLanguage();
 
   useEffect(() => {
     setCurrentUser(getUser());
@@ -25,6 +23,7 @@ export function Navbar() {
 
   const NAV_LINKS = [
     { href: '/war-room',       label: t('nav.warRoom')   },
+    { href: '/legal-drafting', label: t('nav.drafting') || 'Legal Drafting' },
     { href: '/predictor',      label: t('nav.predictor') },
     { href: '/contracts',      label: t('nav.contracts') || 'Contract Analyzer' },
     { href: '/legal-research', label: t('nav.research')  },
@@ -95,58 +94,8 @@ export function Navbar() {
             })}
           </nav>
 
-          {/* Language Selector + Auth buttons */}
+          {/* Auth buttons */}
           <div className="hidden items-center gap-2.5 md:flex shrink-0">
-            
-            {/* Language Selector Dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setLangMenuOpen((v) => !v)}
-                className="flex items-center gap-1.5 rounded border border-[#3B3A33] bg-[#1D211F]/80 px-3 py-1.5 font-sans text-xs font-semibold text-stone hover:text-ivory hover:border-[#B59A68]/50 transition-colors"
-                title="Change Application Language"
-              >
-                <Globe className="h-3.5 w-3.5 text-[#B59A68]" />
-                <span>{currentLanguageObj.nativeName}</span>
-                <ChevronDown className="h-3 w-3 text-stone/70" />
-              </button>
-
-              <AnimatePresence>
-                {langMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-44 rounded border border-[#3B3A33] bg-[#151716] shadow-xl py-1 z-50 max-h-60 overflow-y-auto doc-scroll"
-                  >
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <button
-                        key={lang.code}
-                        type="button"
-                        onClick={() => {
-                          setLanguage(lang.code);
-                          setLangMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3.5 py-2 text-left font-sans text-xs transition-colors ${
-                          language === lang.code
-                            ? 'bg-[#6E2634]/20 text-[#B59A68] font-bold'
-                            : 'text-stone hover:bg-[#242925] hover:text-ivory'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span>{lang.flag}</span>
-                          <span>{lang.nativeName}</span>
-                        </span>
-                        <span className="text-[10px] font-mono text-stone/40 uppercase">
-                          {lang.code}
-                        </span>
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
 
             {currentUser ? (
               <div className="flex items-center gap-2">
@@ -228,18 +177,12 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile hamburger & Language Trigger */}
+          {/* Mobile hamburger */}
           <div className="flex items-center gap-2 md:hidden">
-            <button
-              type="button"
-              onClick={() => setMobileOpen((v) => !v)}
-              className="flex items-center gap-1 rounded border border-[#3B3A33] px-2 py-1 text-xs text-stone"
-            >
-              <Globe className="h-3.5 w-3.5 text-[#B59A68]" />
-              <span className="uppercase font-mono font-bold text-[10px]">{language}</span>
-            </button>
 
             <button
+              type="button"
+              suppressHydrationWarning
               id="nav-mobile-toggle"
               onClick={() => setMobileOpen(v => !v)}
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
@@ -286,25 +229,7 @@ export function Navbar() {
             <div className="h-px bg-[#3B3A33]" />
             <div className="mx-auto max-w-7xl px-6 pt-5 pb-7 space-y-0.5">
 
-              {/* Language Selector Bar Mobile */}
-              <div className="pb-3 mb-2 border-b border-[#3B3A33] flex items-center justify-between">
-                <span className="text-xs text-stone/70 font-medium">Select Language:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {SUPPORTED_LANGUAGES.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => setLanguage(lang.code)}
-                      className={`px-2.5 py-1 rounded text-xs font-sans font-medium border ${
-                        language === lang.code
-                          ? 'border-[#B59A68] bg-[#6E2634]/30 text-[#B59A68]'
-                          : 'border-[#3B3A33] text-stone'
-                      }`}
-                    >
-                      {lang.nativeName}
-                    </button>
-                  ))}
-                </div>
-              </div>
+
 
               {NAV_LINKS.map(({ href, label }, i) => (
                 <motion.div
