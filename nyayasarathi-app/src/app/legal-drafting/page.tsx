@@ -166,15 +166,11 @@ export default function LegalDraftingPage() {
   // Draft Result & Versions
   const [currentResult, setCurrentResult] = useState<DraftResponseData | null>(null);
   const [originalDraft, setOriginalDraft] = useState<DraftContent | null>(null);
-  const [activeLanguageView, setActiveLanguageView] = useState<'original' | 'translated'>('original');
 
   // Editor State for Single Unified Legal Draft
   const [editedFullText, setEditedFullText] = useState<string>('');
   const [isDirty, setIsDirty] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-
-  // Translation in-place
-  const [isTranslating, setIsTranslating] = useState(false);
 
   // Export State
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -284,7 +280,6 @@ export default function LegalDraftingPage() {
 
       setCurrentResult(data);
       setOriginalDraft(data.draft);
-      setActiveLanguageView('original');
 
       const fullText = data.draft.full_text || data.draft.sections?.[0]?.content || '';
       setEditedFullText(fullText);
@@ -420,75 +415,6 @@ export default function LegalDraftingPage() {
       alert(`Export DOCX Error: ${err.message}`);
     } finally {
       setIsExportingDocx(false);
-    }
-  };
-
-  // Regional Translation
-  const handleTranslateDraft = async (langCode: string) => {
-    if (!currentResult) return;
-    if (langCode === 'en') {
-      if (originalDraft) {
-        setCurrentResult({
-          ...currentResult,
-          draft: originalDraft,
-          language: 'en',
-        });
-        const origText = originalDraft.full_text || originalDraft.sections?.[0]?.content || '';
-        setEditedFullText(origText);
-        setActiveLanguageView('original');
-        setIsDirty(false);
-      }
-      return;
-    }
-
-    setIsTranslating(true);
-    try {
-      const textToTranslate = editedFullText || currentResult.draft.full_text || currentResult.draft.sections?.[0]?.content || '';
-      const draftPayload = {
-        title: currentResult.draft.title,
-        full_text: textToTranslate,
-        sections: [
-          {
-            id: 'final_draft',
-            title: currentResult.draft.title,
-            content: textToTranslate,
-            order: 1,
-          },
-        ],
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/drafts/translate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({
-          draft_id: currentResult.draft_id,
-          document_type: currentResult.document_type,
-          draft: draftPayload,
-          source_language: 'en',
-          target_language: langCode,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Translation service failed.');
-      const translatedDraft: DraftContent = await res.json();
-
-      setCurrentResult({
-        ...currentResult,
-        draft: translatedDraft,
-        language: langCode,
-      });
-
-      const tText = translatedDraft.full_text || translatedDraft.sections?.[0]?.content || '';
-      setEditedFullText(tText);
-      setActiveLanguageView('translated');
-      setIsDirty(false);
-    } catch (err: any) {
-      alert(`Translation Error: ${err.message}`);
-    } finally {
-      setIsTranslating(false);
     }
   };
 
@@ -1131,46 +1057,6 @@ export default function LegalDraftingPage() {
                       )}
                       <span>DOCX</span>
                     </button>
-
-                    {/* Regional Translation Quick Switcher */}
-                    <div className="relative inline-flex items-center rounded-lg border border-[#3B3A33] bg-[#151716] p-0.5">
-                      <button
-                        type="button"
-                        onClick={() => handleTranslateDraft('en')}
-                        disabled={isTranslating}
-                        className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                          currentResult.language === 'en'
-                            ? 'bg-[#B59A68]/20 text-[#B59A68] font-bold'
-                            : 'text-stone-400 hover:text-stone-200'
-                        }`}
-                      >
-                        EN
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleTranslateDraft('hi')}
-                        disabled={isTranslating}
-                        className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                          currentResult.language === 'hi'
-                            ? 'bg-[#B59A68]/20 text-[#B59A68] font-bold'
-                            : 'text-stone-400 hover:text-stone-200'
-                        }`}
-                      >
-                        {isTranslating && currentResult.language !== 'hi' ? '...' : 'हिंदी'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleTranslateDraft('mr')}
-                        disabled={isTranslating}
-                        className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                          currentResult.language === 'mr'
-                            ? 'bg-[#B59A68]/20 text-[#B59A68] font-bold'
-                            : 'text-stone-400 hover:text-stone-200'
-                        }`}
-                      >
-                        {isTranslating && currentResult.language !== 'mr' ? '...' : 'मराठी'}
-                      </button>
-                    </div>
                   </div>
                 </div>
 
