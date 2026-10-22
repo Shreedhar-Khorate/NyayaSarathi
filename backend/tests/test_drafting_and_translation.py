@@ -227,7 +227,7 @@ def test_citation_integrity():
         assert c["authority_type"] in ["binding_precedent", "persuasive_authority", "statutory", "unverified"]
 
 
-# ── TEST 11: LLM Fallback Handles Offline API Cleanly ─────────────────────────
+# ── TEST 11: LLM Offline Failure Returns Actionable Error (No Static Fallback) ──
 def test_llm_fallback_on_api_error():
     with patch("services.drafts_service._call_llm_json", side_effect=RuntimeError("Groq API offline")):
         payload = {
@@ -235,11 +235,10 @@ def test_llm_fallback_on_api_error():
             "facts": "Client was wrongfully terminated without payment of statutory severance and notice pay of 3 months.",
         }
         response = client.post("/api/drafts/generate", json=payload)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "completed"
-        assert len(data["draft"]["sections"]) >= 4
-        assert "LEGAL NOTICE" in data["draft"]["title"].upper()
+        # Dynamic AI Only requirement: never return static fallback, return explicit error
+        assert response.status_code == 502
+        assert "Legal draft generation failed" in response.json()["error"]
+        assert "No static fallback is permitted" in response.json()["error"]
 
 
 # ── TEST 12: Regional Translation into Hindi and Marathi ──────────────────────

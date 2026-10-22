@@ -177,6 +177,9 @@ export default function LegalDraftingPage() {
   const [uploadDocError, setUploadDocError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Citation control
+  const [includeCitations, setIncludeCitations] = useState(true);
+
   // Generation State
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
@@ -320,6 +323,17 @@ export default function LegalDraftingPage() {
       setGenError('Please provide case facts of at least 10 characters.');
       return;
     }
+
+    // Pre-submission date validation
+    if (causeOfActionDate) {
+      const coaDate = new Date(causeOfActionDate);
+      const today = new Date();
+      if (!isNaN(coaDate.getTime()) && coaDate > today) {
+        setGenError('Contradictory Date: Cause of action or incident date cannot be set in the future.');
+        return;
+      }
+    }
+
     setGenError(null);
     setIsGenerating(true);
     setProgressMsg('Analyzing case chronology and temporal era (IPC vs BNS)...');
@@ -342,7 +356,7 @@ export default function LegalDraftingPage() {
       case_category: category,
       jurisdiction: jurisdiction.trim() || undefined,
       target_language: targetLanguage,
-      include_citations: false,
+      include_citations: includeCitations,
       case_title: caseTitle.trim() || undefined,
       parties: {
         applicant: senderName.trim()
@@ -381,10 +395,6 @@ export default function LegalDraftingPage() {
       if (!res.ok) {
         throw new Error(data.error || data.detail || 'Draft generation failed.');
       }
-
-      setCurrentResult(data);
-      setOriginalDraft(data.draft);
-      setActiveLanguageView('original');
 
       setCurrentResult(data);
       setOriginalDraft(data.draft);
@@ -822,6 +832,27 @@ export default function LegalDraftingPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Citations Control */}
+              <div className="pt-3 border-t border-[#3B3A33]/50">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="include-citations-toggle"
+                    checked={includeCitations}
+                    onChange={(e) => setIncludeCitations(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-[#B59A68] rounded cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-xs font-semibold text-stone-200 block">
+                      Include Verified Legal Citations & Precedents
+                    </span>
+                    <span className="text-[10px] text-stone-400 block leading-tight mt-0.5">
+                      Embeds certified Supreme Court / High Court precedents without fabricated citations.
+                    </span>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -1352,7 +1383,85 @@ export default function LegalDraftingPage() {
                   </div>
                 </div>
 
+                {/* Warnings & Contradiction Notices */}
+                {currentResult.warnings && currentResult.warnings.length > 0 && (
+                  <div className="p-4 rounded-2xl border border-amber-600/40 bg-amber-950/20 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                      <span>Legal Review & Chronology Notices ({currentResult.warnings.length})</span>
+                    </div>
+                    <ul className="text-xs text-amber-200/90 list-disc list-inside space-y-1 pl-1 font-sans">
+                      {currentResult.warnings.map((warn, wIdx) => (
+                        <li key={wIdx} className="leading-relaxed">
+                          {warn}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
+                {/* Missing Information / Required Advocate Fill-ins */}
+                {currentResult.missing_information && currentResult.missing_information.length > 0 && (
+                  <div className="p-4 rounded-2xl border border-sky-600/40 bg-sky-950/20 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-sky-400">
+                      <Info className="w-4 h-4 shrink-0 text-sky-400" />
+                      <span>Missing Case Data Flagged with [INFORMATION REQUIRED] ({currentResult.missing_information.length})</span>
+                    </div>
+                    <p className="text-[11px] text-stone-300">
+                      To prevent factual hallucinations, the generator has not invented these details. Placeholders have been inserted in the draft for counsel confirmation:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {currentResult.missing_information.map((item, mIdx) => (
+                        <span
+                          key={mIdx}
+                          className="px-2 py-0.5 rounded-md bg-sky-900/40 border border-sky-700/60 text-sky-200 text-[11px] font-mono"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Verified Citations List */}
+                {currentResult.citations && currentResult.citations.length > 0 && (
+                  <div className="p-4 rounded-2xl border border-[#3B3A33] bg-[#151716] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-stone-200">
+                        <FileCheck className="w-4 h-4 text-[#B59A68]" />
+                        <span>Referenced Authorities & Precedents ({currentResult.citations.length})</span>
+                      </div>
+                      <span className="text-[10px] text-emerald-400 font-mono">No Hallucinated Citations</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                      {currentResult.citations.map((c, cIdx) => (
+                        <div
+                          key={cIdx}
+                          className="p-2.5 rounded-lg border border-[#3B3A33] bg-[#1D211F] text-xs space-y-1"
+                        >
+                          <div className="flex items-start justify-between gap-1">
+                            <span className="font-semibold text-stone-200">{c.title}</span>
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-mono shrink-0 ${
+                                c.is_verified
+                                  ? 'bg-emerald-950/60 border border-emerald-800 text-emerald-300'
+                                  : 'bg-amber-950/60 border border-amber-800 text-amber-300'
+                              }`}
+                            >
+                              {c.is_verified ? 'VERIFIED' : 'REVIEW NEEDED'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#B59A68] font-mono">{c.citation}</p>
+                          {c.relevant_statement && (
+                            <p className="text-[10px] text-stone-400 italic line-clamp-2">
+                              {c.relevant_statement}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Single Continuous Legal Draft Document Editor */}
                 <div className="p-5 md:p-6 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-xl space-y-4">
