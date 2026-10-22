@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scale,
@@ -15,16 +15,12 @@ import {
   AlertTriangle,
   ShieldAlert,
   Info,
-  CheckCircle2,
   Calendar,
   Layers,
-  ChevronRight,
-  ExternalLink,
   Edit3,
   RefreshCw,
   Plus,
   X,
-  FileCheck,
   AlertCircle
 } from 'lucide-react';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
@@ -1028,7 +1024,7 @@ export default function LegalDraftingPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Review, Editor, Citations & Export Actions */}
+          {/* RIGHT COLUMN: Review, Editor & Export Actions */}
           <div className="lg:col-span-7 space-y-6">
             {!currentResult ? (
               // Empty State
@@ -1218,45 +1214,7 @@ export default function LegalDraftingPage() {
                   </div>
                 )}
 
-                {/* Verified Citations List */}
-                {currentResult.citations && currentResult.citations.length > 0 && (
-                  <div className="p-4 rounded-2xl border border-[#3B3A33] bg-[#151716] space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-stone-200">
-                        <FileCheck className="w-4 h-4 text-[#B59A68]" />
-                        <span>Referenced Authorities & Precedents ({currentResult.citations.length})</span>
-                      </div>
-                      <span className="text-[10px] text-emerald-400 font-mono">No Hallucinated Citations</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
-                      {currentResult.citations.map((c, cIdx) => (
-                        <div
-                          key={cIdx}
-                          className="p-2.5 rounded-lg border border-[#3B3A33] bg-[#1D211F] text-xs space-y-1"
-                        >
-                          <div className="flex items-start justify-between gap-1">
-                            <span className="font-semibold text-stone-200">{c.title}</span>
-                            <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded font-mono shrink-0 ${
-                                c.is_verified
-                                  ? 'bg-emerald-950/60 border border-emerald-800 text-emerald-300'
-                                  : 'bg-amber-950/60 border border-amber-800 text-amber-300'
-                              }`}
-                            >
-                              {c.is_verified ? 'VERIFIED' : 'REVIEW NEEDED'}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-[#B59A68] font-mono">{c.citation}</p>
-                          {c.relevant_statement && (
-                            <p className="text-[10px] text-stone-400 italic line-clamp-2">
-                              {c.relevant_statement}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
 
                 {/* Single Continuous Legal Draft Document Editor */}
                 <div className="p-5 md:p-6 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-xl space-y-4">
