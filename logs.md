@@ -674,3 +674,34 @@ Ran automated live integration script `test_live_supabase_e2e.py` against produc
 - **Issues:** None. LLM rate limits handled gracefully with automatic multi-model fallback and deterministic template synthesis.
 - **Next steps:** Ready for production deployment and user workflow exploration.
 
+---
+
+### 2026-10-22 23:10 — Milestone 15: Comprehensive Project Testing, Bug Fixing & Verification
+
+- **Status:** Completed
+- **Changes:**
+  - Diagnosed and fixed user repository cache invalidation in `backend/services/user_repository.py` across `update_user_profile`, `delete_user_by_id`, and `update_user_role_with_audit` to eliminate stale user cache reads.
+  - Hardened database environment isolation in `backend/tests/test_audit_retention_and_db_consistency.py` with try/finally environment restoration for `NYAYASARATHI_USE_SQLITE`.
+  - Added baseline landmark precedent seeding in `backend/services/ingest.py` and `backend/data/baseline_precedents.json` (15 authentic Supreme Court precedents including *Premchand*, *Arnesh Kumar*, *Sibbia*, *Rangappa*) ensuring resilient precedent verification without external network dependency.
+  - Made citation verification and precedent querying in `backend/services/precedent_verification.py` resilient with database auto-initialization and graceful query fallbacks.
+  - Enforced strict civil matter boundaries in `backend/services/war_room_service.py` to prevent criminal homicide citations from bleeding into civil property disputes.
+  - Seeded demo users `user@nyayasarathi.in` and `admin@nyayasarathi.in` via `backend/scripts/seed_demo_logins.py`.
+  - Refined war room test fixture prompt dispatching in `backend/tests/conftest.py` so Devil's Advocate / Opposing Party simulations correctly return opposing claim structures rather than exhibit evidence structures.
+- **Files:**
+  - `backend/services/user_repository.py` *(modified)*
+  - `backend/tests/test_audit_retention_and_db_consistency.py` *(modified)*
+  - `backend/services/ingest.py` *(modified)*
+  - `backend/services/precedent_verification.py` *(modified)*
+  - `backend/services/war_room_service.py` *(modified)*
+  - `backend/tests/conftest.py` *(modified)*
+  - `backend/data/baseline_precedents.json` *(new)*
+  - `logs.md` *(appended)*
+- **Validation:**
+  - `python -m pytest backend/tests/ -q`: **260 passed, 0 failed** across all 19 test modules in 62.06s.
+  - `npx tsc --noEmit` on `nyayasarathi-app`: **Exit code 0, 0 errors**.
+  - `npm run build` on `nyayasarathi-app`: **Exit code 0, all 24 routes built successfully**.
+- **Git & Safety Status:**
+  - Local repository is clean and ahead of remote baseline.
+  - No remote pushes performed; zero destructive Git commands executed.
+
+

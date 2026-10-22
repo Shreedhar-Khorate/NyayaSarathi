@@ -963,6 +963,19 @@ def research_precedents(
         if ra.get("citation") and ra.get("citation") not in {p.get("citation") for p in combined}:
             combined.append(ra)
 
+    # Strictly enforce procedural and domain boundary: zero criminal bleeding into civil disputes
+    is_civil = posture_info.get("is_civil", False)
+    if is_civil:
+        combined = [
+            p for p in combined
+            if "section 302" not in (p.get("actual_holding") or "").lower()
+            and "section 302" not in (p.get("title") or "").lower()
+            and "murder" not in (p.get("actual_holding") or "").lower()
+            and "murder" not in (p.get("title") or "").lower()
+            and "homicide" not in (p.get("actual_holding") or "").lower()
+            and "homicide" not in (p.get("title") or "").lower()
+        ]
+
     if not combined:
         combined = [{
             "cnr": "LIMITATION-NO-DATASET-MATCH",

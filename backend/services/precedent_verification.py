@@ -16,8 +16,12 @@ DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", 
 
 
 def init_verified_precedents_table():
-    """No-op: Unification with Hugging Face judgments table complete."""
-    pass
+    """Ensure judgments schema and baseline records are initialized."""
+    try:
+        from services.ingest import init_database
+        init_database()
+    except Exception as e:
+        log.warning(f"Database initialization warning in init_verified_precedents_table: {e}")
 
 
 def verify_citation(citation: str, case_name: Optional[str] = None) -> Dict[str, Any]:
@@ -28,6 +32,7 @@ def verify_citation(citation: str, case_name: Optional[str] = None) -> Dict[str,
     if not citation or not citation.strip():
         return {"is_verified": False, "status": "verification_required", "details": "No citation provided."}
 
+    init_verified_precedents_table()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
@@ -64,6 +69,13 @@ def verify_citation(citation: str, case_name: Optional[str] = None) -> Dict[str,
             "is_verified": False,
             "status": "verification_required",
             "details": f"Citation '{citation}' not verified in Hugging Face dataset repository."
+        }
+    except Exception as e:
+        log.warning(f"Error querying judgments table in verify_citation: {e}")
+        return {
+            "is_verified": False,
+            "status": "verification_required",
+            "details": f"Citation '{citation}' not verified in repository: {e}"
         }
     finally:
         conn.close()
@@ -369,6 +381,8 @@ def query_verified_precedents(
                 "verification_status": "verified_primary_source",
                 "source_url": "https://huggingface.co/datasets/overthelex/indian-court-decisions"
             })
+    except Exception as e:
+        log.warning(f"Local judgments query encounter in query_verified_precedents: {e}")
     finally:
         conn.close()
 

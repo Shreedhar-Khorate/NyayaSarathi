@@ -127,6 +127,47 @@ def init_database():
     finally:
         conn.close()
 
+    seed_baseline_judgments()
+
+
+def seed_baseline_judgments():
+    """Seed baseline landmark precedents into the judgments table if empty."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT count(*) FROM judgments")
+        if cursor.fetchone()[0] == 0:
+            json_path = os.path.join(DB_DIR, "baseline_precedents.json")
+            if os.path.exists(json_path):
+                import json
+                with open(json_path, "r", encoding="utf-8") as f:
+                    items = json.load(f)
+                for x in items:
+                    outcome = "allowed" if x.get("outcome_for_appellant") == "supporting" else "dismissed"
+                    full_text = f"{x['title']}. {x['citation']}. {x.get('legal_issues', '')}. {x.get('actual_holding', '')} {x.get('verbatim_excerpt', '')}"
+                    year_val = int(x["decision_date"][-4:]) if x.get("decision_date") and x["decision_date"][-4:].isdigit() else 2020
+                    pet = x["title"].split(" v. ")[0] if " v. " in x["title"] else x["title"]
+                    resp = x["title"].split(" v. ")[1] if " v. " in x["title"] else ""
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO judgments (
+                            cnr, source, court_code, bench, year, text_length, title,
+                            judge, decision_date, disposal_nature, disposal_nature_normalized,
+                            full_text, parsed_case_type_raw, parsed_case_type,
+                            parsed_petitioner, parsed_respondent, parsed_court_name,
+                            dataset_config, dataset_split
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        x["cnr"], "sc", "SC", x.get("bench"), year_val, len(full_text), x["title"],
+                        x.get("bench"), x.get("decision_date"), outcome, outcome,
+                        full_text, x.get("case_number"), x.get("category"),
+                        pet, resp, x.get("court") or "Supreme Court of India",
+                        "supreme_court", "test"
+                    ))
+                conn.commit()
+                logger.info(f"Seeded {len(items)} baseline landmark judgments.")
+    finally:
+        conn.close()
+
 
 # Backward compatibility alias
 init_db = init_database

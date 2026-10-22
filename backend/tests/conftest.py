@@ -215,3 +215,120 @@ def mock_drafting_llm_fallback():
 
     with patch("services.drafts_service._call_llm_json", side_effect=fake_llm) as p:
         yield p
+
+
+@pytest.fixture(autouse=True)
+def mock_war_room_llm():
+    """
+    Autouse fixture that mocks LLM calls for war room tests to ensure zero external API calls,
+    protection against Groq 429 rate limits, and deterministic test execution in milliseconds.
+    """
+    def fake_war_room_llm(system_prompt: str, user_prompt: str):
+        is_civil = "Civil" in system_prompt or "property" in user_prompt.lower()
+        
+        # Check operation type from system_prompt / user_prompt
+        if "draft rigorous legal arguments" in system_prompt.lower() or "affirmative argument" in system_prompt.lower():
+            provisions = ["Section 54 Transfer of Property Act", "Section 17 Registration Act"] if is_civil else ["Section 438 CrPC", "Section 41A CrPC"]
+            return [
+                {
+                    "id": "arg-1",
+                    "title": "Presumption of Registered Ownership" if is_civil else "Protection Against Mechanical Arrest",
+                    "legal_issue": "Whether registered title prevails over oral settlement" if is_civil else "Whether arrest notice under Section 41A CrPC is mandatory",
+                    "applicable_provisions": provisions,
+                    "main_claim": "Registered instrument confers absolute right in immovable property." if is_civil else "Custodial arrest cannot be effected without compliance with Section 41A CrPC.",
+                    "supporting_facts": ["Registered sale deed executed in 2019" if is_civil else "Clean antecedents and civil nature of dispute"],
+                    "evidence_actually_available": ["Copy of registered sale deed" if is_civil else "Notice under Section 41A CrPC"],
+                    "evidence_refs": ["Copy of registered sale deed" if is_civil else "Notice under Section 41A CrPC"],
+                    "evidence_still_required": ["Certified copy from Sub-Registrar" if is_civil else "Case diary entries"],
+                    "relevant_precedents": ["Suraj Lamp & Industries v. State of Haryana" if is_civil else "Arnesh Kumar v. State of Bihar"],
+                    "confidence_status": "High Doctrinal Ground"
+                }
+            ], "groq(mock)", "test-model", 50, 50
+
+        elif "case overview" in system_prompt.lower() or "case summary" in system_prompt.lower():
+            return {
+                "case_summary": "Dispute concerning ownership of residential property under registered sale deed (2019) vs oral family settlement (2021).",
+                "important_facts": [
+                    {"id": 1, "fact": "Registered sale deed executed in 2019", "category": "documentary_evidence"},
+                    {"id": 2, "fact": "Occupation commenced in 2021", "category": "party_allegation"}
+                ],
+                "unverified_allegations": [],
+                "main_legal_issues": [
+                    "Validity of title under Transfer of Property Act 1882",
+                    "Admissibility of unregistered family settlement under Registration Act 1908"
+                ],
+                "relevant_dates": [
+                    {"event_date": "2019", "description": "Execution of registered sale deed in 2019"},
+                    {"event_date": "2021", "description": "Commencement of occupation in 2021"}
+                ]
+            }, "groq(mock)", "test-model", 50, 50
+
+        elif "fact sheet" in system_prompt.lower() or "factual finding" in system_prompt.lower():
+            return [
+                {"id": 1, "fact": "State of Maharashtra v. Rajesh Sharma", "category": "procedural_event"},
+                {"id": 2, "fact": "Applicant seeks anticipatory bail under Section 438 CrPC", "category": "party_allegation"}
+            ], "groq(mock)", "test-model", 50, 50
+
+        elif "opposing party" in system_prompt.lower() or "devil's advocate" in system_prompt.lower() or "opposition" in system_prompt.lower() or "hostile" in system_prompt.lower():
+            return [
+                {
+                    "id": "opp-1",
+                    "opposing_claim": "Claimant holds prior rights under family settlement",
+                    "adverse_precedents": ["Kale v. Deputy Director of Consolidation"],
+                    "suggested_rebuttal_counterarguments": ["Unregistered settlement creating right in immovable property requires registration under Section 17 Registration Act."],
+                    "user_position_weaknesses": ["Primary custody of original settlement document."]
+                }
+            ], "groq(mock)", "test-model", 50, 50
+
+        elif "evidence specialist" in system_prompt.lower() or "evidentiary" in system_prompt.lower() or "evidence" in system_prompt.lower():
+            return [
+                {
+                    "id": "ev-1",
+                    "exhibit_name": "Sale Deed Copy",
+                    "finding": "Photocopy of registered sale deed executed in 2019",
+                    "reliability": "secondary_evidence",
+                    "why_it_matters": "Requires production of certified copy or original under Section 65 Evidence Act."
+                }
+            ], "groq(mock)", "test-model", 50, 50
+
+        elif "risk" in system_prompt.lower():
+            return [
+                {
+                    "id": "risk-1",
+                    "risk_type": "missing_evidence",
+                    "description": "Original title documents not produced in primary pleadings.",
+                    "severity": "medium"
+                }
+            ], "groq(mock)", "test-model", 50, 50
+
+        elif "10-section" in system_prompt.lower() or "strategy report" in system_prompt.lower():
+            return {
+                "executive_summary": "Comprehensive legal strategy synthesized across primary pleadings, evidence matrix, and verified authorities.",
+                "disclaimer": "This report provides strategic legal analysis and does not constitute a formal legal opinion.",
+                "procedural_posture": "Active Proceedings",
+                "affirmative_arguments": "Registered document carries statutory presumption of valid execution.",
+                "counterarguments": "Opponent contends family arrangement prevails.",
+                "precedent_landscape": "Binding judicial authorities on immovable property transfer.",
+                "practical_next_steps": "File application for production of original documents."
+            }, "groq(mock)", "test-model", 50, 50
+
+        else: # Default: arguments
+            provisions = ["Section 54 Transfer of Property Act", "Section 17 Registration Act"] if is_civil else ["Section 438 CrPC", "Section 41A CrPC"]
+            return [
+                {
+                    "id": "arg-1",
+                    "title": "Presumption of Registered Ownership",
+                    "legal_issue": "Whether registered title prevails over oral settlement",
+                    "applicable_provisions": provisions,
+                    "main_claim": "Registered instrument confers absolute right in immovable property.",
+                    "supporting_facts": ["Registered sale deed executed in 2019"],
+                    "evidence_actually_available": ["Copy of registered sale deed"],
+                    "evidence_refs": ["Copy of registered sale deed"],
+                    "evidence_still_required": ["Certified copy from Sub-Registrar"],
+                    "relevant_precedents": ["Suraj Lamp & Industries v. State of Haryana"],
+                    "confidence_status": "High Doctrinal Ground"
+                }
+            ], "groq(mock)", "test-model", 50, 50
+
+    with patch("services.war_room_service._call_llm_json", side_effect=fake_war_room_llm) as p:
+        yield p
