@@ -43,4 +43,17 @@
    - Re-verified chat tests (45/45 passed in 5.38s), drafting tests (65/65 passed in 4.86s), TypeScript (0 errors), and production build (24 static pages).
    - Fast-forwarded `main` locally via `git merge --ff-only merge/drafting-into-main`.
    - Verified `git merge-base --is-ancestor merge/drafting-into-main main` exited with code 0.
-   - Remote push: NO remote push executed (`origin/main` untouched on GitHub).
+
+7. **Remote Publication Record:**
+   - **Date and Time:** 2026-10-22T22:20:35+05:30
+   - **Target Remote & Branch:** `origin/main` (`https://github.com/Shreedhar-Khorate/NyayaSarathi.git`)
+   - **Previous Remote Commit SHA:** `be6e1bcc21a355239d460f5575669c4d7c527e75`
+   - **Final Published Commit SHA:** `4903e6cd1d98cdcdb6232cf698c9cd84fc4bdb68`
+   - **Commits Published:** 10 commits (`be6e1bc..4903e6c`)
+   - **Push Result:** `SUCCESS` (fast-forward push `be6e1bc..4903e6c main -> main`)
+   - **Force-Push Flag:** None (standard `git push origin main`, zero force-push)
+   - **Post-Push Verification:**
+     - `main` and `origin/main` point to `4903e6cd1d98cdcdb6232cf698c9cd84fc4bdb68`.
+     - `git status` reports `## main...origin/main` (up-to-date, ahead 0, behind 0).
+     - Merge commit `0cc587c842e94da5d49a9bea02e930e7419b7e4b` verified in remote history.
+
