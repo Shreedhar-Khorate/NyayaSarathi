@@ -21,11 +21,12 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
 from routers import admin, analyze, auth, cases, contracts, drafts, advocate, news, ocr, qa, search, statutes, translate, war_room
-from routers import google_oauth, profile
+from routers import google_oauth, profile, chat
 from services.user_repository import init_user_table
 from services.document_processor import init_document_tables
 from services.ingest import init_database
 from services.war_room_repository import init_war_room_tables
+from services.chat_repository import init_chat_tables
 
 log = get_logger("nyayasarathi")
 
@@ -207,6 +208,7 @@ app.include_router(war_room.router,    prefix="/api/war-room",   tags=["Legal Wa
 app.include_router(admin.router,         prefix="/api/admin",           tags=["Admin Dashboard"])
 app.include_router(advocate.router,      prefix="/api/advocate",        tags=["Advocate Portal"])
 app.include_router(news.router,          prefix="/api/news",            tags=["Legal News"])
+app.include_router(chat.router,          prefix="/api/chat",            tags=["Chat"])
 
 # ── Root & Health ─────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
@@ -242,6 +244,11 @@ async def on_startup():
         init_war_room_tables()
     except Exception as e:
         log.error(f"Failed to initialize war room database tables: {e}", extra={"component": "STARTUP"})
+
+    try:
+        init_chat_tables()
+    except Exception as e:
+        log.error(f"Failed to initialize chat database tables: {e}", extra={"component": "STARTUP"})
 
     import os
     port = int(os.environ.get("PORT", 8001))
