@@ -665,6 +665,18 @@ textarea::-webkit-scrollbar-thumb {
   border-radius: 9999px;
 }
 
-
-
-
+/* ── Modern discreet scrollbars for chat feeds ─────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 142, 247, 0.5);
+}

@@ -61,6 +61,7 @@ export interface ChatMessage {
   idempotency_key?: string | null;
   created_at: string;
   attachments?: ChatAttachmentMeta[];
+  status?: 'sending' | 'sent' | 'failed';
 }
 
 export interface MessagePage {
@@ -221,7 +222,7 @@ export function createChatPoller(
   conversationId: string,
   getLatestMessageId: () => string | null,
   onNewMessages: (msgs: ChatMessage[]) => void,
-  intervalMs = 5000
+  intervalMs = 2500
 ): { start: () => void; stop: () => void } {
   let timerId: ReturnType<typeof setInterval> | null = null;
   let running = false;
@@ -230,16 +231,8 @@ export function createChatPoller(
     if (!running) return;
     try {
       const page = await fetchMessages(conversationId);
-      const latestId = getLatestMessageId();
-      if (!latestId && page.messages.length > 0) {
+      if (page.messages.length > 0) {
         onNewMessages(page.messages);
-        return;
-      }
-      const idx = page.messages.findIndex((m) => m.id === latestId);
-      if (idx === -1 && page.messages.length > 0) {
-        onNewMessages(page.messages);
-      } else if (idx >= 0 && idx < page.messages.length - 1) {
-        onNewMessages(page.messages.slice(idx + 1));
       }
     } catch {
       /* polling errors are non-fatal */
