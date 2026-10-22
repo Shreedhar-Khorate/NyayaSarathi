@@ -55,7 +55,7 @@ export default function Hero() {
 
           {/* Editorial eyebrow label */}
           <motion.div variants={item} className="mb-8">
-            <span className="section-label">
+            <span className="section-label border border-[#B59A68]/40 bg-gradient-to-r from-[#6E2634]/30 via-[#242925] to-[#B59A68]/20 text-[#B59A68] shadow-sm">
               <Scale className="h-3 w-3 text-[#B59A68]" strokeWidth={1.5} />
               {t('hero.eyebrow')}
             </span>
@@ -63,19 +63,28 @@ export default function Hero() {
 
           {/* Headline — Cormorant Garamond */}
           <h1 className="font-display flex flex-wrap gap-x-3 gap-y-1 text-5xl font-semibold leading-[1.1] text-ivory sm:text-6xl md:text-7xl">
-            {headlineWords.map((word: string, i: number) => (
-              <motion.span
-                key={i}
-                variants={item}
-                className={
-                  i === 1 || i === 3 || word === 'Judicial' || word === 'Intelligence' || word === 'न्यायालयीन' || word === 'न्यायिक'
-                    ? 'text-[#B59A68]'
-                    : ''
-                }
-              >
-                {word}
-              </motion.span>
-            ))}
+            {headlineWords.map((word: string, i: number) => {
+              const isHighlight =
+                i === 1 ||
+                i === 3 ||
+                word === 'Judicial' ||
+                word === 'Intelligence' ||
+                word === 'न्यायालयीन' ||
+                word === 'न्यायिक';
+              return (
+                <motion.span
+                  key={i}
+                  variants={item}
+                  className={
+                    isHighlight
+                      ? 'bg-gradient-to-r from-[#F4EFE5] via-[#B59A68] to-[#997E4F] bg-clip-text text-transparent drop-shadow-[0_2px_14px_rgba(181,154,104,0.30)]'
+                      : ''
+                  }
+                >
+                  {word}
+                </motion.span>
+              );
+            })}
           </h1>
 
           {/* Sub-copy */}
@@ -90,14 +99,14 @@ export default function Hero() {
           <motion.div variants={item} className="mt-10 flex flex-col gap-4 sm:flex-row">
             <Link
               href="/predictor"
-              className="btn-oxblood group flex items-center justify-center gap-2 rounded px-7 py-3.5 font-sans text-sm font-semibold tracking-wide"
+              className="btn-oxblood group flex items-center justify-center gap-2 rounded px-7 py-3.5 font-sans text-sm font-semibold tracking-wide bg-gradient-to-r from-[#6E2634] via-[#7E2D3D] to-[#8A3545] border border-[#B59A68]/30 shadow-lg shadow-[#6E2634]/30"
             >
               <span>{t('hero.launchHub')}</span>
               <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
             <Link
               href="/ocr"
-              className="group flex items-center justify-center gap-2 rounded border border-[#3B3A33] bg-transparent px-7 py-3.5 font-sans text-sm font-semibold text-ivory transition-colors duration-300 hover:border-[#8A3545]/50 hover:bg-[#6E2634]/8"
+              className="group flex items-center justify-center gap-2 rounded border border-[#3B3A33] bg-gradient-to-b from-[#1D211F]/90 to-[#151716]/90 px-7 py-3.5 font-sans text-sm font-semibold text-ivory transition-all duration-300 hover:border-[#B59A68]/50 hover:bg-gradient-to-b hover:from-[#242925] hover:to-[#181B1A]"
             >
               <Upload className="h-4 w-4 text-stone transition-colors group-hover:text-ivory" />
               <span>{t('hero.uploadDoc')}</span>
@@ -115,7 +124,9 @@ export default function Hero() {
                 key={label}
                 className={`pr-8 sm:pr-10 ${i > 0 ? 'sm:pl-10 sm:border-l sm:border-[#3B3A33]' : ''}`}
               >
-                <p className="font-display text-3xl font-semibold text-[#B59A68]">{value}</p>
+                <p className="font-display text-3xl font-semibold bg-gradient-to-b from-[#F4EFE5] via-[#B59A68] to-[#8C6F34] bg-clip-text text-transparent">
+                  {value}
+                </p>
                 <p className="mt-1 font-sans text-xs tracking-wide text-stone">{label}</p>
               </div>
             ))}

@@ -27,7 +27,7 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
   }, [isInView, value]);
 
   return (
-    <span className="font-display text-[#B59A68] text-5xl sm:text-6xl lg:text-7xl font-semibold tabular-nums leading-none">
+    <span className="font-display bg-gradient-to-b from-[#F4EFE5] via-[#B59A68] to-[#8C6F34] bg-clip-text text-transparent text-5xl sm:text-6xl lg:text-7xl font-semibold tabular-nums leading-none">
       <span ref={ref}>0</span>
       {suffix}
     </span>
@@ -46,11 +46,13 @@ export default function StatsCounters() {
   ];
 
   return (
-    <section className="relative border-y border-[#3B3A33] py-24 bg-[#151716]">
+    <section className="relative border-y border-[#3B3A33] py-24 bg-gradient-to-b from-[#151716] via-[#191D1B] to-[#151716]">
       <div className="relative mx-auto max-w-6xl px-6">
         {/* Section label */}
         <div className="mb-14">
-          <span className="section-label">{t('stats.label')}</span>
+          <span className="section-label border border-[#B59A68]/40 bg-gradient-to-r from-[#6E2634]/30 via-[#242925] to-[#B59A68]/20 text-[#B59A68]">
+            {t('stats.label')}
+          </span>
         </div>
 
         <div className="grid grid-cols-1 gap-0 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#3B3A33]">
@@ -64,7 +66,7 @@ export default function StatsCounters() {
               className="py-10 md:py-0 md:px-14 first:pl-0 last:pr-0"
             >
               {stat.isText ? (
-                <span className="font-display text-[#B59A68] text-4xl sm:text-5xl lg:text-6xl font-semibold leading-none block">
+                <span className="font-display bg-gradient-to-r from-[#F4EFE5] via-[#B59A68] to-[#8C6F34] bg-clip-text text-transparent text-4xl sm:text-5xl lg:text-6xl font-semibold leading-none block">
                   Hybrid RAG
                 </span>
               ) : (

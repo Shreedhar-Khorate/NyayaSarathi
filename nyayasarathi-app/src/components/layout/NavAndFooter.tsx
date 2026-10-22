@@ -21,21 +21,22 @@ export function Navbar() {
     setCurrentUser(getUser());
   }, [pathname]);
 
+  // All 10 navigation modules directly displayed without hiding any section
   const NAV_LINKS = [
-    { href: '/war-room',       label: t('nav.warRoom')   },
-    { href: '/legal-drafting', label: t('nav.drafting') || 'Legal Drafting' },
-    { href: '/predictor',      label: t('nav.predictor') },
-    { href: '/contracts',      label: t('nav.contracts') || 'Contract Analyzer' },
-    { href: '/legal-research', label: t('nav.research')  },
-    { href: '/ocr',            label: t('nav.ocr')       },
-    { href: '/find-advocate',  label: 'Find Advocate'   },
-    { href: '/messages',       label: 'Messages'        },
-    { href: '/news',           label: 'Legal News'       },
-    { href: '/#pipeline',      label: t('nav.howItWorks') },
+    { href: '/war-room',       label: 'War Room' },
+    { href: '/legal-drafting', label: 'Legal Drafting' },
+    { href: '/predictor',      label: 'Judgment Predictor' },
+    { href: '/contracts',      label: 'Contract Analyzer' },
+    { href: '/legal-research', label: 'Legal Research' },
+    { href: '/ocr',            label: 'Legal OCR' },
+    { href: '/find-advocate',  label: 'Find Advocate' },
+    { href: '/messages',       label: 'Messages' },
+    { href: '/news',           label: 'Legal News' },
+    { href: '/#pipeline',      label: t('nav.howItWorks') || 'How It Works' },
   ];
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -51,29 +52,29 @@ export function Navbar() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: EASE }}
-        className={`fixed inset-x-0 top-0 z-50 py-5 bg-transparent transition-all duration-500 ${
-          scrolled ? 'bg-[#151716]/40 backdrop-blur-sm' : 'bg-transparent'
+        className={`fixed inset-x-0 top-0 z-50 py-3 bg-[#151716]/30 backdrop-blur-xl border-b border-[#3B3A33]/30 transition-all duration-300 ${
+          scrolled ? 'bg-[#151716]/65 backdrop-blur-2xl shadow-xl shadow-black/40 border-[#3B3A33]/60' : ''
         }`}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
+        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-4 sm:px-6 xl:px-8">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 group mr-2 xl:mr-4">
             <Scale
               className="h-[18px] w-[18px] text-[#B59A68] transition-opacity duration-200 group-hover:opacity-70"
               strokeWidth={1.5}
             />
             <span
-              className="font-display text-[1.05rem] font-semibold text-ivory/90"
+              className="font-display text-[1.05rem] font-semibold text-ivory/95"
               style={{ letterSpacing: '0.04em' }}
             >
               NyayaSarathi
             </span>
           </Link>
 
-          {/* Nav links with border pill */}
+          {/* Nav links with transparent blurry glass pill — all 10 sections visible & proper fit */}
           <nav
-            className="hidden items-center gap-0.5 lg:flex rounded-full border border-[#3B3A33] px-1.5 py-1 bg-[#151716]/60 backdrop-blur-md"
+            className="hidden items-center gap-0.5 xl:gap-1 lg:flex rounded-full border border-[#B59A68]/20 bg-gradient-to-r from-[#151716]/40 via-[#1D211F]/30 to-[#151716]/40 backdrop-blur-2xl px-2 py-1 shadow-2xl shadow-black/50"
             aria-label="Main navigation"
           >
             {NAV_LINKS.map(({ href, label }) => {
@@ -82,10 +83,10 @@ export function Navbar() {
                 <Link
                   key={href}
                   href={href}
-                  className={`rounded-full px-3.5 py-1.5 font-sans text-xs xl:text-sm font-medium transition-all duration-200 ${
+                  className={`whitespace-nowrap rounded-full px-2 xl:px-2.5 2xl:px-3 py-1 font-sans text-[11px] xl:text-[12px] 2xl:text-xs font-medium transition-all duration-200 ${
                     isActive
-                      ? 'text-[#B59A68] bg-[#B59A68]/15 border border-[#B59A68]/30 font-semibold shadow-sm'
-                      : 'text-stone/80 hover:text-ivory hover:bg-white/[0.04]'
+                      ? 'text-[#B59A68] bg-gradient-to-r from-[#B59A68]/20 via-[#6E2634]/15 to-[#B59A68]/20 border border-[#B59A68]/40 font-semibold shadow-sm'
+                      : 'text-stone/85 hover:text-ivory hover:bg-white/[0.04]'
                   }`}
                 >
                   {label}
@@ -95,7 +96,7 @@ export function Navbar() {
           </nav>
 
           {/* Auth buttons */}
-          <div className="hidden items-center gap-2.5 md:flex shrink-0">
+          <div className="hidden items-center gap-2.5 md:flex shrink-0 ml-2 xl:ml-4">
 
             {currentUser ? (
               <div className="flex items-center gap-2">
@@ -103,7 +104,7 @@ export function Navbar() {
                   <Link
                     href="/admin/dashboard"
                     id="nav-admin-portal-btn"
-                    className="flex items-center gap-1.5 rounded-xl border border-[#B59A68]/50 bg-[#6E2634]/30 px-3 py-1.5 font-sans text-xs font-bold text-[#B59A68] hover:bg-[#6E2634]/60 hover:border-[#B59A68] transition-all shadow-sm"
+                    className="flex items-center gap-1.5 rounded-full border border-[#B59A68]/45 bg-gradient-to-r from-[#6E2634]/35 to-[#8A3545]/20 px-3.5 py-1.5 font-sans text-xs font-semibold text-[#B59A68] hover:border-[#B59A68] hover:bg-[#6E2634]/55 transition-all shadow-sm whitespace-nowrap"
                   >
                     <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
                     <span>Admin Portal</span>
@@ -114,7 +115,7 @@ export function Navbar() {
                   <Link
                     href="/advocate/dashboard"
                     id="nav-advocate-portal-btn"
-                    className="flex items-center gap-1.5 rounded-xl border border-[#B59A68]/50 bg-[#242925] px-3 py-1.5 font-sans text-xs font-bold text-[#B59A68] hover:bg-[#2e3530] hover:border-[#B59A68] transition-all shadow-sm"
+                    className="flex items-center gap-1.5 rounded-full border border-[#B59A68]/50 bg-[#242925] px-3.5 py-1.5 font-sans text-xs font-semibold text-[#B59A68] hover:bg-[#2e3530] hover:border-[#B59A68] transition-all shadow-sm whitespace-nowrap"
                   >
                     <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
                     <span>Advocate Portal</span>
@@ -126,7 +127,7 @@ export function Navbar() {
                     <Link
                       href="/find-advocate"
                       id="nav-user-find-advocate-btn"
-                      className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#4F8EF7]/40 bg-[#4F8EF7]/10 px-3 py-1.5 font-sans text-xs font-semibold text-[#4F8EF7] hover:bg-[#4F8EF7]/20 transition-all shadow-sm"
+                      className="hidden sm:flex items-center gap-1.5 rounded-full border border-[#4F8EF7]/40 bg-[#4F8EF7]/10 px-3 py-1.5 font-sans text-xs font-semibold text-[#4F8EF7] hover:bg-[#4F8EF7]/20 transition-all shadow-sm whitespace-nowrap"
                     >
                       <Users className="w-3.5 h-3.5 text-[#4F8EF7]" />
                       <span>Find Advocate</span>
@@ -134,7 +135,7 @@ export function Navbar() {
                     <Link
                       href="/messages"
                       id="nav-user-messages-btn"
-                      className="flex items-center gap-1.5 rounded-xl border border-[#B59A68]/40 bg-[#B59A68]/10 px-3 py-1.5 font-sans text-xs font-semibold text-[#B59A68] hover:bg-[#B59A68]/20 transition-all shadow-sm"
+                      className="flex items-center gap-1.5 rounded-full border border-[#B59A68]/40 bg-[#B59A68]/10 px-3 py-1.5 font-sans text-xs font-semibold text-[#B59A68] hover:bg-[#B59A68]/20 transition-all shadow-sm whitespace-nowrap"
                     >
                       <MessageCircle className="w-3.5 h-3.5 text-[#B59A68]" />
                       <span>Messages</span>
@@ -145,12 +146,12 @@ export function Navbar() {
                 <Link
                   href="/profile"
                   id="nav-profile-btn"
-                  className="flex items-center gap-2 rounded-xl border border-[#3B3A33] bg-[#1D211F] px-3.5 py-1.5 font-sans text-xs font-semibold text-[#F4EFE5] hover:border-[#B59A68]/60 transition-colors"
+                  className="flex items-center gap-2 rounded-full border border-[#3B3A33] bg-gradient-to-b from-[#1D211F] to-[#151716] px-3.5 py-1.5 font-sans text-xs font-medium text-ivory hover:border-[#B59A68]/50 transition-colors whitespace-nowrap"
                 >
                   <div className="w-5 h-5 rounded-full bg-[#B59A68]/20 flex items-center justify-center">
                     <User className="w-3 h-3 text-[#B59A68]" />
                   </div>
-                  <span className="max-w-[120px] truncate">{currentUser.full_name || 'Profile'}</span>
+                  <span className="max-w-[110px] xl:max-w-[140px] truncate">{currentUser.full_name || 'Profile'}</span>
                 </Link>
               </div>
             ) : (
@@ -165,7 +166,7 @@ export function Navbar() {
                 <Link
                   href="/signup"
                   id="nav-getstarted-btn"
-                  className="btn-oxblood group flex items-center gap-1.5 rounded px-4 py-2 font-sans text-sm font-semibold tracking-wide"
+                  className="btn-oxblood group flex items-center gap-1.5 rounded-full px-4 py-2 font-sans text-sm font-semibold tracking-wide"
                 >
                   {t('nav.getStarted')}
                   <ArrowUpRight
@@ -237,7 +238,7 @@ export function Navbar() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{
                     opacity: 1, x: 0,
-                    transition: { delay: i * 0.05, duration: 0.22 },
+                    transition: { delay: i * 0.04, duration: 0.22 },
                   }}
                 >
                   <Link
@@ -254,7 +255,7 @@ export function Navbar() {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{
                   opacity: 1, x: 0,
-                  transition: { delay: NAV_LINKS.length * 0.05, duration: 0.22 },
+                  transition: { delay: NAV_LINKS.length * 0.04, duration: 0.22 },
                 }}
                 className="flex flex-col gap-2.5 pt-5 mt-2 border-t border-[#3B3A33]"
               >
