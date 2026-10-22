@@ -48,19 +48,19 @@ export function LoginForm() {
     setErrors({});
 
     // Client-side form validation
-    const newErrors: { email?: string; password?: string } = {};
+    const nextErrors: { email?: string; password?: string } = {};
     if (!email.trim()) {
-      newErrors.email = 'Please enter your email address.';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please provide a valid email format.';
+      nextErrors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      nextErrors.email = 'Please provide a valid email format';
     }
 
     if (!password) {
-      newErrors.password = 'Please enter your password.';
+      nextErrors.password = 'Password is required to authenticate';
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
 
@@ -82,24 +82,24 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-lg mx-auto">
       {/* Editorial Header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: EASE }}
-        className="mb-6"
+        className="mb-7"
       >
-        <div className="flex items-center gap-2 mb-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-[#B59A68]">
+        <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-[0.25em] text-[#B59A68]">
           <span>02</span>
           <span>&bull;</span>
           <span>AUTHENTICATION</span>
         </div>
-        <h2 className="font-display text-2xl sm:text-3xl font-medium text-[#F4EFE5] tracking-[-0.01em]">
+        <h2 className="font-display text-3xl sm:text-4xl font-medium text-[#F4EFE5] tracking-[-0.01em]">
           Welcome back.
         </h2>
-        <p className="font-sans text-xs sm:text-sm text-[#A9A49A] mt-1">
-          Continue your legal research.
+        <p className="font-sans text-sm sm:text-base text-[#A9A49A] mt-1.5">
+          Continue your legal research and case analysis.
         </p>
       </motion.div>
 
@@ -109,7 +109,7 @@ export function LoginForm() {
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           role="alert"
-          className="mb-5 rounded-lg border border-[#8A3545]/60 bg-[#6E2634]/15 px-4 py-2.5 text-xs text-[#F4EFE5]"
+          className="mb-6 rounded-xl border border-[#8A3545]/60 bg-[#6E2634]/15 px-4 sm:px-5 py-3 text-sm text-[#F4EFE5]"
         >
           {errors.general}
         </motion.div>
@@ -120,22 +120,22 @@ export function LoginForm() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.08, ease: EASE }}
-        className="mb-5"
+        className="mb-6"
       >
         <GoogleAuthButton label="Continue with Google" />
       </motion.div>
 
       {/* ── Divider ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-6">
         <div className="flex-1 h-px bg-[#3B3A33]/60" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#A9A49A]/60">
+        <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#A9A49A]/70">
           or sign in with email
         </span>
         <div className="flex-1 h-px bg-[#3B3A33]/60" />
       </div>
 
       {/* ── Email / Password Login Form ─────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         {/* Email Address */}
         <AuthInput
           id="login-email"
@@ -143,7 +143,7 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           label="Email Address"
-          placeholder="Enter your email"
+          placeholder="e.g. advocate.sharma@delhibar.org"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
@@ -156,7 +156,7 @@ export function LoginForm() {
           name="password"
           autoComplete="current-password"
           label="Password"
-          placeholder="Enter your password"
+          placeholder="Enter your account password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
@@ -164,30 +164,30 @@ export function LoginForm() {
         />
 
         {/* Remember me & Forgot Password */}
-        <div className="flex items-center justify-between pt-0.5">
-          <label className="flex items-center gap-2 cursor-pointer select-none group">
+        <div className="flex items-center justify-between pt-1">
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
             <input
               type="checkbox"
               id="remember-me"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-[#3B3A33] bg-[#1D211F] text-[#6E2634] focus:ring-[#6E2634] focus:ring-offset-0 transition-colors cursor-pointer accent-[#6E2634]"
+              className="w-4 h-4 rounded border-[#3B3A33] bg-[#1D211F] text-[#6E2634] focus:ring-[#6E2634] focus:ring-offset-0 transition-colors cursor-pointer accent-[#6E2634]"
             />
-            <span className="font-sans text-xs text-[#A9A49A] group-hover:text-[#F4EFE5] transition-colors">
+            <span className="font-sans text-sm text-[#A9A49A] group-hover:text-[#F4EFE5] transition-colors">
               Remember me
             </span>
           </label>
 
           <Link
             href="/forgot-password"
-            className="editorial-link font-sans text-xs text-[#A9A49A] hover:text-[#F4EFE5]"
+            className="editorial-link font-sans text-sm text-[#A9A49A] hover:text-[#B59A68] transition-colors"
           >
             Forgot password?
           </Link>
         </div>
 
         {/* Primary CTA */}
-        <div className="pt-1.5">
+        <div className="pt-2">
           <AuthButton type="submit" isLoading={isLoading}>
             Continue Research
           </AuthButton>
@@ -195,20 +195,20 @@ export function LoginForm() {
       </form>
 
       {/* Switch to Sign Up */}
-      <div className="mt-6 pt-4 border-t border-[#3B3A33]/50 text-center">
-        <p className="font-sans text-xs text-[#A9A49A]">
+      <div className="mt-8 pt-5 border-t border-[#3B3A33]/50 text-center">
+        <p className="font-sans text-sm text-[#A9A49A]">
           Don&apos;t have an account?{' '}
           <Link
             href="/signup"
-            className="editorial-link font-medium text-[#F4EFE5] hover:text-[#B59A68] ml-1"
+            className="editorial-link font-semibold text-[#F4EFE5] hover:text-[#B59A68] ml-1 transition-colors"
           >
-            Begin research &rarr;
+            Create an account &rarr;
           </Link>
         </p>
       </div>
 
       {/* Trust Indicator */}
-      <div className="mt-4 flex justify-center">
+      <div className="mt-5 flex justify-center">
         <TrustIndicator />
       </div>
     </div>

@@ -45,20 +45,20 @@ export function AuthLayout({ children, activeTab = 'login' }: AuthLayoutProps) {
 
       {/* Main Expansive Split Screen Layout (Unrestricted by boxed frames, fit to screen) */}
       <main className="relative z-10 w-full flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
-        {/* Left Side: Majestic Brand, Emblem & Sanskrit Shlokas (approx 58% on desktop) */}
-        <div className="lg:col-span-7 flex flex-col h-full min-h-0 overflow-y-auto lg:overflow-hidden">
+        {/* Left Side: Majestic Brand, Emblem & Sanskrit Shlokas */}
+        <div className="lg:col-span-6 flex flex-col h-full min-h-0 overflow-y-auto lg:overflow-hidden">
           <AuthBrandPanel />
         </div>
 
-        {/* Right Side: Authentication Form Canvas (approx 42% on desktop) */}
-        <div className="lg:col-span-5 flex flex-col justify-center items-center p-6 sm:p-8 lg:p-10 xl:p-12 bg-[#181C1A]/40 backdrop-blur-md relative h-full min-h-0 overflow-y-auto">
+        {/* Right Side: Authentication Form Canvas */}
+        <div className="lg:col-span-6 flex flex-col justify-center items-center p-6 sm:p-8 lg:p-10 xl:p-12 bg-[#181C1A]/40 backdrop-blur-md relative h-full min-h-0 overflow-y-auto">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, x: activeTab === 'login' ? -12 : 12 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: activeTab === 'login' ? 12 : -12 }}
             transition={{ duration: 0.4, ease: EASE }}
-            className="w-full max-w-md my-auto"
+            className="w-full max-w-lg my-auto"
           >
             {children}
           </motion.div>

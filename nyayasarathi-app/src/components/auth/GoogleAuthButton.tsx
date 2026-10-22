@@ -35,25 +35,25 @@ export function GoogleAuthButton({ label = 'Continue with Google' }: GoogleAuthB
       className="
         group relative w-full flex items-center justify-center gap-3
         rounded-xl border border-[#3B3A33] bg-[#1D211F]
-        px-5 py-3 font-sans text-sm font-medium text-[#F4EFE5]
-        hover:bg-[#242925] hover:border-[#B59A68]/40
+        px-6 py-3.5 sm:py-4 font-sans text-base font-medium text-[#F4EFE5]
+        hover:bg-[#242925] hover:border-[#B59A68]/50
         focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B59A68]
         disabled:opacity-50 disabled:cursor-not-allowed
-        transition-all duration-200 min-h-[44px]
-        shadow-[0_1px_3px_rgba(0,0,0,0.25)]
+        transition-all duration-200 min-h-[52px] sm:min-h-[56px]
+        shadow-[0_2px_8px_rgba(0,0,0,0.3)]
       "
       aria-label="Continue with Google"
     >
       {isLoading ? (
         <>
-          <Loader2 className="w-4 h-4 animate-spin text-[#A9A49A] shrink-0" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#A9A49A] shrink-0" />
           <span className="text-[#A9A49A]">Connecting to Google…</span>
         </>
       ) : (
         <>
           {/* Google G Logo SVG */}
           <svg
-            className="w-4 h-4 shrink-0"
+            className="w-5 h-5 shrink-0"
             viewBox="0 0 24 24"
             aria-hidden="true"
           >

@@ -95,24 +95,24 @@ export function SignupForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-lg mx-auto">
       {/* Editorial Header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: EASE }}
-        className="mb-4"
+        className="mb-6"
       >
-        <div className="flex items-center gap-2 mb-1 font-mono text-[10px] uppercase tracking-[0.25em] text-[#B59A68]">
+        <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-[0.25em] text-[#B59A68]">
           <span>02</span>
           <span>&bull;</span>
           <span>REGISTRATION</span>
         </div>
-        <h2 className="font-display text-2xl sm:text-3xl font-medium text-[#F4EFE5] tracking-[-0.01em]">
+        <h2 className="font-display text-3xl sm:text-4xl font-medium text-[#F4EFE5] tracking-[-0.01em]">
           Begin your research.
         </h2>
-        <p className="font-sans text-xs text-[#A9A49A] mt-0.5 leading-relaxed">
-          Create your NyayaSarathi account and build your legal research workspace.
+        <p className="font-sans text-sm sm:text-base text-[#A9A49A] mt-1.5 leading-relaxed">
+          Create your NyayaSarathi workspace for verifiable judicial intelligence.
         </p>
       </motion.div>
 
@@ -122,7 +122,7 @@ export function SignupForm() {
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           role="alert"
-          className="mb-4 rounded-lg border border-[#8A3545]/60 bg-[#6E2634]/15 px-4 py-2 text-xs text-[#F4EFE5]"
+          className="mb-5 rounded-xl border border-[#8A3545]/60 bg-[#6E2634]/15 px-4 sm:px-5 py-3 text-sm text-[#F4EFE5]"
         >
           {errors.general}
         </motion.div>
@@ -133,22 +133,22 @@ export function SignupForm() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.08, ease: EASE }}
-        className="mb-4"
+        className="mb-5"
       >
         <GoogleAuthButton label="Sign up with Google" />
       </motion.div>
 
       {/* ── Divider ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-5">
         <div className="flex-1 h-px bg-[#3B3A33]/60" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#A9A49A]/60">
+        <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#A9A49A]/70">
           or register with email
         </span>
         <div className="flex-1 h-px bg-[#3B3A33]/60" />
       </div>
 
       {/* ── Email / Password Signup Form ─────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Full Name */}
         <AuthInput
           id="signup-fullname"
@@ -170,7 +170,7 @@ export function SignupForm() {
           type="email"
           autoComplete="email"
           label="Email Address"
-          placeholder="advocate@chamber.in"
+          placeholder="e.g. advocate.sharma@delhibar.org"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
@@ -183,7 +183,7 @@ export function SignupForm() {
           name="password"
           autoComplete="new-password"
           label="Password"
-          placeholder="Create a secure password"
+          placeholder="Create a secure password (min. 8 characters)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
@@ -196,7 +196,7 @@ export function SignupForm() {
           name="confirmPassword"
           autoComplete="new-password"
           label="Confirm Password"
-          placeholder="Re-enter your password"
+          placeholder="Re-enter your password to confirm"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           error={errors.confirmPassword}
@@ -204,7 +204,7 @@ export function SignupForm() {
         />
 
         {/* Primary CTA */}
-        <div className="pt-1">
+        <div className="pt-2">
           <AuthButton type="submit" isLoading={isLoading}>
             Create Research Account
           </AuthButton>
@@ -212,20 +212,20 @@ export function SignupForm() {
       </form>
 
       {/* Switch to Sign In */}
-      <div className="mt-5 pt-3.5 border-t border-[#3B3A33]/50 text-center">
-        <p className="font-sans text-xs text-[#A9A49A]">
+      <div className="mt-6 pt-4 border-t border-[#3B3A33]/50 text-center">
+        <p className="font-sans text-sm text-[#A9A49A]">
           Already have an account?{' '}
           <Link
             href="/login"
-            className="editorial-link font-medium text-[#F4EFE5] hover:text-[#B59A68] ml-1"
+            className="editorial-link font-semibold text-[#F4EFE5] hover:text-[#B59A68] ml-1 transition-colors"
           >
-            Sign in
+            Sign in &rarr;
           </Link>
         </p>
       </div>
 
       {/* Trust Indicator */}
-      <div className="mt-3.5 flex justify-center">
+      <div className="mt-4 flex justify-center">
         <TrustIndicator />
       </div>
     </div>
