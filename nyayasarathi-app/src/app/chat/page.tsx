@@ -58,6 +58,7 @@ import {
 } from '@/lib/chat';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+const CHAT_ALLOWED_ROLES = ['USER', 'ADVOCATE', 'ADMIN'];
 const MAX_FILE_MB = 10;
 const ALLOWED_EXTS = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.txt', '.doc', '.docx'];
 const POLL_INTERVAL_MS = 5000;
@@ -248,6 +249,9 @@ function ChatContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollerRef = useRef<ReturnType<typeof createChatPoller> | null>(null);
   const activeConvIdRef = useRef<string | null>(null);
+  const messagesRef = useRef<ChatMessage[]>([]);
+  messagesRef.current = messages;
+  const initialLoadedRef = useRef(false);
 
   // ── Load conversation list ──────────────────────────────────────────────────
   const loadConversations = useCallback(async () => {
@@ -291,7 +295,7 @@ function ChatContent() {
     pollerRef.current?.stop();
     pollerRef.current = createChatPoller(
       convId,
-      () => messages[messages.length - 1]?.id ?? null,
+      () => messagesRef.current[messagesRef.current.length - 1]?.id ?? null,
       (newMsgs) => {
         setMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
@@ -299,12 +303,11 @@ function ChatContent() {
           return fresh.length ? [...prev, ...fresh] : prev;
         });
         setIsConnected(true);
-        loadConversations();
       },
       POLL_INTERVAL_MS
     );
     pollerRef.current.start();
-  }, [messages, loadConversations]);
+  }, []);
 
   // ── Select conversation ─────────────────────────────────────────────────────
   const selectConversation = useCallback(async (convId: string) => {
@@ -321,6 +324,9 @@ function ChatContent() {
 
   // ── Initial load & searchParam conversation selection ──────────────────────
   useEffect(() => {
+    if (initialLoadedRef.current) return;
+    initialLoadedRef.current = true;
+
     loadConversations().then((convs) => {
       if (paramConvId) {
         selectConversation(paramConvId);
@@ -330,6 +336,13 @@ function ChatContent() {
       .then((h) => setRealtimeMode(h.chat_db_mode))
       .catch(() => setRealtimeMode('sqlite'));
   }, [loadConversations, paramConvId, selectConversation]);
+
+  // ── React to searchParam change after mount ────────────────────────────────
+  useEffect(() => {
+    if (paramConvId && initialLoadedRef.current && paramConvId !== activeConvIdRef.current) {
+      selectConversation(paramConvId);
+    }
+  }, [paramConvId, selectConversation]);
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -446,7 +459,7 @@ function ChatContent() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <RoleGuard allowedRoles={['USER', 'ADVOCATE', 'ADMIN']} portalName="NyayaSarathi Chat">
+    <RoleGuard allowedRoles={CHAT_ALLOWED_ROLES} portalName="NyayaSarathi Chat">
       <div className="min-h-screen bg-[#151716] pt-20 pb-4 px-2 sm:px-4 lg:px-6">
         {/* Background glows */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">

@@ -8,9 +8,10 @@ Enforces transactional integrity, durable audit retention, and robust role autho
 import json
 import os
 import sqlite3
+import time
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 
 from logger import get_logger
 from services.supabase_client import get_supabase_client
@@ -21,9 +22,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 DB_PATH = os.path.join(DATA_DIR, "nyayasarathi.db")
 
+from contextlib import contextmanager
+
 try:
     import psycopg2
     import psycopg2.extras
+    import psycopg2.pool
     PSYCOPG2_AVAILABLE = True
 except ImportError:
     PSYCOPG2_AVAILABLE = False
@@ -42,12 +46,64 @@ def is_postgres_authoritative() -> bool:
     return bool(db_url and db_url.strip() and "dummy" not in db_url.lower())
 
 
+_PG_POOL: Optional[Any] = None
+
+def _get_pg_pool():
+    global _PG_POOL
+    if _PG_POOL is None and PSYCOPG2_AVAILABLE and is_postgres_authoritative():
+        db_url = os.getenv("DATABASE_URL")
+        try:
+            _PG_POOL = psycopg2.pool.ThreadedConnectionPool(
+                minconn=1,
+                maxconn=10,
+                dsn=db_url,
+                connect_timeout=5,
+                keepalives=1,
+                keepalives_idle=30,
+                keepalives_interval=10,
+                keepalives_count=3,
+            )
+        except Exception as e:
+            log.warning(f"Could not initialize connection pool: {e}")
+    return _PG_POOL
+
+
+@contextmanager
+def pg_connection_scope():
+    """Context manager yielding a pooled PostgreSQL connection for high throughput."""
+    pool = _get_pg_pool()
+    if pool is not None:
+        conn = pool.getconn()
+        try:
+            if conn.closed:
+                conn = psycopg2.connect(os.getenv("DATABASE_URL"), connect_timeout=5)
+            yield conn
+        finally:
+            try:
+                pool.putconn(conn)
+            except Exception:
+                pass
+    else:
+        conn = get_pg_connection()
+        try:
+            yield conn
+        finally:
+            conn.close()
+
+
 def get_pg_connection():
     """Get raw connection to authoritative PostgreSQL database with autocommit disabled."""
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
         raise RuntimeError("DATABASE_URL environment variable is missing.")
-    return psycopg2.connect(db_url)
+    return psycopg2.connect(
+        db_url,
+        connect_timeout=5,
+        keepalives=1,
+        keepalives_idle=30,
+        keepalives_interval=10,
+        keepalives_count=3,
+    )
 
 
 def get_db_connection() -> sqlite3.Connection:
@@ -159,8 +215,7 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     clean_email = email.strip()
 
     if is_postgres_authoritative():
-        conn = get_pg_connection()
-        try:
+        with pg_connection_scope() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
                     """SELECT id, email, password_hash, full_name, role, avatar_url, 
@@ -174,8 +229,6 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
                     d = dict(row)
                     d["profile_completed"] = bool(d.get("profile_completed"))
                     return d
-        finally:
-            conn.close()
 
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -200,8 +253,7 @@ def get_user_by_google_sub(google_sub: str) -> Optional[Dict[str, Any]]:
         return None
 
     if is_postgres_authoritative():
-        conn = get_pg_connection()
-        try:
+        with pg_connection_scope() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
                     """SELECT id, email, password_hash, full_name, role, avatar_url, 
@@ -215,8 +267,6 @@ def get_user_by_google_sub(google_sub: str) -> Optional[Dict[str, Any]]:
                     d = dict(row)
                     d["profile_completed"] = bool(d.get("profile_completed"))
                     return d
-        finally:
-            conn.close()
 
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -235,11 +285,39 @@ def get_user_by_google_sub(google_sub: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+# ── Fast In-Memory Caches (Short TTL to prevent Supabase latency spikes) ────────
+_USER_CACHE: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+_USER_CACHE_TTL = 30.0  # seconds
+
+_ADVOCATES_CACHE: Tuple[float, List[Dict[str, Any]]] = (0.0, [])
+_ADVOCATES_CACHE_TTL = 30.0  # seconds
+
+def invalidate_user_cache(user_id: Optional[str] = None):
+    """Invalidate cached user profiles on update or role change."""
+    global _ADVOCATES_CACHE
+    if user_id:
+        _USER_CACHE.pop(user_id, None)
+    else:
+        _USER_CACHE.clear()
+    _ADVOCATES_CACHE = (0.0, [])
+
+
 def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
-    """Retrieve user dictionary by ID from authoritative store."""
+    """Retrieve user dictionary by ID from authoritative store with fast TTL cache."""
+    now = time.time()
+    cached = _USER_CACHE.get(user_id)
+    if cached and (now - cached[0]) < _USER_CACHE_TTL:
+        return cached[1]
+
+    user = _fetch_user_by_id(user_id)
+    if user:
+        _USER_CACHE[user_id] = (now, user)
+    return user
+
+
+def _fetch_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     if is_postgres_authoritative():
-        conn = get_pg_connection()
-        try:
+        with pg_connection_scope() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
                     """SELECT id, email, password_hash, full_name, role, avatar_url, 
@@ -253,8 +331,6 @@ def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
                     d = dict(row)
                     d["profile_completed"] = bool(d.get("profile_completed"))
                     return d
-        finally:
-            conn.close()
 
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -278,9 +354,19 @@ def list_eligible_advocates() -> List[Dict[str, Any]]:
     Retrieve all users with role 'ADVOCATE' for directory listing.
     Returns only safe public profile fields (never password hashes, tokens, or internal metadata).
     """
+    global _ADVOCATES_CACHE
+    now = time.time()
+    if _ADVOCATES_CACHE[1] and (now - _ADVOCATES_CACHE[0]) < _ADVOCATES_CACHE_TTL:
+        return _ADVOCATES_CACHE[1]
+
+    advocates = _fetch_eligible_advocates()
+    _ADVOCATES_CACHE = (now, advocates)
+    return advocates
+
+
+def _fetch_eligible_advocates() -> List[Dict[str, Any]]:
     if is_postgres_authoritative():
-        conn = get_pg_connection()
-        try:
+        with pg_connection_scope() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
                     """SELECT id, email, full_name, role, avatar_url, organization, designation
@@ -289,8 +375,6 @@ def list_eligible_advocates() -> List[Dict[str, Any]]:
                        ORDER BY full_name ASC"""
                 )
                 return [dict(r) for r in cur.fetchall()]
-        finally:
-            conn.close()
 
     with get_db_connection() as conn:
         cursor = conn.cursor()

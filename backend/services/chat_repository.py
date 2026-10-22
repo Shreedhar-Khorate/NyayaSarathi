@@ -20,6 +20,7 @@ from services.user_repository import (
     is_postgres_authoritative,
     get_db_connection as _get_sqlite_conn,
     get_pg_connection,
+    pg_connection_scope,
 )
 
 log = get_logger("nyayasarathi.chat_repo")
@@ -157,8 +158,7 @@ def get_or_create_conversation(
 
 
 def _pg_get_or_create_conversation(user_id: str, advocate_id: str, now: str) -> Dict[str, Any]:
-    conn = get_pg_connection()
-    try:
+    with pg_connection_scope() as conn:
         with conn:
             with conn.cursor(cursor_factory=__import__("psycopg2.extras", fromlist=["RealDictCursor"]).RealDictCursor) as cur:
                 cur.execute(
@@ -178,8 +178,6 @@ def _pg_get_or_create_conversation(user_id: str, advocate_id: str, now: str) -> 
                     (conv_id, user_id, advocate_id, now, now),
                 )
                 return dict(cur.fetchone())
-    finally:
-        conn.close()
 
 
 def _sqlite_get_or_create_conversation(user_id: str, advocate_id: str, now: str) -> Dict[str, Any]:
@@ -218,45 +216,41 @@ def list_conversations(current_user_id: str, current_user_role: str) -> List[Dic
 
 def _pg_list_conversations(uid: str, role: str) -> List[Dict[str, Any]]:
     import psycopg2.extras
-    conn = get_pg_connection()
-    try:
-        with conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                where_clause, params = _participant_where_pg(uid, role)
-                cur.execute(f"""
-                    SELECT
-                        c.*,
-                        u.full_name AS other_party_name,
-                        u.avatar_url AS other_party_avatar,
-                        u.designation AS other_party_designation,
-                        m.body AS last_message_body,
-                        m.sender_id AS last_message_sender_id,
-                        (
-                            SELECT COUNT(*) FROM public.chat_messages cm
-                            WHERE cm.conversation_id = c.id
-                              AND cm.sender_id != %s
-                              AND cm.created_at > COALESCE(
-                                  (SELECT last_read_at FROM public.chat_participant_state
-                                   WHERE conversation_id = c.id AND user_id = %s),
-                                  '1970-01-01T00:00:00Z'
-                              )
-                        ) AS unread_count
-                    FROM public.chat_conversations c
-                    LEFT JOIN public.users u ON u.id = (
-                        CASE WHEN c.user_id = %s THEN c.advocate_id ELSE c.user_id END
-                    )
-                    LEFT JOIN public.chat_messages m ON m.id = (
-                        SELECT id FROM public.chat_messages
-                        WHERE conversation_id = c.id
-                        ORDER BY created_at DESC, id DESC
-                        LIMIT 1
-                    )
-                    WHERE {where_clause}
-                    ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
-                """, [uid, uid, uid] + params)
-                return [dict(r) for r in cur.fetchall()]
-    finally:
-        conn.close()
+    with pg_connection_scope() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            where_clause, params = _participant_where_pg(uid, role)
+            cur.execute(f"""
+                SELECT
+                    c.*,
+                    u.full_name AS other_party_name,
+                    u.avatar_url AS other_party_avatar,
+                    u.designation AS other_party_designation,
+                    m.body AS last_message_body,
+                    m.sender_id AS last_message_sender_id,
+                    (
+                        SELECT COUNT(*) FROM public.chat_messages cm
+                        WHERE cm.conversation_id = c.id
+                          AND cm.sender_id != %s
+                          AND cm.created_at > COALESCE(
+                              (SELECT last_read_at FROM public.chat_participant_state
+                               WHERE conversation_id = c.id AND user_id = %s),
+                              '1970-01-01T00:00:00Z'
+                          )
+                    ) AS unread_count
+                FROM public.chat_conversations c
+                LEFT JOIN public.users u ON u.id = (
+                    CASE WHEN c.user_id = %s THEN c.advocate_id ELSE c.user_id END
+                )
+                LEFT JOIN public.chat_messages m ON m.id = (
+                    SELECT id FROM public.chat_messages
+                    WHERE conversation_id = c.id
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT 1
+                )
+                WHERE {where_clause}
+                ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
+            """, [uid, uid, uid] + params)
+            return [dict(r) for r in cur.fetchall()]
 
 
 def _participant_where_pg(uid: str, role: str) -> Tuple[str, List]:
@@ -325,31 +319,27 @@ def get_conversation(
 
 def _pg_get_conversation(conv_id: str, uid: str, role: str) -> Optional[Dict[str, Any]]:
     import psycopg2.extras
-    conn = get_pg_connection()
-    try:
-        with conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute(
-                    """SELECT c.*,
-                              u.full_name AS other_party_name,
-                              u.avatar_url AS other_party_avatar,
-                              u.designation AS other_party_designation,
-                              u.role AS other_party_role
-                       FROM public.chat_conversations c
-                       LEFT JOIN public.users u ON u.id = (
-                           CASE WHEN c.user_id = %s THEN c.advocate_id ELSE c.user_id END
-                       )
-                       WHERE c.id=%s""",
-                    (uid, conv_id),
-                )
-                row = cur.fetchone()
-                if not row:
-                    return None
-                if not _is_participant(dict(row), uid, role):
-                    return None
-                return dict(row)
-    finally:
-        conn.close()
+    with pg_connection_scope() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT c.*,
+                          u.full_name AS other_party_name,
+                          u.avatar_url AS other_party_avatar,
+                          u.designation AS other_party_designation,
+                          u.role AS other_party_role
+                   FROM public.chat_conversations c
+                   LEFT JOIN public.users u ON u.id = (
+                       CASE WHEN c.user_id = %s THEN c.advocate_id ELSE c.user_id END
+                   )
+                   WHERE c.id=%s""",
+                (uid, conv_id),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            if not _is_participant(dict(row), uid, role):
+                return None
+            return dict(row)
 
 
 def _sqlite_get_conversation(conv_id: str, uid: str, role: str) -> Optional[Dict[str, Any]]:
@@ -419,8 +409,7 @@ def _pg_create_message(
     ikey: Optional[str], now: str
 ) -> Dict[str, Any]:
     import psycopg2.extras
-    conn = get_pg_connection()
-    try:
+    with pg_connection_scope() as conn:
         with conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
@@ -440,8 +429,6 @@ def _pg_create_message(
                     (now, now, conv_id),
                 )
                 return msg
-    finally:
-        conn.close()
 
 
 def _sqlite_create_message(
@@ -496,31 +483,27 @@ def _pg_list_messages(
     conv_id: str, before_ts: Optional[str], before_id: Optional[str], limit: int
 ) -> List[Dict[str, Any]]:
     import psycopg2.extras
-    conn = get_pg_connection()
-    try:
-        with conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                if before_ts and before_id:
-                    cur.execute(
-                        """SELECT * FROM public.chat_messages
-                           WHERE conversation_id=%s
-                             AND (created_at, id) < (%s, %s)
-                           ORDER BY created_at DESC, id DESC
-                           LIMIT %s""",
-                        (conv_id, before_ts, before_id, limit),
-                    )
-                else:
-                    cur.execute(
-                        """SELECT * FROM public.chat_messages
-                           WHERE conversation_id=%s
-                           ORDER BY created_at DESC, id DESC
-                           LIMIT %s""",
-                        (conv_id, limit),
-                    )
-                rows = [dict(r) for r in cur.fetchall()]
-                return list(reversed(rows))  # chronological for display
-    finally:
-        conn.close()
+    with pg_connection_scope() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            if before_ts and before_id:
+                cur.execute(
+                    """SELECT * FROM public.chat_messages
+                       WHERE conversation_id=%s
+                         AND (created_at, id) < (%s, %s)
+                       ORDER BY created_at DESC, id DESC
+                       LIMIT %s""",
+                    (conv_id, before_ts, before_id, limit),
+                )
+            else:
+                cur.execute(
+                    """SELECT * FROM public.chat_messages
+                       WHERE conversation_id=%s
+                       ORDER BY created_at DESC, id DESC
+                       LIMIT %s""",
+                    (conv_id, limit),
+                )
+            rows = [dict(r) for r in cur.fetchall()]
+            return list(reversed(rows))  # chronological for display
 
 
 def _sqlite_list_messages(
@@ -545,6 +528,144 @@ def _sqlite_list_messages(
                 (conv_id, limit),
             ).fetchall()
         return list(reversed([dict(r) for r in rows]))
+
+
+def get_messages_bundle(
+    conv_id: str,
+    uid: str,
+    role: str,
+    before_ts: Optional[str] = None,
+    before_id: Optional[str] = None,
+    limit: int = 30,
+) -> Optional[List[Dict[str, Any]]]:
+    """
+    High-performance combined query on a single pooled connection:
+    1. Authenticate user as conversation participant
+    2. Fetch paginated messages
+    3. Batch-fetch and associate attachments
+    Returns None if conversation not found or access denied.
+    """
+    if is_postgres_authoritative():
+        return _pg_get_messages_bundle(conv_id, uid, role, before_ts, before_id, limit)
+    return _sqlite_get_messages_bundle(conv_id, uid, role, before_ts, before_id, limit)
+
+
+def _pg_get_messages_bundle(conv_id, uid, role, before_ts, before_id, limit):
+    import psycopg2.extras
+    with pg_connection_scope() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # 1. Participant auth check
+            cur.execute(
+                "SELECT id, user_id, advocate_id, status FROM public.chat_conversations WHERE id=%s",
+                (conv_id,)
+            )
+            conv = cur.fetchone()
+            if not conv or not _is_participant(dict(conv), uid, role):
+                return None
+
+            # 2. One-shot messages with json_agg attachments (storage_key omitted for security)
+            if before_ts and before_id:
+                cur.execute(
+                    """SELECT m.id, m.conversation_id, m.sender_id, m.body, m.idempotency_key, m.created_at,
+                              COALESCE(
+                                  json_agg(
+                                      json_build_object(
+                                          'id', a.id,
+                                          'message_id', a.message_id,
+                                          'conversation_id', a.conversation_id,
+                                          'uploaded_by', a.uploaded_by,
+                                          'original_filename', a.original_filename,
+                                          'content_type', a.content_type,
+                                          'size_bytes', a.size_bytes,
+                                          'created_at', a.created_at
+                                      )
+                                  ) FILTER (WHERE a.id IS NOT NULL),
+                                  '[]'::json
+                              ) AS attachments
+                       FROM public.chat_messages m
+                       LEFT JOIN public.chat_attachments a ON a.message_id = m.id
+                       WHERE m.conversation_id = %s
+                         AND (m.created_at, m.id) < (%s, %s)
+                       GROUP BY m.id, m.conversation_id, m.sender_id, m.body, m.idempotency_key, m.created_at
+                       ORDER BY m.created_at DESC, m.id DESC
+                       LIMIT %s""",
+                    (conv_id, before_ts, before_id, limit),
+                )
+            else:
+                cur.execute(
+                    """SELECT m.id, m.conversation_id, m.sender_id, m.body, m.idempotency_key, m.created_at,
+                              COALESCE(
+                                  json_agg(
+                                      json_build_object(
+                                          'id', a.id,
+                                          'message_id', a.message_id,
+                                          'conversation_id', a.conversation_id,
+                                          'uploaded_by', a.uploaded_by,
+                                          'original_filename', a.original_filename,
+                                          'content_type', a.content_type,
+                                          'size_bytes', a.size_bytes,
+                                          'created_at', a.created_at
+                                      )
+                                  ) FILTER (WHERE a.id IS NOT NULL),
+                                  '[]'::json
+                              ) AS attachments
+                       FROM public.chat_messages m
+                       LEFT JOIN public.chat_attachments a ON a.message_id = m.id
+                       WHERE m.conversation_id = %s
+                       GROUP BY m.id, m.conversation_id, m.sender_id, m.body, m.idempotency_key, m.created_at
+                       ORDER BY m.created_at DESC, m.id DESC
+                       LIMIT %s""",
+                    (conv_id, limit),
+                )
+            rows = [dict(r) for r in cur.fetchall()]
+            return list(reversed(rows))
+
+
+def _sqlite_get_messages_bundle(conv_id, uid, role, before_ts, before_id, limit):
+    with _sqlite_conn() as conn:
+        conv = conn.execute(
+            "SELECT id, user_id, advocate_id, status FROM chat_conversations WHERE id=?",
+            (conv_id,)
+        ).fetchone()
+        if not conv or not _is_participant(dict(conv), uid, role):
+            return None
+
+        if before_ts and before_id:
+            rows = conn.execute(
+                """SELECT * FROM chat_messages
+                   WHERE conversation_id=?
+                     AND (created_at < ? OR (created_at = ? AND id < ?))
+                   ORDER BY created_at DESC, id DESC
+                   LIMIT ?""",
+                (conv_id, before_ts, before_ts, before_id, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT * FROM chat_messages
+                   WHERE conversation_id=?
+                   ORDER BY created_at DESC, id DESC
+                   LIMIT ?""",
+                (conv_id, limit),
+            ).fetchall()
+        chronological = list(reversed([dict(r) for r in rows]))
+        if chronological:
+            mids = [m["id"] for m in chronological]
+            placeholders = ",".join("?" for _ in mids)
+            att_rows = conn.execute(
+                f"SELECT * FROM chat_attachments WHERE message_id IN ({placeholders}) ORDER BY created_at",
+                mids,
+            ).fetchall()
+            att_map = {}
+            for a in att_rows:
+                d = dict(a)
+                safe = {k: v for k, v in d.items() if k != "storage_key"}
+                att_map.setdefault(d["message_id"], []).append(safe)
+            for m in chronological:
+                m["attachments"] = att_map.get(m["id"], [])
+        else:
+            for m in chronological:
+                m["attachments"] = []
+        return chronological
 
 
 # ── Attachment operations ──────────────────────────────────────────────────────
@@ -573,8 +694,7 @@ def create_attachment(
 
 def _pg_create_attachment(att_id, msg_id, conv_id, by_, skey, fname, ctype, size, now):
     import psycopg2.extras
-    conn = get_pg_connection()
-    try:
+    with pg_connection_scope() as conn:
         with conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
@@ -585,8 +705,6 @@ def _pg_create_attachment(att_id, msg_id, conv_id, by_, skey, fname, ctype, size
                     (att_id, msg_id, conv_id, by_, skey, fname, ctype, size, now),
                 )
                 return dict(cur.fetchone())
-    finally:
-        conn.close()
 
 
 def _sqlite_create_attachment(att_id, msg_id, conv_id, by_, skey, fname, ctype, size, now):
@@ -611,17 +729,13 @@ def get_attachment(attachment_id: str) -> Optional[Dict[str, Any]]:
 
 def _pg_get_attachment(att_id: str) -> Optional[Dict[str, Any]]:
     import psycopg2.extras
-    conn = get_pg_connection()
-    try:
-        with conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute(
-                    "SELECT * FROM public.chat_attachments WHERE id=%s", (att_id,)
-                )
-                row = cur.fetchone()
-                return dict(row) if row else None
-    finally:
-        conn.close()
+    with pg_connection_scope() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM public.chat_attachments WHERE id=%s", (att_id,)
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
 
 
 def _sqlite_get_attachment(att_id: str) -> Optional[Dict[str, Any]]:
@@ -638,19 +752,53 @@ def list_attachments_for_message(message_id: str) -> List[Dict[str, Any]]:
     return _sqlite_list_attachments_for_message(message_id)
 
 
+def list_attachments_for_messages(message_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+    """Retrieve attachments for multiple messages in a single batched query."""
+    if not message_ids:
+        return {}
+    if is_postgres_authoritative():
+        return _pg_list_attachments_for_messages(message_ids)
+    return _sqlite_list_attachments_for_messages(message_ids)
+
+
+def _pg_list_attachments_for_messages(msg_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+    import psycopg2.extras
+    with pg_connection_scope() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM public.chat_attachments WHERE message_id = ANY(%s) ORDER BY created_at",
+                (msg_ids,),
+            )
+            res: Dict[str, List[Dict[str, Any]]] = {mid: [] for mid in msg_ids}
+            for r in cur.fetchall():
+                d = dict(r)
+                res.setdefault(d["message_id"], []).append(d)
+            return res
+
+
+def _sqlite_list_attachments_for_messages(msg_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+    placeholders = ",".join("?" for _ in msg_ids)
+    with _sqlite_conn() as conn:
+        rows = conn.execute(
+            f"SELECT * FROM chat_attachments WHERE message_id IN ({placeholders}) ORDER BY created_at",
+            msg_ids,
+        ).fetchall()
+        res: Dict[str, List[Dict[str, Any]]] = {mid: [] for mid in msg_ids}
+        for r in rows:
+            d = dict(r)
+            res.setdefault(d["message_id"], []).append(d)
+        return res
+
+
 def _pg_list_attachments_for_message(msg_id: str) -> List[Dict[str, Any]]:
     import psycopg2.extras
-    conn = get_pg_connection()
-    try:
-        with conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute(
-                    "SELECT * FROM public.chat_attachments WHERE message_id=%s ORDER BY created_at",
-                    (msg_id,),
-                )
-                return [dict(r) for r in cur.fetchall()]
-    finally:
-        conn.close()
+    with pg_connection_scope() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM public.chat_attachments WHERE message_id=%s ORDER BY created_at",
+                (msg_id,),
+            )
+            return [dict(r) for r in cur.fetchall()]
 
 
 def _sqlite_list_attachments_for_message(msg_id: str) -> List[Dict[str, Any]]:
@@ -678,8 +826,7 @@ def update_read_state(
 
 
 def _pg_update_read_state(conv_id, uid, msg_id, now):
-    conn = get_pg_connection()
-    try:
+    with pg_connection_scope() as conn:
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -692,8 +839,6 @@ def _pg_update_read_state(conv_id, uid, msg_id, now):
                                updated_at=EXCLUDED.updated_at""",
                     (conv_id, uid, msg_id, now, now),
                 )
-    finally:
-        conn.close()
 
 
 def _sqlite_update_read_state(conv_id, uid, msg_id, now):
@@ -718,24 +863,20 @@ def get_unread_count(conversation_id: str, user_id: str) -> int:
 
 
 def _pg_get_unread_count(conv_id: str, uid: str) -> int:
-    conn = get_pg_connection()
-    try:
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """SELECT COUNT(*) FROM public.chat_messages
-                       WHERE conversation_id=%s
-                         AND sender_id != %s
-                         AND created_at > COALESCE(
-                             (SELECT last_read_at FROM public.chat_participant_state
-                              WHERE conversation_id=%s AND user_id=%s),
-                             '1970-01-01T00:00:00Z'
-                         )""",
-                    (conv_id, uid, conv_id, uid),
-                )
-                return cur.fetchone()[0]
-    finally:
-        conn.close()
+    with pg_connection_scope() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT COUNT(*) FROM public.chat_messages
+                   WHERE conversation_id=%s
+                     AND sender_id != %s
+                     AND created_at > COALESCE(
+                         (SELECT last_read_at FROM public.chat_participant_state
+                          WHERE conversation_id=%s AND user_id=%s),
+                         '1970-01-01T00:00:00Z'
+                     )""",
+                (conv_id, uid, conv_id, uid),
+            )
+            return cur.fetchone()[0]
 
 
 def _sqlite_get_unread_count(conv_id: str, uid: str) -> int:

@@ -16,6 +16,7 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -29,13 +30,18 @@ export function LoginForm() {
       if (!googleAuth.user.profile_completed) {
         router.push('/profile/complete');
       } else {
-        router.push('/predictor');
+        const redirect = searchParams?.get('redirect');
+        if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+          router.push(redirect);
+        } else {
+          router.push(googleAuth.user.role === 'ADVOCATE' ? '/advocate/dashboard' : '/predictor');
+        }
       }
     }
     if (googleAuth.error) {
       setErrors({ general: googleAuth.error });
     }
-  }, [googleAuth.handled, googleAuth.error, router]);
+  }, [googleAuth.handled, googleAuth.error, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -61,8 +67,13 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      await loginUser(email, password);
-      router.push('/predictor');
+      const res = await loginUser(email, password);
+      const redirect = searchParams?.get('redirect');
+      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+        router.push(redirect);
+      } else {
+        router.push(res.user?.role === 'ADVOCATE' ? '/advocate/dashboard' : '/predictor');
+      }
     } catch (err: any) {
       setErrors({ general: err.message || 'Authentication failed. Please verify your credentials and try again.' });
     } finally {

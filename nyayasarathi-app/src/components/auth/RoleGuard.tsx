@@ -19,23 +19,39 @@ export function RoleGuard({ allowedRoles, portalName = 'Restricted Judicial Port
   const [isVerifying, setIsVerifying] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
+  const rolesKey = allowedRoles.slice().sort().join(',');
+
   useEffect(() => {
     let isMounted = true;
 
     async function checkAuth() {
       const cached = getUser();
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '';
+      const loginUrl = currentPath ? `/login?redirect=${encodeURIComponent(currentPath)}` : '/login';
+
       if (!cached) {
-        router.push('/login');
+        setIsVerifying(false);
+        router.replace(loginUrl);
         return;
       }
 
-      // Verify with server to defeat stale JWTs and demotion
+      // Fast-path: check cached user role immediately
+      const cachedRole = (cached.role || 'USER').toUpperCase();
+      const hasInitialPermission = allowedRoles.map((r) => r.toUpperCase()).includes(cachedRole);
+      if (hasInitialPermission) {
+        setCurrentUser(cached);
+        setIsAuthorized(true);
+        setIsVerifying(false);
+      }
+
+      // Verify with server to defeat stale JWTs and demotion in background
       try {
         const freshUser = await fetchMe();
         if (!isMounted) return;
 
         if (!freshUser) {
-          router.push('/login');
+          setIsVerifying(false);
+          router.replace(loginUrl);
           return;
         }
 
@@ -45,7 +61,10 @@ export function RoleGuard({ allowedRoles, portalName = 'Restricted Judicial Port
         setIsAuthorized(hasPermission);
       } catch {
         if (!isMounted) return;
-        router.push('/login');
+        if (!hasInitialPermission) {
+          setIsVerifying(false);
+          router.replace(loginUrl);
+        }
       } finally {
         if (isMounted) {
           setIsVerifying(false);
@@ -58,7 +77,7 @@ export function RoleGuard({ allowedRoles, portalName = 'Restricted Judicial Port
     return () => {
       isMounted = false;
     };
-  }, [router, allowedRoles]);
+  }, [router, rolesKey]);
 
   if (isVerifying) {
     return (

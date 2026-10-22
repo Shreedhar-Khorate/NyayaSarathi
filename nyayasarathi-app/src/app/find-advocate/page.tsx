@@ -35,12 +35,14 @@ import {
 import { UserAvatar } from '@/components/ui/UserAvatar';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
+const ALLOWED_ROLES = ['USER', 'ADVOCATE', 'ADMIN'];
+let memoryAdvocatesCache: AdvocateProfile[] | null = null;
 
 export default function FindAdvocatePage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [advocates, setAdvocates] = useState<AdvocateProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [advocates, setAdvocates] = useState<AdvocateProfile[]>(() => memoryAdvocatesCache || []);
+  const [loading, setLoading] = useState(() => !memoryAdvocatesCache);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [initiatingId, setInitiatingId] = useState<string | null>(null);
@@ -52,13 +54,19 @@ export default function FindAdvocatePage() {
   }, []);
 
   const loadAdvocates = async () => {
-    setLoading(true);
+    if (!memoryAdvocatesCache) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const res = await fetchAdvocates();
-      setAdvocates(res.advocates || []);
+      const list = res.advocates || [];
+      memoryAdvocatesCache = list;
+      setAdvocates(list);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load advocate directory.');
+      if (!memoryAdvocatesCache) {
+        setError(err instanceof Error ? err.message : 'Failed to load advocate directory.');
+      }
     } finally {
       setLoading(false);
     }
@@ -98,7 +106,7 @@ export default function FindAdvocatePage() {
   }, [advocates, searchQuery]);
 
   return (
-    <RoleGuard allowedRoles={['USER', 'ADVOCATE', 'ADMIN']} portalName="Find an Advocate">
+    <RoleGuard allowedRoles={ALLOWED_ROLES} portalName="Find an Advocate">
       <div className="min-h-screen bg-[#151716] pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         {/* Ambient glow backgrounds */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">

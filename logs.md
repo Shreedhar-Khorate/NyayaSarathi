@@ -575,3 +575,44 @@ Ran automated live integration script `test_live_supabase_e2e.py` against produc
   - [x] Existing application functionality and routes preserved intact.
   - [x] All automated checks executed: 45 pytest tests passed, 0 TypeScript compilation errors.
   - [x] Every milestone documented sequentially in `logs.md` without truncation or overwriting.
+
+---
+
+### Post-Handover Performance & Bug Resolution
+
+- **Issues Diagnosed:**
+  1. `/find-advocate` slow loading: In `RoleGuard.tsx`, the `allowedRoles` array was passed as a literal in JSX, triggering `useEffect` on every render and continuously calling `fetchMe()` in a loop.
+  2. In `nyayasarathi-app/src/app/chat/page.tsx`, `selectConversation` and `startPolling` depended dynamically on `messages`, which caused an infinite re-fetch loop whenever `?conversationId=...` was present in the URL.
+  3. In `backend/routers/chat.py` and `backend/services/chat_repository.py`, `get_messages` executed an N+1 query: for each message in the thread, a separate connection to Supabase cloud was opened to fetch attachments (30 queries = ~12s).
+- **Fixes Implemented:**
+  1. `RoleGuard.tsx`: Added fast-path check with cached user and stabilized the role dependency using a string key (`rolesKey`) to eliminate redundant `fetchMe()` cycles.
+  2. `nyayasarathi-app/src/app/find-advocate/page.tsx`: Added memory caching (`memoryAdvocatesCache`) for instant zero-delay rendering on revisits, plus constant `ALLOWED_ROLES`.
+  3. `nyayasarathi-app/src/app/chat/page.tsx`: Introduced `messagesRef` to eliminate dynamic dependencies from `startPolling`, stabilized `selectConversation`, and added `initialLoadedRef` to eliminate the infinite re-fetch loop on query parameters.
+  4. `backend/services/chat_repository.py` & `backend/routers/chat.py`: Implemented `list_attachments_for_messages()` to batch-fetch attachments for all messages in a single query (`WHERE message_id = ANY(%s)`), dropping database latency from ~12s down to <0.6s.
+- **Verification Results:**
+  - `python -m pytest tests/test_chat.py tests/test_chat_api.py -v`: **45 passed in 5.82s** (down from 22.12s, 4x speedup).
+  - `npx tsc --noEmit`: **Exit code 0, 0 errors**.
+  - Live E2E workflow: **All checks passed with thread `62f5633c-5cb0-4895-87ed-41b5f52c7f93`**.
+  - Live Browser Subagent Execution: Successfully logged into `user@nyayasarathi.in`, navigated `/find-advocate`, rendered counsel cards with zero delay, clicked "Chat with Advocate" on Adv. Meera Sen, loaded the chat room, sent a test message, and verified immediate message rendering and timestamping.
+
+---
+
+### Performance & Load Time Optimization — Deep Latency Elimination
+
+- **Root Causes Diagnosed:**
+  1. *Repeated TLS/TCP Handshake Overhead:* Multiple database operations across `chat_repository.py` and `user_repository.py` were opening and closing separate raw `psycopg2.connect()` connections to Supabase PostgreSQL in Tokyo (`aws-0-ap-northeast-1`). Each connection incurred ~800ms of SSL negotiation latency.
+  2. *Blocking Realtime Event Dispatch:* `send_message` was executing a synchronous `requests.post` call to the Supabase Realtime broadcast endpoint, adding 1.5–2.0s of delay before returning HTTP 201 to the client.
+  3. *Multi-Step Network Roundtrips on Message Loading:* Fetching a conversation's messages required 3 sequential roundtrips (participant check, message rows query, attachment rows query), accumulating network latency.
+- **Engineering Optimizations Implemented:**
+  1. *Full Connection Pool Adoption:* Replaced all unpooled `get_pg_connection()` calls across `chat_repository.py` (`_pg_get_or_create_conversation`, `_pg_get_conversation`, `_pg_create_message`, `_pg_create_attachment`, `_pg_get_attachment`, `_pg_list_attachments_for_messages`, `_pg_list_attachments_for_message`, `_pg_update_read_state`, `_pg_get_unread_count`) and `user_repository.py` (`get_user_by_email`, `get_user_by_google_sub`) with `@contextmanager pg_connection_scope()`. All operations now reuse warm, persistent connections.
+  2. *Background Realtime Dispatch:* Migrated `_publish_realtime_event` in `backend/routers/chat.py` to FastAPI `BackgroundTasks`. The client message send response returns immediately without blocking on external HTTP broadcast requests.
+  3. *Single-Roundtrip SQL with JSON Aggregation:* Refactored `_pg_get_messages_bundle` to fetch paginated messages and associated attachments in a single query using PostgreSQL `json_agg` and `json_build_object`. Sensitive fields (`storage_key`) remain excluded at the SQL projection level.
+- **Measured Performance Benchmarks (Live Supabase):**
+  - `GET /api/chat/advocates`: **0.40s** (previously 2.44s, **6x speedup**).
+  - `GET /api/chat/conversations`: **0.40s** (previously 3.20s, **8x speedup**).
+  - `GET /api/chat/conversations/{id}/messages`: **0.55s** (previously 2.76s, **5x speedup**).
+  - `POST /api/chat/conversations/{id}/messages`: **0.95s** (previously 3.56s, **3.7x speedup**).
+  - `POST /api/chat/conversations/{id}/read`: **0.83s** (previously 2.05s, **2.5x speedup**).
+- **Automated Verification:**
+  - Backend Pytest Suite: `python -m pytest tests/test_chat.py tests/test_chat_api.py -v` -> **45 passed in 4.52s** (down from 22.12s, **4.9x overall speedup**).
+  - Frontend Typecheck: `npx tsc --noEmit` -> **Exit code 0, 0 errors**.

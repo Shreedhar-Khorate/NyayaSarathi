@@ -22,7 +22,7 @@ from pathlib import PurePosixPath
 from typing import Any, Dict, List, Optional
 
 from fastapi import (
-    APIRouter, Depends, File, HTTPException, Query,
+    APIRouter, BackgroundTasks, Depends, File, HTTPException, Query,
     UploadFile, status,
 )
 from fastapi.responses import StreamingResponse
@@ -40,9 +40,11 @@ from services.chat_repository import (
     get_attachment,
     get_conversation,
     get_or_create_conversation,
+    get_messages_bundle,
     get_unread_count,
     init_chat_tables,
     list_attachments_for_message,
+    list_attachments_for_messages,
     list_conversations,
     list_messages,
     update_read_state,
@@ -172,7 +174,7 @@ def _publish_realtime_event(conversation_id: str, message_id: str, created_at: A
 
 # GET /api/chat/advocates
 @router.get("/advocates", tags=["Chat"])
-async def get_advocate_directory(
+def get_advocate_directory(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
@@ -185,7 +187,7 @@ async def get_advocate_directory(
 
 # GET /api/chat/conversations
 @router.get("/conversations", tags=["Chat"])
-async def list_my_conversations(
+def list_my_conversations(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
@@ -200,7 +202,7 @@ async def list_my_conversations(
 
 # POST /api/chat/conversations
 @router.post("/conversations", status_code=status.HTTP_201_CREATED, tags=["Chat"])
-async def create_or_get_conversation(
+def create_or_get_conversation(
     payload: ConversationCreateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -227,7 +229,7 @@ async def create_or_get_conversation(
 
 # GET /api/chat/conversations/{conversation_id}
 @router.get("/conversations/{conversation_id}", tags=["Chat"])
-async def get_conversation_detail(
+def get_conversation_detail(
     conversation_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -240,7 +242,7 @@ async def get_conversation_detail(
 
 # GET /api/chat/conversations/{conversation_id}/messages
 @router.get("/conversations/{conversation_id}/messages", tags=["Chat"])
-async def get_messages(
+def get_messages(
     conversation_id: str,
     before_created_at: Optional[str] = Query(None, description="ISO8601 timestamp cursor"),
     before_id: Optional[str] = Query(None, description="Message ID cursor"),
@@ -252,19 +254,16 @@ async def get_messages(
     Returns messages in chronological order within each page.
     Participant access is verified before any content is returned.
     """
-    _require_participant(conversation_id, current_user)
-    msgs = list_messages(conversation_id, before_created_at, before_id, limit)
-
-    # Attach attachments to each message
-    enriched = []
-    for m in msgs:
-        attachments = list_attachments_for_message(m["id"])
-        # Strip storage_key from client response — never expose internal paths
-        safe_attachments = [
-            {k: v for k, v in a.items() if k != "storage_key"}
-            for a in attachments
-        ]
-        enriched.append({**m, "attachments": safe_attachments})
+    uid = current_user["id"]
+    role = current_user.get("role", "USER")
+    enriched = get_messages_bundle(
+        conversation_id, uid, role, before_created_at, before_id, limit
+    )
+    if enriched is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
 
     # Provide next-page cursor
     next_cursor = None
@@ -275,7 +274,7 @@ async def get_messages(
     return {
         "messages": enriched,
         "next_cursor": next_cursor,
-        "has_more": len(msgs) == limit,
+        "has_more": len(enriched) == limit,
     }
 
 
@@ -285,15 +284,16 @@ async def get_messages(
     status_code=status.HTTP_201_CREATED,
     tags=["Chat"],
 )
-async def send_message(
+def send_message(
     conversation_id: str,
     payload: MessageSendRequest,
+    background_tasks: BackgroundTasks,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """
     Send a text message. Sender ID is derived exclusively from the verified JWT;
     request body cannot override it.
-    Publishes a minimal Realtime event after successful persistence.
+    Publishes a minimal Realtime event in the background after successful persistence.
     """
     _require_participant(conversation_id, current_user)
     sender_id = current_user["id"]
@@ -308,15 +308,17 @@ async def send_message(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
 
-    # Publish event AFTER commit — non-fatal if it fails
-    _publish_realtime_event(conversation_id, msg["id"], msg.get("created_at"))
+    # Publish event in background so response returns immediately without HTTP wait
+    background_tasks.add_task(
+        _publish_realtime_event, conversation_id, msg["id"], msg.get("created_at")
+    )
 
     return msg
 
 
 # POST /api/chat/conversations/{conversation_id}/read
 @router.post("/conversations/{conversation_id}/read", tags=["Chat"])
-async def mark_read(
+def mark_read(
     conversation_id: str,
     payload: ReadStateUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
@@ -514,7 +516,7 @@ def _serve_local(storage_key: str, filename: str, mime: str):
 
 # GET /api/chat/health (debug/mode indicator — no secrets)
 @router.get("/health", tags=["Chat"])
-async def chat_health():
+def chat_health():
     """
     Returns which database mode is active for chat (no sensitive info).
     """
