@@ -40,6 +40,14 @@ export const metadata: Metadata = {
   title: 'NyayaSarathi — AI-Powered Judicial Case Intelligence',
   description:
     'NyayaSarathi is an AI-powered judicial case intelligence and decision support system — hybrid RAG search, judgment summarization, and verifiable legal citations.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
 };
 
 import SmoothScroll from '@/components/layout/SmoothScroll';

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Scale } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Loading() {
   return (
@@ -14,19 +14,27 @@ export default function Loading() {
       </div>
 
       <div className="relative flex flex-col items-center gap-10">
-        {/* Scales of Justice — slow, dignified tilt */}
+        {/* Official NyayaSarathi Emblem — slow dignified pulse */}
         <motion.div
           animate={{
-            rotate: [-5, 5, -5],
-            y: [-2, 2, -2],
+            scale: [0.96, 1.04, 0.96],
+            opacity: [0.85, 1, 0.85],
           }}
           transition={{
-            rotate: { duration: 4.5, ease: 'easeInOut', repeat: Infinity },
-            y: { duration: 2.25, ease: 'easeInOut', repeat: Infinity },
+            duration: 3,
+            ease: 'easeInOut',
+            repeat: Infinity,
           }}
-          className="text-[#B59A68] opacity-80"
+          className="relative w-20 h-20"
         >
-          <Scale size={56} strokeWidth={1.2} />
+          <Image
+            src="/logo-transparent.png"
+            alt="NyayaSarathi Emblem"
+            width={80}
+            height={80}
+            className="w-full h-full object-contain drop-shadow-[0_4px_24px_rgba(181,154,104,0.4)]"
+            priority
+          />
         </motion.div>
 
         <div className="flex flex-col items-center gap-4">

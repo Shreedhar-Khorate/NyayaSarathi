@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import AuthBrandPanel from './AuthBrandPanel';
 import Link from 'next/link';
-import { Scale } from 'lucide-react';
+import Image from 'next/image';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -30,8 +30,15 @@ export function AuthLayout({ children, activeTab = 'login' }: AuthLayoutProps) {
             href="/"
             className="flex items-center gap-2.5 group focus:outline-none focus:ring-1 focus:ring-[#B59A68] rounded px-1"
           >
-            <div className="w-6 h-6 rounded-full bg-[#1D211F] border border-[#B59A68]/40 flex items-center justify-center transition-colors group-hover:border-[#B59A68]">
-              <Scale className="w-3.5 h-3.5 text-[#B59A68]" strokeWidth={1.5} />
+            <div className="w-7 h-7 rounded-full bg-[#1D211F] border border-[#B59A68]/40 flex items-center justify-center p-0.5 transition-colors group-hover:border-[#B59A68]">
+              <Image
+                src="/logo-transparent.png"
+                alt="NyayaSarathi Logo"
+                width={22}
+                height={22}
+                className="w-full h-full object-contain"
+                priority
+              />
             </div>
             <span className="font-display text-sm sm:text-base font-semibold tracking-wider text-[#F4EFE5]">
               NyayaSarathi

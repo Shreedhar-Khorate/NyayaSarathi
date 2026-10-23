@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Scale, Menu, X, ArrowUpRight, User, Users, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { getUser, type UserProfile } from '@/lib/auth';
@@ -59,9 +60,13 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0 group mr-2 xl:mr-4">
-            <Scale
-              className="h-[18px] w-[18px] text-[#B59A68] transition-opacity duration-200 group-hover:opacity-70"
-              strokeWidth={1.5}
+            <Image
+              src="/logo-transparent.png"
+              alt="NyayaSarathi Logo"
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain drop-shadow-[0_2px_10px_rgba(181,154,104,0.35)] transition-transform duration-200 group-hover:scale-105"
+              priority
             />
             <span
               className="font-display text-[1.05rem] font-semibold text-ivory/95"
@@ -358,7 +363,13 @@ export function Footer() {
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-10 px-6 md:flex-row md:items-center">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <Scale className="h-4 w-4 text-[#B59A68]" strokeWidth={1.4} />
+            <Image
+              src="/logo-transparent.png"
+              alt="NyayaSarathi Logo"
+              width={24}
+              height={24}
+              className="h-6 w-6 object-contain drop-shadow-[0_2px_8px_rgba(181,154,104,0.3)]"
+            />
             <span className="font-display text-lg font-semibold text-ivory">NyayaSarathi</span>
           </div>
           <p className="font-legal italic text-sm text-stone/70 mt-1">
