@@ -19,6 +19,7 @@ import {
   LogOut,
   Menu,
   X,
+  Home,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -28,6 +29,38 @@ import { getUser, removeAuth, type UserProfile } from '@/lib/auth';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
+
+// ── Page label map for breadcrumb / mobile header ────────────────────
+const PAGE_LABELS: Record<string, string> = {
+  '/': 'Home',
+  '/legal-research': 'Research Hub',
+  '/find-advocate': 'Find Advocate',
+  '/news': 'Legal News',
+  '/predictor': 'Judgment Predictor',
+  '/war-room': 'War Room',
+  '/legal-drafting': 'Legal Drafting',
+  '/contracts': 'Contract Analyzer',
+  '/ocr': 'Legal OCR',
+  '/profile': 'My Profile',
+  '/messages': 'Messages',
+  '/chat': 'AI Chat',
+  '/admin/dashboard': 'Admin Dashboard',
+  '/admin/users': 'User Management',
+  '/admin/audit-logs': 'Audit Logs',
+  '/advocate/dashboard': 'Advocate Dashboard',
+  '/advocate/activity': 'My Activity',
+  '/login': 'Sign In',
+  '/signup': 'Get Started',
+};
+
+function getPageLabel(pathname: string): string {
+  if (PAGE_LABELS[pathname]) return PAGE_LABELS[pathname];
+  // Prefix fallback for deep routes
+  if (pathname.startsWith('/admin')) return 'Admin Portal';
+  if (pathname.startsWith('/advocate')) return 'Advocate Portal';
+  if (pathname.startsWith('/profile')) return 'Profile';
+  return 'NyayaSarathi';
+}
 
 // ── AI Intelligence Suite Feature Modules ─────────────────────────────
 const AI_SUITE_MODULES = [
@@ -83,6 +116,13 @@ const DIRECT_LINKS = [
   },
 ];
 
+// ── Active underline indicator ────────────────────────────────────────
+function ActiveDot() {
+  return (
+    <span className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#B59A68]" />
+  );
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -133,6 +173,13 @@ export function Navbar() {
   }, []);
 
   const isAiSuiteActive = AI_SUITE_MODULES.some(m => pathname.startsWith(m.href));
+  const isAdminActive = pathname.startsWith('/admin');
+  const isAdvocateActive = pathname.startsWith('/advocate');
+  const isProfileActive = pathname === '/profile';
+  const isMessagesActive = pathname === '/messages';
+  const isHomeActive = pathname === '/';
+
+  const pageLabel = getPageLabel(pathname);
 
   const handleSignOut = () => {
     removeAuth();
@@ -147,15 +194,16 @@ export function Navbar() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: EASE }}
-        className={`fixed inset-x-0 top-0 z-50 py-2.5 transition-all duration-300 ${
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
           scrolled
             ? 'bg-[#151716]/85 backdrop-blur-2xl shadow-xl shadow-black/50 border-b border-[#3B3A33]/70'
             : 'bg-[#151716]/40 backdrop-blur-md border-b border-[#3B3A33]/30'
         }`}
       >
-        <div className="mx-auto flex w-full max-w-[1520px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* ── Main header row ─────────────────────────────────────── */}
+        <div className="mx-auto flex w-full max-w-[1520px] items-center justify-between px-4 sm:px-6 lg:px-8 py-2.5">
 
-          {/* ── Brand Logo ────────────────────────────────────────────── */}
+          {/* ── Brand Logo ────────────────────────────────────────── */}
           <Link
             href="/"
             className="flex items-center gap-3 shrink-0 group focus:outline-none"
@@ -181,11 +229,26 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* ── Desktop Primary Navigation (Clean & Un-nested) ─────────── */}
+          {/* ── Desktop Primary Navigation ─────────────────────────── */}
           <nav
             className="hidden lg:flex items-center gap-1 xl:gap-2 rounded-full border border-[#B59A68]/20 bg-gradient-to-r from-[#151716]/60 via-[#1D211F]/40 to-[#151716]/60 backdrop-blur-xl px-2.5 py-1.5 shadow-lg shadow-black/30"
             aria-label="Main navigation"
           >
+            {/* Home */}
+            <Link
+              href="/"
+              aria-current={isHomeActive ? 'page' : undefined}
+              className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 font-sans text-xs font-medium transition-all duration-200 ${
+                isHomeActive
+                  ? 'text-[#B59A68] bg-[#B59A68]/15 border border-[#B59A68]/30 font-semibold shadow-sm'
+                  : 'text-stone/85 hover:text-ivory hover:bg-white/[0.04] border border-transparent'
+              }`}
+            >
+              <Home className="w-3 h-3" />
+              <span>Home</span>
+              {isHomeActive && <ActiveDot />}
+            </Link>
+
             {/* AI Intelligence Suite Dropdown Trigger */}
             <div
               ref={aiMenuRef}
@@ -196,12 +259,13 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setAiMenuOpen(prev => !prev)}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1 font-sans text-xs font-medium transition-all duration-200 focus:outline-none ${
-                  isAiSuiteActive || aiMenuOpen
-                    ? 'text-[#B59A68] bg-[#B59A68]/15 border border-[#B59A68]/30 font-semibold shadow-sm'
-                    : 'text-stone/85 hover:text-ivory hover:bg-white/[0.04]'
-                }`}
                 aria-expanded={aiMenuOpen}
+                aria-current={isAiSuiteActive ? 'page' : undefined}
+                className={`relative flex items-center gap-1.5 rounded-full px-3 py-1 font-sans text-xs font-medium transition-all duration-200 focus:outline-none border ${
+                  isAiSuiteActive || aiMenuOpen
+                    ? 'text-[#B59A68] bg-[#B59A68]/15 border-[#B59A68]/30 font-semibold shadow-sm'
+                    : 'text-stone/85 hover:text-ivory hover:bg-white/[0.04] border-transparent'
+                }`}
               >
                 <Scale className="w-3.5 h-3.5 text-[#B59A68]" strokeWidth={1.5} />
                 <span>Judicial Suite</span>
@@ -210,6 +274,7 @@ export function Navbar() {
                     aiMenuOpen ? 'rotate-180' : ''
                   }`}
                 />
+                {isAiSuiteActive && <ActiveDot />}
               </button>
 
               {/* Dropdown Menu Card */}
@@ -233,12 +298,13 @@ export function Navbar() {
                       <div className="flex flex-col gap-0.5">
                         {AI_SUITE_MODULES.map(module => {
                           const Icon = module.icon;
-                          const isActive = pathname === module.href;
+                          const isActive = pathname === module.href || pathname.startsWith(module.href + '/');
                           return (
                             <Link
                               key={module.href}
                               href={module.href}
                               onClick={() => setAiMenuOpen(false)}
+                              aria-current={isActive ? 'page' : undefined}
                               className={`group flex items-center justify-between rounded-xl px-3 py-2 transition-all duration-150 border ${
                                 isActive
                                   ? 'bg-[#B59A68]/15 border-[#B59A68]/30'
@@ -246,11 +312,17 @@ export function Navbar() {
                               }`}
                             >
                               <div className="flex items-center gap-3 min-w-0">
-                                <div className="w-7 h-7 rounded-lg bg-[#151716] border border-[#3B3A33] flex items-center justify-center shrink-0 text-[#B59A68] transition-colors group-hover:border-[#B59A68]/50 group-hover:text-ivory shadow-sm">
+                                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm ${
+                                  isActive
+                                    ? 'bg-[#B59A68]/20 border-[#B59A68]/50 text-[#B59A68]'
+                                    : 'bg-[#151716] border-[#3B3A33] text-[#B59A68] group-hover:border-[#B59A68]/50 group-hover:text-ivory'
+                                }`}>
                                   <Icon className="w-3.5 h-3.5" strokeWidth={1.5} />
                                 </div>
                                 <div className="flex flex-col min-w-0">
-                                  <span className="font-sans text-xs font-semibold text-ivory group-hover:text-[#B59A68] transition-colors leading-tight">
+                                  <span className={`font-sans text-xs font-semibold transition-colors leading-tight ${
+                                    isActive ? 'text-[#B59A68]' : 'text-ivory group-hover:text-[#B59A68]'
+                                  }`}>
                                     {module.title}
                                   </span>
                                   <span className="font-sans text-[11px] text-stone/60 truncate mt-0.5">
@@ -258,7 +330,13 @@ export function Navbar() {
                                   </span>
                                 </div>
                               </div>
-                              <ChevronRight className="w-3.5 h-3.5 text-stone/40 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[#B59A68] shrink-0 ml-2" />
+                              {isActive ? (
+                                <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#B59A68] bg-[#B59A68]/10 border border-[#B59A68]/30 rounded-full px-1.5 py-0.5 shrink-0 ml-2">
+                                  Active
+                                </span>
+                              ) : (
+                                <ChevronRight className="w-3.5 h-3.5 text-stone/40 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[#B59A68] shrink-0 ml-2" />
+                              )}
                             </Link>
                           );
                         })}
@@ -271,15 +349,16 @@ export function Navbar() {
 
             {/* Direct Primary Links */}
             {DIRECT_LINKS.map(link => {
-              const isActive = pathname === link.href;
+              const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 font-sans text-xs font-medium transition-all duration-200 ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 font-sans text-xs font-medium transition-all duration-200 border ${
                     isActive
-                      ? 'text-[#B59A68] bg-[#B59A68]/15 border border-[#B59A68]/30 font-semibold shadow-sm'
-                      : 'text-stone/85 hover:text-ivory hover:bg-white/[0.04]'
+                      ? 'text-[#B59A68] bg-[#B59A68]/15 border-[#B59A68]/30 font-semibold shadow-sm'
+                      : 'text-stone/85 hover:text-ivory hover:bg-white/[0.04] border-transparent'
                   }`}
                 >
                   <span>{link.label}</span>
@@ -289,21 +368,27 @@ export function Navbar() {
                       <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                     </span>
                   )}
+                  {isActive && <ActiveDot />}
                 </Link>
               );
             })}
           </nav>
 
-          {/* ── Desktop Right Controls (Portal, Messages, Profile / Auth) ─ */}
+          {/* ── Desktop Right Controls ─────────────────────────────── */}
           <div className="hidden lg:flex items-center gap-2.5 shrink-0">
             {currentUser ? (
               <div className="flex items-center gap-2">
-                {/* Role Specific Operations Badge */}
+                {/* Role Specific Portal Badge */}
                 {currentUser.role === 'ADMIN' && (
                   <Link
                     href="/admin/dashboard"
                     id="nav-admin-portal-btn"
-                    className="flex items-center gap-1.5 rounded-full border border-[#B59A68]/45 bg-gradient-to-r from-[#6E2634]/35 to-[#8A3545]/20 px-3 py-1.5 font-sans text-xs font-semibold text-[#B59A68] hover:border-[#B59A68] hover:bg-[#6E2634]/55 transition-all shadow-sm whitespace-nowrap"
+                    aria-current={isAdminActive ? 'page' : undefined}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-sans text-xs font-semibold transition-all shadow-sm whitespace-nowrap ${
+                      isAdminActive
+                        ? 'border-[#B59A68] bg-[#6E2634]/60 text-[#B59A68]'
+                        : 'border-[#B59A68]/45 bg-gradient-to-r from-[#6E2634]/35 to-[#8A3545]/20 text-[#B59A68] hover:border-[#B59A68] hover:bg-[#6E2634]/55'
+                    }`}
                   >
                     <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
                     <span>Admin Portal</span>
@@ -314,19 +399,29 @@ export function Navbar() {
                   <Link
                     href="/advocate/dashboard"
                     id="nav-advocate-portal-btn"
-                    className="flex items-center gap-1.5 rounded-full border border-[#B59A68]/50 bg-[#242925] px-3 py-1.5 font-sans text-xs font-semibold text-[#B59A68] hover:bg-[#2e3530] hover:border-[#B59A68] transition-all shadow-sm whitespace-nowrap"
+                    aria-current={isAdvocateActive ? 'page' : undefined}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-sans text-xs font-semibold transition-all shadow-sm whitespace-nowrap ${
+                      isAdvocateActive
+                        ? 'border-[#B59A68] bg-[#2e3530] text-[#B59A68]'
+                        : 'border-[#B59A68]/50 bg-[#242925] text-[#B59A68] hover:bg-[#2e3530] hover:border-[#B59A68]'
+                    }`}
                   >
                     <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
                     <span>Advocate Portal</span>
                   </Link>
                 )}
 
-                {/* Direct Messages Icon with indicator */}
+                {/* Messages icon */}
                 <Link
                   href="/messages"
                   id="nav-user-messages-btn"
                   title="Messages & Consultations"
-                  className="relative p-2 rounded-full border border-[#3B3A33]/70 bg-[#1D211F]/70 text-stone/80 hover:text-ivory hover:border-[#B59A68]/40 hover:bg-white/[0.06] transition-colors"
+                  aria-current={isMessagesActive ? 'page' : undefined}
+                  className={`relative p-2 rounded-full border transition-colors ${
+                    isMessagesActive
+                      ? 'border-[#B59A68]/60 bg-[#B59A68]/10 text-[#B59A68]'
+                      : 'border-[#3B3A33]/70 bg-[#1D211F]/70 text-stone/80 hover:text-ivory hover:border-[#B59A68]/40 hover:bg-white/[0.06]'
+                  }`}
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#B59A68] ring-2 ring-[#151716]" />
@@ -338,7 +433,12 @@ export function Navbar() {
                     type="button"
                     id="nav-profile-menu-btn"
                     onClick={() => setUserMenuOpen(prev => !prev)}
-                    className="flex items-center gap-2 rounded-full border border-[#3B3A33] bg-gradient-to-b from-[#1D211F] to-[#151716] pl-1 pr-3 py-1 font-sans text-xs font-medium text-ivory hover:border-[#B59A68]/50 transition-colors whitespace-nowrap focus:outline-none"
+                    aria-expanded={userMenuOpen}
+                    className={`flex items-center gap-2 rounded-full border pl-1 pr-3 py-1 font-sans text-xs font-medium transition-colors whitespace-nowrap focus:outline-none ${
+                      isProfileActive || userMenuOpen
+                        ? 'border-[#B59A68]/60 bg-[#B59A68]/10 text-ivory'
+                        : 'border-[#3B3A33] bg-gradient-to-b from-[#1D211F] to-[#151716] text-ivory hover:border-[#B59A68]/50'
+                    }`}
                   >
                     <UserAvatar
                       avatarUrl={currentUser.avatar_url}
@@ -388,10 +488,36 @@ export function Navbar() {
                               href="/profile"
                               id="nav-profile-link"
                               onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-xs text-stone/80 hover:text-ivory hover:bg-white/[0.05] transition-colors"
+                              aria-current={isProfileActive ? 'page' : undefined}
+                              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-xs transition-colors ${
+                                isProfileActive
+                                  ? 'text-[#B59A68] bg-[#B59A68]/10'
+                                  : 'text-stone/80 hover:text-ivory hover:bg-white/[0.05]'
+                              }`}
                             >
                               <User className="w-3.5 h-3.5 text-[#B59A68]" />
                               <span>View Profile</span>
+                              {isProfileActive && (
+                                <span className="ml-auto text-[9px] font-mono font-bold text-[#B59A68] uppercase tracking-widest">now</span>
+                              )}
+                            </Link>
+
+                            <Link
+                              href="/messages"
+                              id="nav-messages-link"
+                              onClick={() => setUserMenuOpen(false)}
+                              aria-current={isMessagesActive ? 'page' : undefined}
+                              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-xs transition-colors ${
+                                isMessagesActive
+                                  ? 'text-[#B59A68] bg-[#B59A68]/10'
+                                  : 'text-stone/80 hover:text-ivory hover:bg-white/[0.05]'
+                              }`}
+                            >
+                              <MessageSquare className="w-3.5 h-3.5 text-[#B59A68]" />
+                              <span>Messages</span>
+                              {isMessagesActive && (
+                                <span className="ml-auto text-[9px] font-mono font-bold text-[#B59A68] uppercase tracking-widest">now</span>
+                              )}
                             </Link>
 
                             <button
@@ -415,7 +541,10 @@ export function Navbar() {
                 <Link
                   href="/login"
                   id="nav-signin-btn"
-                  className="font-sans text-xs font-semibold text-stone/80 hover:text-ivory px-3 py-1.5 transition-colors"
+                  aria-current={pathname === '/login' ? 'page' : undefined}
+                  className={`font-sans text-xs font-semibold px-3 py-1.5 transition-colors ${
+                    pathname === '/login' ? 'text-[#B59A68]' : 'text-stone/80 hover:text-ivory'
+                  }`}
                 >
                   {t('nav.signIn')}
                 </Link>
@@ -434,8 +563,14 @@ export function Navbar() {
             )}
           </div>
 
-          {/* ── Mobile Hamburger Toggle (< lg) ────────────────────────── */}
+          {/* ── Mobile: page label + hamburger ─────────────────────── */}
           <div className="flex items-center gap-2 lg:hidden">
+            {/* Current page label chip */}
+            {pathname !== '/' && (
+              <span className="hidden sm:flex items-center gap-1.5 rounded-full border border-[#B59A68]/30 bg-[#B59A68]/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#B59A68]">
+                {pageLabel}
+              </span>
+            )}
             <button
               type="button"
               id="nav-mobile-toggle"
@@ -469,6 +604,28 @@ export function Navbar() {
             </button>
           </div>
         </div>
+
+        {/* ── Mobile breadcrumb strip (xs only — shows current page label) ── */}
+        <AnimatePresence>
+          {!mobileOpen && pathname !== '/' && (
+            <motion.div
+              key="breadcrumb"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden border-t border-[#3B3A33]/40 bg-[#151716]/60 px-4 py-1.5 flex items-center gap-1.5"
+            >
+              <Link href="/" className="font-mono text-[9px] uppercase tracking-widest text-stone/50 hover:text-stone/80 transition-colors">
+                Home
+              </Link>
+              <ChevronRight className="w-2.5 h-2.5 text-stone/30" />
+              <span className="font-mono text-[9px] uppercase tracking-widest text-[#B59A68] font-semibold">
+                {pageLabel}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.header>
 
       {/* ── Mobile Drawer (< lg) ────────────────────────────────────── */}
@@ -483,6 +640,13 @@ export function Navbar() {
           >
             <div className="mx-auto max-w-xl px-5 py-6 space-y-6">
 
+              {/* Current page indicator banner */}
+              <div className="flex items-center gap-2 rounded-xl border border-[#B59A68]/25 bg-[#B59A68]/08 px-4 py-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#B59A68] animate-pulse" />
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[#B59A68]/70">Currently viewing</span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[#B59A68] font-semibold ml-1">{pageLabel}</span>
+              </div>
+
               {/* Section 1: AI Intelligence Suite */}
               <div>
                 <p className="font-sans text-[11px] font-semibold uppercase tracking-wider text-[#B59A68] mb-2.5">
@@ -491,12 +655,13 @@ export function Navbar() {
                 <div className="grid grid-cols-1 gap-1.5">
                   {AI_SUITE_MODULES.map(module => {
                     const Icon = module.icon;
-                    const isActive = pathname === module.href;
+                    const isActive = pathname === module.href || pathname.startsWith(module.href + '/');
                     return (
                       <Link
                         key={module.href}
                         href={module.href}
                         onClick={() => setMobileOpen(false)}
+                        aria-current={isActive ? 'page' : undefined}
                         className={`flex items-center justify-between rounded-xl p-3 border transition-colors ${
                           isActive
                             ? 'bg-[#B59A68]/15 border-[#B59A68]/40 text-ivory'
@@ -504,7 +669,9 @@ export function Navbar() {
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-[#151716] border border-[#3B3A33] flex items-center justify-center shrink-0 text-[#B59A68]">
+                          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${
+                            isActive ? 'bg-[#B59A68]/20 border-[#B59A68]/40 text-[#B59A68]' : 'bg-[#151716] border-[#3B3A33] text-[#B59A68]'
+                          }`}>
                             <Icon className="w-4 h-4" strokeWidth={1.5} />
                           </div>
                           <div className="flex flex-col min-w-0">
@@ -516,7 +683,13 @@ export function Navbar() {
                             </span>
                           </div>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-stone/50 shrink-0 ml-2" />
+                        {isActive ? (
+                          <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#B59A68] bg-[#B59A68]/10 border border-[#B59A68]/30 rounded-full px-2 py-0.5 shrink-0 ml-2">
+                            Active
+                          </span>
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-stone/50 shrink-0 ml-2" />
+                        )}
                       </Link>
                     );
                   })}
@@ -529,14 +702,39 @@ export function Navbar() {
                   Explore & Research
                 </p>
                 <div className="grid grid-cols-1 gap-1.5">
+                  {/* Home link in mobile */}
+                  <Link
+                    href="/"
+                    onClick={() => setMobileOpen(false)}
+                    aria-current={isHomeActive ? 'page' : undefined}
+                    className={`flex items-center justify-between rounded-xl p-3 border transition-colors ${
+                      isHomeActive
+                        ? 'bg-[#B59A68]/15 border-[#B59A68]/40 text-ivory'
+                        : 'bg-[#181C1A]/60 border-[#3B3A33]/50 text-stone/85 hover:border-[#B59A68]/30 hover:text-ivory'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Home className="w-4 h-4 text-[#B59A68]" />
+                      <span className="font-sans text-sm font-medium">Home</span>
+                    </div>
+                    {isHomeActive ? (
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#B59A68] bg-[#B59A68]/10 border border-[#B59A68]/30 rounded-full px-2 py-0.5">
+                        Active
+                      </span>
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-stone/50" />
+                    )}
+                  </Link>
+
                   {DIRECT_LINKS.map(link => {
                     const Icon = link.icon;
-                    const isActive = pathname === link.href;
+                    const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
                     return (
                       <Link
                         key={link.href}
                         href={link.href}
                         onClick={() => setMobileOpen(false)}
+                        aria-current={isActive ? 'page' : undefined}
                         className={`flex items-center justify-between rounded-xl p-3 border transition-colors ${
                           isActive
                             ? 'bg-[#B59A68]/15 border-[#B59A68]/40 text-ivory'
@@ -547,10 +745,16 @@ export function Navbar() {
                           <Icon className="w-4 h-4 text-[#B59A68]" />
                           <span className="font-sans text-sm font-medium">{link.label}</span>
                         </div>
-                        {link.hasLiveBadge && (
+                        {isActive ? (
+                          <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#B59A68] bg-[#B59A68]/10 border border-[#B59A68]/30 rounded-full px-2 py-0.5">
+                            Active
+                          </span>
+                        ) : link.hasLiveBadge ? (
                           <span className="font-mono text-[10px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">
                             LIVE
                           </span>
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-stone/50" />
                         )}
                       </Link>
                     );
@@ -583,10 +787,16 @@ export function Navbar() {
                       <Link
                         href="/admin/dashboard"
                         onClick={() => setMobileOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#B59A68] bg-[#6E2634]/40 px-4 py-2.5 font-sans text-sm font-semibold text-[#B59A68]"
+                        aria-current={isAdminActive ? 'page' : undefined}
+                        className={`w-full flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-sans text-sm font-semibold ${
+                          isAdminActive
+                            ? 'border-[#B59A68] bg-[#6E2634]/60 text-[#B59A68]'
+                            : 'border-[#B59A68] bg-[#6E2634]/40 text-[#B59A68]'
+                        }`}
                       >
                         <Scale className="w-4 h-4 text-[#B59A68]" />
                         <span>Admin Operations Portal</span>
+                        {isAdminActive && <span className="ml-auto text-[9px] font-mono font-bold text-[#B59A68] uppercase tracking-widest">Active</span>}
                       </Link>
                     )}
 
@@ -594,10 +804,16 @@ export function Navbar() {
                       <Link
                         href="/advocate/dashboard"
                         onClick={() => setMobileOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#B59A68]/60 bg-[#242925] px-4 py-2.5 font-sans text-sm font-semibold text-[#B59A68]"
+                        aria-current={isAdvocateActive ? 'page' : undefined}
+                        className={`w-full flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-sans text-sm font-semibold ${
+                          isAdvocateActive
+                            ? 'border-[#B59A68] bg-[#2e3530] text-[#B59A68]'
+                            : 'border-[#B59A68]/60 bg-[#242925] text-[#B59A68]'
+                        }`}
                       >
                         <Scale className="w-4 h-4 text-[#B59A68]" />
                         <span>Advocate Portal</span>
+                        {isAdvocateActive && <span className="ml-auto text-[9px] font-mono font-bold text-[#B59A68] uppercase tracking-widest">Active</span>}
                       </Link>
                     )}
 
@@ -605,7 +821,12 @@ export function Navbar() {
                       <Link
                         href="/messages"
                         onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-center gap-2 rounded-xl border border-[#3B3A33] bg-[#181C1A] px-3 py-2 font-sans text-xs font-medium text-ivory hover:border-[#B59A68]/50"
+                        aria-current={isMessagesActive ? 'page' : undefined}
+                        className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 font-sans text-xs font-medium ${
+                          isMessagesActive
+                            ? 'border-[#B59A68]/60 bg-[#B59A68]/10 text-[#B59A68]'
+                            : 'border-[#3B3A33] bg-[#181C1A] text-ivory hover:border-[#B59A68]/50'
+                        }`}
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-[#B59A68]" />
                         <span>Messages</span>
@@ -614,7 +835,12 @@ export function Navbar() {
                       <Link
                         href="/profile"
                         onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-center gap-2 rounded-xl border border-[#3B3A33] bg-[#181C1A] px-3 py-2 font-sans text-xs font-medium text-ivory hover:border-[#B59A68]/50"
+                        aria-current={isProfileActive ? 'page' : undefined}
+                        className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 font-sans text-xs font-medium ${
+                          isProfileActive
+                            ? 'border-[#B59A68]/60 bg-[#B59A68]/10 text-[#B59A68]'
+                            : 'border-[#3B3A33] bg-[#181C1A] text-ivory hover:border-[#B59A68]/50'
+                        }`}
                       >
                         <User className="w-3.5 h-3.5 text-[#B59A68]" />
                         <span>Profile</span>
@@ -635,7 +861,12 @@ export function Navbar() {
                     <Link
                       href="/login"
                       onClick={() => setMobileOpen(false)}
-                      className="w-full text-center rounded-xl border border-[#3B3A33] px-5 py-2.5 font-sans text-sm font-medium text-ivory/80 transition-colors hover:text-ivory hover:border-[#8A3545]/60"
+                      aria-current={pathname === '/login' ? 'page' : undefined}
+                      className={`w-full text-center rounded-xl border px-5 py-2.5 font-sans text-sm font-medium transition-colors ${
+                        pathname === '/login'
+                          ? 'border-[#B59A68]/50 text-[#B59A68] bg-[#B59A68]/10'
+                          : 'border-[#3B3A33] text-ivory/80 hover:text-ivory hover:border-[#8A3545]/60'
+                      }`}
                     >
                       {t('nav.signIn')}
                     </Link>
