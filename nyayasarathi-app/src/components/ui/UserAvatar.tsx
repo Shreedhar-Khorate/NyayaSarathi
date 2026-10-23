@@ -93,7 +93,7 @@ export function UserAvatar({
   return (
     <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`}>
       <div
-        className={`rounded-2xl border border-[#3B3A33] overflow-hidden flex items-center justify-center select-none shadow-md ${container} ${
+        className={`rounded-full border border-[#3B3A33] overflow-hidden flex items-center justify-center select-none shadow-md ${container} ${
           hasValidImage ? 'bg-[#1D211F]' : colorClass
         }`}
       >
