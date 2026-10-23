@@ -13,12 +13,12 @@ import {
   Newspaper,
   MessageSquare,
   ChevronDown,
+  ChevronRight,
   ArrowUpRight,
   User,
   LogOut,
   Menu,
   X,
-  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -34,37 +34,32 @@ const AI_SUITE_MODULES = [
   {
     href: '/war-room',
     title: 'War Room',
-    desc: 'Multi-agent courtroom simulation & argument audit',
+    desc: 'Simulated bench proceedings & argument audit',
     icon: Gavel,
-    accent: '#B59A68',
   },
   {
     href: '/legal-drafting',
     title: 'Legal Drafting',
-    desc: 'AI-assisted petitions, affidavits & statutory notices',
+    desc: 'Statutory petitions, affidavits & legal notices',
     icon: FileText,
-    accent: '#D4AF37',
   },
   {
     href: '/predictor',
     title: 'Judgment Predictor',
-    desc: 'Bench outcome probability & judicial analytics',
+    desc: 'Bench probability & judicial trend analysis',
     icon: Scale,
-    accent: '#385E49',
   },
   {
     href: '/contracts',
     title: 'Contract Analyzer',
-    desc: 'Clause vulnerability, redlining & compliance audit',
+    desc: 'Clause risk auditing & compliance verification',
     icon: FileCheck,
-    accent: '#8A3545',
   },
   {
     href: '/ocr',
     title: 'Legal OCR',
     desc: 'Vernacular court order extraction & scanning',
     icon: ScanText,
-    accent: '#5E81AC',
   },
 ];
 
@@ -208,8 +203,8 @@ export function Navbar() {
                 }`}
                 aria-expanded={aiMenuOpen}
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#B59A68]" />
-                <span>AI Suite</span>
+                <Scale className="w-3.5 h-3.5 text-[#B59A68]" strokeWidth={1.5} />
+                <span>Judicial Suite</span>
                 <ChevronDown
                   className={`w-3 h-3 text-[#B59A68]/80 transition-transform duration-200 ${
                     aiMenuOpen ? 'rotate-180' : ''
@@ -229,10 +224,10 @@ export function Navbar() {
                   >
                     <div className="rounded-2xl border border-[#B59A68]/25 bg-[#181C1A]/95 backdrop-blur-2xl p-2 shadow-2xl shadow-black/80 ring-1 ring-white/5">
                       <div className="px-3 py-2 border-b border-[#3B3A33]/50 mb-1 flex items-center justify-between">
-                        <span className="font-sans text-[10px] font-semibold tracking-wider uppercase text-[#B59A68]">
-                          Judicial Intelligence Tools
+                        <span className="font-mono text-[9.5px] font-semibold tracking-[0.18em] uppercase text-[#B59A68]">
+                          Chambers Intelligence
                         </span>
-                        <span className="font-mono text-[9px] text-stone/50">v2.4 Core</span>
+                        <span className="font-mono text-[9px] text-stone/50 tracking-wider uppercase">Active Suite</span>
                       </div>
 
                       <div className="flex flex-col gap-0.5">
@@ -244,29 +239,26 @@ export function Navbar() {
                               key={module.href}
                               href={module.href}
                               onClick={() => setAiMenuOpen(false)}
-                              className={`group flex items-start gap-3 rounded-xl p-2.5 transition-all duration-150 ${
+                              className={`group flex items-center justify-between rounded-xl px-3 py-2 transition-all duration-150 border ${
                                 isActive
-                                  ? 'bg-[#B59A68]/15 border border-[#B59A68]/30'
-                                  : 'hover:bg-white/[0.04]'
+                                  ? 'bg-[#B59A68]/15 border-[#B59A68]/30'
+                                  : 'border-transparent hover:bg-white/[0.04] hover:border-[#3B3A33]/50'
                               }`}
                             >
-                              <div
-                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-transform duration-150 group-hover:scale-105"
-                                style={{
-                                  backgroundColor: `${module.accent}15`,
-                                  borderColor: `${module.accent}40`,
-                                }}
-                              >
-                                <Icon className="w-4 h-4" style={{ color: module.accent }} />
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-[#151716] border border-[#3B3A33] flex items-center justify-center shrink-0 text-[#B59A68] transition-colors group-hover:border-[#B59A68]/50 group-hover:text-ivory shadow-sm">
+                                  <Icon className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-sans text-xs font-semibold text-ivory group-hover:text-[#B59A68] transition-colors leading-tight">
+                                    {module.title}
+                                  </span>
+                                  <span className="font-sans text-[11px] text-stone/60 truncate mt-0.5">
+                                    {module.desc}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-sans text-xs font-semibold text-ivory group-hover:text-[#B59A68] transition-colors leading-tight">
-                                  {module.title}
-                                </span>
-                                <span className="font-sans text-[11px] text-stone/70 line-clamp-1 mt-0.5">
-                                  {module.desc}
-                                </span>
-                              </div>
+                              <ChevronRight className="w-3.5 h-3.5 text-stone/40 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-[#B59A68] shrink-0 ml-2" />
                             </Link>
                           );
                         })}
@@ -505,28 +497,26 @@ export function Navbar() {
                         key={module.href}
                         href={module.href}
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center gap-3 rounded-xl p-3 border transition-colors ${
+                        className={`flex items-center justify-between rounded-xl p-3 border transition-colors ${
                           isActive
                             ? 'bg-[#B59A68]/15 border-[#B59A68]/40 text-ivory'
                             : 'bg-[#181C1A]/60 border-[#3B3A33]/50 text-stone/85 hover:border-[#B59A68]/30 hover:text-ivory'
                         }`}
                       >
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                          style={{
-                            backgroundColor: `${module.accent}20`,
-                          }}
-                        >
-                          <Icon className="w-4 h-4" style={{ color: module.accent }} />
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-[#151716] border border-[#3B3A33] flex items-center justify-center shrink-0 text-[#B59A68]">
+                            <Icon className="w-4 h-4" strokeWidth={1.5} />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-sans text-sm font-medium leading-tight text-ivory">
+                              {module.title}
+                            </span>
+                            <span className="font-sans text-[11px] text-stone/60 line-clamp-1 mt-0.5">
+                              {module.desc}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-sans text-sm font-medium leading-tight">
-                            {module.title}
-                          </span>
-                          <span className="font-sans text-[11px] text-stone/60 line-clamp-1 mt-0.5">
-                            {module.desc}
-                          </span>
-                        </div>
+                        <ChevronRight className="w-4 h-4 text-stone/50 shrink-0 ml-2" />
                       </Link>
                     );
                   })}
