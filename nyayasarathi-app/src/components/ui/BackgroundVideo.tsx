@@ -1,12 +1,14 @@
 'use client';
 
-import { RefObject, useEffect, useState } from 'react';
+import { RefObject, useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 
 interface BackgroundVideoProps {
   targetRef: RefObject<HTMLElement | null>;
   sources?: { src: string; type: string }[];
   posterSrc?: string;
+  /** Called once the video has buffered enough data to start playing */
+  onReady?: () => void;
 }
 
 export default function BackgroundVideo({
@@ -15,8 +17,11 @@ export default function BackgroundVideo({
     { src: '/video/court.mp4', type: 'video/mp4' },
   ],
   posterSrc,
+  onReady,
 }: BackgroundVideoProps) {
   const [reducedMotion, setReducedMotion] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const readyFired = useRef(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -25,6 +30,28 @@ export default function BackgroundVideo({
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
+
+  // Fire onReady when the video can actually start playing
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !onReady) return;
+
+    const fire = () => {
+      if (!readyFired.current) {
+        readyFired.current = true;
+        onReady();
+      }
+    };
+
+    // If already ready (e.g. cached), fire immediately
+    if (video.readyState >= 3) {
+      fire();
+      return;
+    }
+
+    video.addEventListener('canplay', fire);
+    return () => video.removeEventListener('canplay', fire);
+  }, [onReady]);
 
   const { scrollYProgress } = useScroll({
     target: targetRef,
@@ -54,13 +81,14 @@ export default function BackgroundVideo({
   return (
     <div className="absolute inset-0 overflow-hidden">
       <motion.video
+        ref={videoRef}
         className="h-full w-full object-cover"
         style={{ scale, y, opacity, willChange: 'transform, opacity' }}
         autoPlay
         muted
         loop
         playsInline
-        preload="metadata"
+        preload="auto"
         poster={posterSrc}
       >
         {sources.map((s) => (

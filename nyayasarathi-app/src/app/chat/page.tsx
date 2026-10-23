@@ -43,6 +43,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { Navbar } from '@/components/layout/NavAndFooter';
 import { getUser } from '@/lib/auth';
 import {
   fetchConversations,
@@ -750,6 +751,7 @@ function ChatContent() {
 
   return (
     <RoleGuard allowedRoles={CHAT_ALLOWED_ROLES} portalName="NyayaSarathi Chat">
+      <Navbar />
       <div className="min-h-screen bg-[#0B0D0C] text-[#F4EFE5] pt-16 sm:pt-20 pb-4 px-2 sm:px-4 lg:px-6">
         {/* Ambient background glows */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">

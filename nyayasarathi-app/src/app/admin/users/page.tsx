@@ -24,6 +24,7 @@ import {
   History,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import {
   fetchAdminUsers,
   updateUserRole,
@@ -125,7 +126,9 @@ export default function AdminUsersPage() {
 
   return (
     <RoleGuard allowedRoles={['ADMIN']} portalName="User Role Management">
-      <div className="min-h-screen bg-[#151716] pt-28 pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#151716] flex flex-col justify-between">
+        <Navbar />
+        <div className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
 
           {/* Breadcrumb & Navigation */}
@@ -503,8 +506,9 @@ export default function AdminUsersPage() {
               </div>
             )}
           </AnimatePresence>
-
         </div>
+        </div>
+        <Footer />
       </div>
     </RoleGuard>
   );

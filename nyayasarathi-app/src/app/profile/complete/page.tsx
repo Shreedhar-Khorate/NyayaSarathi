@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Scale, Building2, Briefcase, User, AlertCircle, ArrowRight, Loader2, Upload, Camera } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/UserAvatar';
@@ -57,7 +59,7 @@ export default function ProfileCompletePage() {
     setError(null);
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const maxDim = 256;
@@ -142,7 +144,28 @@ export default function ProfileCompletePage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#151716] text-[#F4EFE5] flex flex-col justify-center items-center px-4 py-12 selection:bg-[#6E2634] selection:text-[#F4EFE5]">
+    <div className="relative min-h-screen bg-[#151716] text-[#F4EFE5] flex flex-col justify-between items-center px-4 py-8 selection:bg-[#6E2634] selection:text-[#F4EFE5]">
+      {/* Top Universal Access Bar */}
+      <header className="relative z-10 w-full max-w-5xl flex items-center justify-between pb-6 border-b border-[#3B3A33]/40">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <Image
+            src="/logo-transparent.png"
+            alt="NyayaSarathi Logo"
+            width={28}
+            height={28}
+            className="w-7 h-7 object-contain drop-shadow-[0_2px_8px_rgba(181,154,104,0.3)]"
+          />
+          <span className="font-display text-base font-semibold text-ivory tracking-wide">NyayaSarathi</span>
+        </Link>
+        <Link
+          href="/"
+          className="font-sans text-xs text-stone/70 hover:text-ivory transition-colors flex items-center gap-1"
+        >
+          <span>Return to Portal</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </header>
+
       {/* Background Architectural Grid */}
       <div
         className="pointer-events-none fixed inset-0 z-0 opacity-20 bg-[radial-gradient(#3B3A33_1px,transparent_1px)] [background-size:32px_32px]"
@@ -326,6 +349,11 @@ export default function ProfileCompletePage() {
           </div>
         </form>
       </motion.div>
+
+      {/* Footer copyright */}
+      <div className="relative z-10 text-center font-sans text-xs text-stone/50 pt-8 pb-2">
+        &copy; {new Date().getFullYear()} NyayaSarathi &bull; Judicial Intelligence
+      </div>
     </div>
   );
 }

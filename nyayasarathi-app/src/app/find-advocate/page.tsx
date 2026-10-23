@@ -32,6 +32,7 @@ import {
   type AdvocateProfile,
 } from '@/lib/chat';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const ALLOWED_ROLES = ['USER', 'ADVOCATE', 'ADMIN'];
@@ -106,7 +107,9 @@ export default function FindAdvocatePage() {
 
   return (
     <RoleGuard allowedRoles={ALLOWED_ROLES} portalName="Find an Advocate">
-      <div className="min-h-screen bg-[#151716] pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#151716] flex flex-col justify-between">
+        <Navbar />
+        <div className="flex-1 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         {/* Ambient glow backgrounds */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] bg-[#4F8EF7]/5 rounded-full blur-3xl" />
@@ -332,6 +335,8 @@ export default function FindAdvocatePage() {
             </div>
           )}
         </div>
+        </div>
+        <Footer />
       </div>
     </RoleGuard>
   );

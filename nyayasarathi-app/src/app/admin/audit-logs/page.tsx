@@ -17,6 +17,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import { fetchRoleAuditHistory, type RoleAuditItem } from '@/lib/auth';
 
 export default function AdminAuditLogsPage() {
@@ -55,7 +56,9 @@ export default function AdminAuditLogsPage() {
 
   return (
     <RoleGuard allowedRoles={['ADMIN']} portalName="Role Change Audit Registry">
-      <div className="min-h-screen bg-[#151716] pt-28 pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#151716] flex flex-col justify-between">
+        <Navbar />
+        <div className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
 
           {/* Breadcrumb */}
@@ -248,8 +251,9 @@ export default function AdminAuditLogsPage() {
               </div>
             </div>
           </div>
-
         </div>
+        </div>
+        <Footer />
       </div>
     </RoleGuard>
   );

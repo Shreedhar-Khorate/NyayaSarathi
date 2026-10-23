@@ -29,6 +29,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import {
   getUser,
   fetchMe,
@@ -223,7 +224,8 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#151716] text-[#F4EFE5] pb-24 selection:bg-[#6E2634] selection:text-[#F4EFE5]">
+    <div className="min-h-screen bg-[#151716] text-[#F4EFE5] flex flex-col justify-between selection:bg-[#6E2634] selection:text-[#F4EFE5]">
+      <Navbar />
       {/* Background Architectural Grid */}
       <div
         className="pointer-events-none fixed inset-0 z-0 opacity-20 bg-[radial-gradient(#3B3A33_1px,transparent_1px)] [background-size:32px_32px]"
@@ -743,6 +745,7 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

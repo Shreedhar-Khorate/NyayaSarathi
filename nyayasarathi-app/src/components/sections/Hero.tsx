@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { ArrowUpRight, Upload } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -14,13 +14,13 @@ const BackgroundVideo = dynamic(() => import('@/components/ui/BackgroundVideo'),
 const container: Variants = {
   hidden: {},
   show: {
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+    transition: { staggerChildren: 0.1, delayChildren: 0.15 },
   },
 };
 
 const item: Variants = {
   hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] } },
 };
 
 const HEADLINE_WORDS = [
@@ -35,6 +35,23 @@ export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const { t } = useLanguage();
 
+  // Gate: hold text until the background video is ready to play
+  const [videoReady, setVideoReady] = useState(false);
+  const fallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleVideoReady = useCallback(() => {
+    if (fallbackRef.current) clearTimeout(fallbackRef.current);
+    setVideoReady(true);
+  }, []);
+
+  // Safety fallback — reveal text after 3 s even if video never fires
+  useEffect(() => {
+    fallbackRef.current = setTimeout(() => setVideoReady(true), 3000);
+    return () => {
+      if (fallbackRef.current) clearTimeout(fallbackRef.current);
+    };
+  }, []);
+
   const headlineRaw = t('hero.headline');
   const headlineWords = Array.isArray(headlineRaw)
     ? headlineRaw
@@ -48,10 +65,15 @@ export default function Hero() {
       className="relative flex min-h-screen items-center overflow-hidden pt-28"
     >
       {/* Ink-toned scroll-parallax background video */}
-      <BackgroundVideo targetRef={sectionRef} />
+      <BackgroundVideo targetRef={sectionRef} onReady={handleVideoReady} />
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-6">
-        <motion.div variants={container} initial="hidden" animate="show" className="max-w-4xl">
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate={videoReady ? 'show' : 'hidden'}
+          className="max-w-4xl"
+        >
 
           {/* Headline — Cormorant Garamond */}
           <h1 className="font-display flex flex-wrap gap-x-3 gap-y-1 text-5xl font-semibold leading-[1.1] text-ivory sm:text-6xl md:text-7xl">
@@ -112,3 +134,4 @@ export default function Hero() {
     </section>
   );
 }
+

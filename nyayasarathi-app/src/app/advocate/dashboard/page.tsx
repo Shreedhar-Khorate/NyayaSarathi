@@ -20,6 +20,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import { fetchAdvocateMetrics, type AdvocateMetrics } from '@/lib/auth';
 
 const fadeUp = {
@@ -31,7 +32,7 @@ const TOOLS = [
   { href: '/legal-research', icon: Search, label: 'Legal Research', desc: 'Search case law and statutes', color: '#4F8EF7' },
   { href: '/ocr', icon: ScanLine, label: 'Document OCR', desc: 'Extract text from legal PDFs', color: '#B59A68' },
   { href: '/predictor', icon: TrendingUp, label: 'Judgment Predictor', desc: 'AI-powered case outcome analysis', color: '#6BD28E' },
-  { href: '/drafts', icon: FileText, label: 'Draft Generator', desc: 'Generate legal documents & petitions', color: '#A78BFA' },
+  { href: '/legal-drafting', icon: FileText, label: 'Legal Drafting', desc: 'Generate legal documents & petitions', color: '#A78BFA' },
   { href: '/messages', icon: MessageCircle, label: 'Messages & Client Chat', desc: 'Secure incoming client conversations', color: '#2DD4BF' },
 ];
 
@@ -67,7 +68,9 @@ export default function AdvocateDashboardPage() {
 
   return (
     <RoleGuard allowedRoles={['ADVOCATE', 'ADMIN']} portalName="Advocate Bar Portal">
-      <div className="min-h-screen bg-[#151716] pt-28 pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#151716] flex flex-col justify-between">
+        <Navbar />
+        <div className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8">
         {/* Background Glows */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#4F8EF7]/6 rounded-full blur-3xl" />
@@ -209,6 +212,8 @@ export default function AdvocateDashboardPage() {
             </div>
           </motion.section>
         </div>
+        </div>
+        <Footer />
       </div>
     </RoleGuard>
   );

@@ -18,6 +18,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import { fetchAdminMetrics, type AdminMetrics } from '@/lib/auth';
 
 export default function AdminDashboardPage() {
@@ -44,7 +45,9 @@ export default function AdminDashboardPage() {
 
   return (
     <RoleGuard allowedRoles={['ADMIN']} portalName="Administrative Operations Portal">
-      <div className="min-h-screen bg-[#151716] pt-28 pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#151716] flex flex-col justify-between">
+        <Navbar />
+        <div className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
 
           {/* Header */}
@@ -394,8 +397,9 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           </div>
-
         </div>
+        </div>
+        <Footer />
       </div>
     </RoleGuard>
   );

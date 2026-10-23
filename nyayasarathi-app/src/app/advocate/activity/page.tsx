@@ -17,6 +17,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import { fetchAdvocateActivity, type AdvocateActivityItem } from '@/lib/auth';
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
@@ -87,7 +88,9 @@ export default function AdvocateActivityPage() {
 
   return (
     <RoleGuard allowedRoles={['ADVOCATE', 'ADMIN']} portalName="Advocate Activity Log">
-      <div className="min-h-screen bg-[#151716] pt-28 pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#151716] flex flex-col justify-between">
+        <Navbar />
+        <div className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="fixed inset-0 pointer-events-none">
           <div className="absolute top-20 right-1/4 w-96 h-96 bg-[#4F8EF7]/5 rounded-full blur-3xl" />
         </div>
@@ -216,6 +219,8 @@ export default function AdvocateActivityPage() {
             </div>
           )}
         </div>
+        </div>
+        <Footer />
       </div>
     </RoleGuard>
   );
