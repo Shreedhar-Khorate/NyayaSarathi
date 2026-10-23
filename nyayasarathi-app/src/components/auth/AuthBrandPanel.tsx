@@ -10,44 +10,44 @@ export function AuthBrandPanel() {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="relative flex flex-col justify-center items-center h-full p-6 sm:p-8 lg:p-10 xl:p-12 border-b lg:border-b-0 lg:border-r border-[#3B3A33]/70 overflow-hidden bg-[#151716] select-none">
+    <div className="relative flex flex-col justify-center items-center h-full p-4 sm:p-6 lg:p-8 xl:p-10 border-b lg:border-b-0 lg:border-r border-[#3B3A33]/70 overflow-hidden bg-[#151716] select-none">
       {/* Subtle fine architectural corner lines */}
-      <div className="absolute top-5 left-5 w-4 h-4 border-t border-l border-[#B59A68]/30 pointer-events-none hidden sm:block" />
-      <div className="absolute top-5 right-5 w-4 h-4 border-t border-r border-[#B59A68]/30 pointer-events-none hidden sm:block" />
-      <div className="absolute bottom-5 left-5 w-4 h-4 border-b border-l border-[#B59A68]/30 pointer-events-none hidden sm:block" />
-      <div className="absolute bottom-5 right-5 w-4 h-4 border-b border-r border-[#B59A68]/30 pointer-events-none hidden sm:block" />
+      <div className="absolute top-4 left-4 w-3.5 h-3.5 border-t border-l border-[#B59A68]/30 pointer-events-none hidden sm:block" />
+      <div className="absolute top-4 right-4 w-3.5 h-3.5 border-t border-r border-[#B59A68]/30 pointer-events-none hidden sm:block" />
+      <div className="absolute bottom-4 left-4 w-3.5 h-3.5 border-b border-l border-[#B59A68]/30 pointer-events-none hidden sm:block" />
+      <div className="absolute bottom-4 right-4 w-3.5 h-3.5 border-b border-r border-[#B59A68]/30 pointer-events-none hidden sm:block" />
 
       {/* Atmospheric ambient radiant glow that deepens dynamically on hover */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <motion.div
           animate={{
-            scale: isHovered ? 1.25 : 1,
+            scale: isHovered ? 1.2 : 1,
             opacity: isHovered ? 0.16 : 0.08,
           }}
           transition={{ duration: 0.8, ease: EASE }}
-          className="w-[420px] h-[420px] sm:w-[560px] sm:h-[560px] lg:w-[640px] lg:h-[640px] rounded-full bg-[#B59A68] blur-[110px]"
+          className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[460px] lg:h-[460px] rounded-full bg-[#B59A68] blur-[90px]"
         />
         <motion.div
           animate={{
-            scale: isHovered ? 1.3 : 1,
-            opacity: isHovered ? 0.32 : 0.16,
+            scale: isHovered ? 1.25 : 1,
+            opacity: isHovered ? 0.3 : 0.15,
           }}
           transition={{ duration: 0.8, ease: EASE }}
-          className="w-[260px] h-[260px] sm:w-[360px] sm:h-[360px] lg:w-[420px] lg:h-[420px] rounded-full bg-[#6E2634] blur-[85px]"
+          className="w-[180px] h-[180px] sm:w-[260px] sm:h-[260px] lg:w-[320px] lg:h-[320px] rounded-full bg-[#6E2634] blur-[70px]"
         />
       </div>
 
       {/* ── Center Section: Grand 2D Revolving Emblem & Headline ────────────── */}
-      <div className="relative z-10 my-auto py-2 sm:py-4 flex flex-col items-center justify-center w-full">
+      <div className="relative z-10 my-auto py-1 sm:py-2 flex flex-col items-center justify-center w-full max-w-lg">
         {/* Responsive 2D Revolving Sacred Shloka Insignia */}
         <motion.div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.03 }}
+          whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.4, ease: EASE }}
-          className="relative w-full max-w-[340px] sm:max-w-[420px] md:max-w-[480px] lg:max-w-[520px] xl:max-w-[580px] 2xl:max-w-[640px] aspect-square flex items-center justify-center cursor-pointer select-none"
+          className="relative w-full max-w-[170px] sm:max-w-[220px] md:max-w-[260px] lg:max-w-[310px] xl:max-w-[360px] 2xl:max-w-[400px] max-h-[30vh] aspect-square flex items-center justify-center cursor-pointer select-none"
         >
           <svg
             viewBox="0 0 500 500"
@@ -516,7 +516,7 @@ export function AuthBrandPanel() {
         </motion.div>
 
         {/* Dynamic Sacred Shloka Meaning Reveal */}
-        <div className="mt-4 min-h-[26px] flex items-center justify-center">
+        <div className="mt-2.5 sm:mt-3 min-h-[24px] flex items-center justify-center">
           <AnimatePresence mode="wait">
             {isHovered ? (
               <motion.div
@@ -525,10 +525,10 @@ export function AuthBrandPanel() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -3, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1.5 sm:gap-2 px-2"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#B59A68]" />
-                <span className="font-serif italic text-sm sm:text-[15px] text-[#F4EFE5] tracking-wide">
+                <Sparkles className="w-3.5 h-3.5 text-[#B59A68] shrink-0" />
+                <span className="font-serif italic text-xs sm:text-sm text-[#F4EFE5] tracking-wide text-center">
                   &ldquo;Where there is Dharma &amp; Truth, there is Victory&rdquo;
                 </span>
               </motion.div>
@@ -539,13 +539,13 @@ export function AuthBrandPanel() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex items-center gap-2.5"
+                className="flex items-center gap-2 sm:gap-2.5"
               >
-                <div className="w-8 h-px bg-[#3B3A33]" />
-                <span className="font-mono text-xs sm:text-[13px] uppercase tracking-[0.25em] text-[#A9A49A]">
+                <div className="w-5 sm:w-8 h-px bg-[#3B3A33]" />
+                <span className="font-mono text-[11px] sm:text-xs uppercase tracking-[0.22em] text-[#A9A49A]">
                   ॥ यतो धर्मस्ततो जयः ॥
                 </span>
-                <div className="w-8 h-px bg-[#3B3A33]" />
+                <div className="w-5 sm:w-8 h-px bg-[#3B3A33]" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -556,12 +556,12 @@ export function AuthBrandPanel() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: EASE, delay: 0.1 }}
-          className="text-center max-w-xl mt-3 sm:mt-4 space-y-2 px-2"
+          className="text-center max-w-lg mt-2 sm:mt-3 space-y-1.5 px-3"
         >
-          <h1 className="font-display text-xl sm:text-2xl lg:text-3xl font-medium leading-[1.25] text-[#F4EFE5] tracking-[-0.01em]">
+          <h1 className="font-display text-base sm:text-xl lg:text-2xl font-medium leading-[1.28] text-[#F4EFE5] tracking-[-0.01em]">
             Find the Law. Understand the Precedent. Verify the Source.
           </h1>
-          <p className="font-sans text-xs sm:text-sm text-[#A9A49A] leading-relaxed max-w-lg mx-auto">
+          <p className="font-sans text-[11px] sm:text-xs lg:text-[13px] text-[#A9A49A] leading-relaxed max-w-md mx-auto">
             AI-driven constitutional search, citation graphs, and verifiable judgment analysis indexing 75+ years of Indian jurisprudence.
           </p>
         </motion.div>

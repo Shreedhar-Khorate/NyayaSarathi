@@ -32,11 +32,11 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
             id={id}
             aria-invalid={error ? 'true' : 'false'}
             aria-describedby={error ? `${id}-error` : undefined}
-            className={`w-full rounded-xl bg-[#1D211F] border px-4 sm:px-5 py-3.5 sm:py-4 font-sans text-base text-[#F4EFE5] placeholder:text-[#A9A49A]/75 placeholder:text-[15px] sm:placeholder:text-base transition-all duration-200 outline-none min-h-[52px] sm:min-h-[56px] ${
+            className={`w-full rounded-xl bg-[#1D211F] border px-3.5 sm:px-4 py-2.5 sm:py-3 font-sans text-sm sm:text-base text-[#F4EFE5] placeholder:text-[#A9A49A]/60 placeholder:text-sm sm:placeholder:text-[15px] transition-all duration-200 outline-none min-h-[46px] sm:min-h-[50px] ${
               error
-                ? 'border-[#8A3545] focus:border-[#8A3545] focus:ring-1 focus:ring-[#8A3545]'
-                : 'border-[#3B3A33] hover:border-[#3B3A33]/90 focus:border-[#6E2634] focus:ring-1 focus:ring-[#6E2634]'
-            } ${rightElement ? 'pr-12 sm:pr-14' : ''} ${className}`}
+                ? 'border-[#8A3545] focus:border-[#DC3854] focus:ring-1 focus:ring-[#DC3854]'
+                : 'border-[#3B3A33] hover:border-[#B59A68]/40 focus:border-[#B59A68] focus:ring-1 focus:ring-[#B59A68]'
+            } ${rightElement ? 'pr-11 sm:pr-12' : ''} ${className}`}
             {...props}
           />
 

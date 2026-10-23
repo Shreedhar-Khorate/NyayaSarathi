@@ -35,11 +35,11 @@ export function GoogleAuthButton({ label = 'Continue with Google' }: GoogleAuthB
       className="
         group relative w-full flex items-center justify-center gap-3
         rounded-xl border border-[#3B3A33] bg-[#1D211F]
-        px-6 py-3.5 sm:py-4 font-sans text-base font-medium text-[#F4EFE5]
+        px-4 sm:px-5 py-2.5 sm:py-3 font-sans text-sm sm:text-base font-medium text-[#F4EFE5]
         hover:bg-[#242925] hover:border-[#B59A68]/50
         focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B59A68]
         disabled:opacity-50 disabled:cursor-not-allowed
-        transition-all duration-200 min-h-[52px] sm:min-h-[56px]
+        transition-all duration-200 min-h-[46px] sm:min-h-[50px]
         shadow-[0_2px_8px_rgba(0,0,0,0.3)]
       "
       aria-label="Continue with Google"

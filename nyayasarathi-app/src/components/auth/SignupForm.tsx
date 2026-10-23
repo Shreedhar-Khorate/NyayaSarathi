@@ -96,22 +96,38 @@ export function SignupForm() {
 
   return (
     <div className="w-full max-w-lg mx-auto">
+      {/* Mode Switcher Tabs */}
+      <div className="flex items-center p-1 rounded-xl bg-[#1D211F] border border-[#3B3A33]/80 mb-4 sm:mb-5">
+        <Link
+          href="/login"
+          className="flex-1 text-center py-2 rounded-lg text-xs sm:text-sm font-medium transition-all text-[#A9A49A] hover:text-[#F4EFE5]"
+        >
+          Sign In
+        </Link>
+        <Link
+          href="/signup"
+          className="flex-1 text-center py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-[#6E2634] text-[#F4EFE5] shadow-[0_2px_8px_rgba(110,38,52,0.4)]"
+        >
+          Create Account
+        </Link>
+      </div>
+
       {/* Editorial Header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: EASE }}
-        className="mb-6"
+        className="mb-4 sm:mb-5"
       >
-        <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-[0.25em] text-[#B59A68]">
+        <div className="flex items-center gap-2 mb-1.5 font-mono text-[11px] uppercase tracking-[0.22em] text-[#B59A68]">
           <span>02</span>
           <span>&bull;</span>
           <span>REGISTRATION</span>
         </div>
-        <h2 className="font-display text-3xl sm:text-4xl font-medium text-[#F4EFE5] tracking-[-0.01em]">
+        <h2 className="font-display text-2xl sm:text-3xl font-medium text-[#F4EFE5] tracking-[-0.01em]">
           Begin your research.
         </h2>
-        <p className="font-sans text-sm sm:text-base text-[#A9A49A] mt-1.5 leading-relaxed">
+        <p className="font-sans text-xs sm:text-sm text-[#A9A49A] mt-1 leading-relaxed">
           Create your NyayaSarathi workspace for verifiable judicial intelligence.
         </p>
       </motion.div>
@@ -122,7 +138,7 @@ export function SignupForm() {
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           role="alert"
-          className="mb-5 rounded-xl border border-[#8A3545]/60 bg-[#6E2634]/15 px-4 sm:px-5 py-3 text-sm text-[#F4EFE5]"
+          className="mb-4 rounded-xl border border-[#8A3545]/60 bg-[#6E2634]/15 px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm text-[#F4EFE5]"
         >
           {errors.general}
         </motion.div>
@@ -133,22 +149,22 @@ export function SignupForm() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.08, ease: EASE }}
-        className="mb-5"
+        className="mb-4"
       >
         <GoogleAuthButton label="Sign up with Google" />
       </motion.div>
 
       {/* ── Divider ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-4">
         <div className="flex-1 h-px bg-[#3B3A33]/60" />
-        <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#A9A49A]/70">
+        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#A9A49A]/70">
           or register with email
         </span>
         <div className="flex-1 h-px bg-[#3B3A33]/60" />
       </div>
 
       {/* ── Email / Password Signup Form ─────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-3.5" noValidate>
         {/* Full Name */}
         <AuthInput
           id="signup-fullname"
@@ -183,7 +199,7 @@ export function SignupForm() {
           name="password"
           autoComplete="new-password"
           label="Password"
-          placeholder="Create a secure password (min. 8 characters)"
+          placeholder="Min. 8 characters"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
@@ -203,8 +219,13 @@ export function SignupForm() {
           required
         />
 
+        {/* Legal Disclaimer */}
+        <p className="font-sans text-[11px] text-[#A9A49A]/70 pt-0.5 leading-tight">
+          By registering, you agree to NyayaSarathi&apos;s Judicial Research Terms &amp; Security Protocols.
+        </p>
+
         {/* Primary CTA */}
-        <div className="pt-2">
+        <div className="pt-1.5 sm:pt-2">
           <AuthButton type="submit" isLoading={isLoading}>
             Create Research Account
           </AuthButton>
@@ -212,8 +233,8 @@ export function SignupForm() {
       </form>
 
       {/* Switch to Sign In */}
-      <div className="mt-6 pt-4 border-t border-[#3B3A33]/50 text-center">
-        <p className="font-sans text-sm text-[#A9A49A]">
+      <div className="mt-5 pt-3.5 border-t border-[#3B3A33]/50 text-center">
+        <p className="font-sans text-xs sm:text-sm text-[#A9A49A]">
           Already have an account?{' '}
           <Link
             href="/login"
@@ -225,7 +246,7 @@ export function SignupForm() {
       </div>
 
       {/* Trust Indicator */}
-      <div className="mt-4 flex justify-center">
+      <div className="mt-3.5 flex justify-center">
         <TrustIndicator />
       </div>
     </div>

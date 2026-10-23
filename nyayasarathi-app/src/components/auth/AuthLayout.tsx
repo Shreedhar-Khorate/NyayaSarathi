@@ -24,7 +24,7 @@ export function AuthLayout({ children, activeTab = 'login' }: AuthLayoutProps) {
       <div className="grain-overlay" aria-hidden="true" />
 
       {/* Top Universal Access Bar */}
-      <header className="relative z-10 w-full shrink-0 border-b border-[#3B3A33]/60 bg-[#151716]/80 backdrop-blur-md px-6 sm:px-8 lg:px-12 py-3">
+      <header className="relative z-10 w-full shrink-0 border-b border-[#3B3A33]/60 bg-[#151716]/80 backdrop-blur-md px-4 sm:px-8 lg:px-12 py-2.5 sm:py-3">
         <div className="w-full flex items-center justify-between">
           <Link
             href="/"
@@ -44,31 +44,44 @@ export function AuthLayout({ children, activeTab = 'login' }: AuthLayoutProps) {
               NyayaSarathi
             </span>
           </Link>
-          <div className="hidden sm:flex items-center gap-2 font-mono text-[10px] text-[#A9A49A]/60 uppercase tracking-widest">
-            <span>SUPREME COURT &bull; HIGH COURTS</span>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 font-mono text-[10px] text-[#A9A49A]/60 uppercase tracking-widest">
+              <span>SUPREME COURT &bull; HIGH COURTS</span>
+            </div>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] text-[#A9A49A] hover:text-[#B59A68] transition-colors py-1 sm:py-1.5 px-2.5 sm:px-3 rounded-lg border border-[#3B3A33]/70 hover:border-[#B59A68]/40 bg-[#1D211F]/60"
+            >
+              <span>&larr;</span>
+              <span className="hidden sm:inline">Back to Home</span>
+              <span className="sm:hidden">Home</span>
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Expansive Split Screen Layout (Unrestricted by boxed frames, fit to screen) */}
+      {/* Main Expansive Split Screen Layout */}
       <main className="relative z-10 w-full flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
-        {/* Left Side: Majestic Brand, Emblem & Sanskrit Shlokas */}
-        <div className="lg:col-span-6 flex flex-col h-full min-h-0 overflow-y-auto lg:overflow-hidden">
+        {/* Left Side: Majestic Brand, Emblem & Sanskrit Shlokas (Desktop split-screen) */}
+        <div className="hidden lg:flex lg:col-span-6 flex-col h-full min-h-0 overflow-hidden">
           <AuthBrandPanel />
         </div>
 
         {/* Right Side: Authentication Form Canvas */}
-        <div className="lg:col-span-6 flex flex-col justify-center items-center p-6 sm:p-8 lg:p-10 xl:p-12 bg-[#181C1A]/40 backdrop-blur-md relative h-full min-h-0 overflow-y-auto">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: activeTab === 'login' ? -12 : 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: activeTab === 'login' ? 12 : -12 }}
-            transition={{ duration: 0.4, ease: EASE }}
-            className="w-full max-w-lg my-auto"
-          >
-            {children}
-          </motion.div>
+        <div className="col-span-1 lg:col-span-6 flex flex-col items-center p-4 sm:p-6 lg:p-8 xl:p-10 bg-[#181C1A]/40 backdrop-blur-md relative h-full min-h-0 overflow-y-auto">
+          <div className="w-full max-w-md xl:max-w-lg my-auto py-3 sm:py-6 flex flex-col justify-center min-h-min">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: activeTab === 'login' ? -10 : 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: activeTab === 'login' ? 10 : -10 }}
+              transition={{ duration: 0.35, ease: EASE }}
+              className="w-full"
+            >
+              {children}
+            </motion.div>
+          </div>
         </div>
       </main>
 

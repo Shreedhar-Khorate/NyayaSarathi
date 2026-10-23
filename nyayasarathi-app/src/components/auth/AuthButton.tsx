@@ -43,10 +43,10 @@ export function AuthButton({
           : undefined
       }
       disabled={disabled || isLoading}
-      className={`group relative w-full rounded-xl px-6 py-3.5 sm:py-4 font-sans text-base font-semibold tracking-wide flex items-center justify-center gap-3 transition-all duration-200 outline-none select-none min-h-[52px] sm:min-h-[56px] ${
+      className={`group relative w-full rounded-xl px-5 py-2.5 sm:py-3 font-sans text-sm sm:text-base font-semibold tracking-wide flex items-center justify-center gap-2.5 sm:gap-3 transition-all duration-200 outline-none select-none min-h-[46px] sm:min-h-[50px] ${
         isPrimary
           ? 'bg-[#6E2634] text-[#F4EFE5] hover:bg-[#8A3545] active:bg-[#5D1F2B] focus-visible:ring-2 focus-visible:ring-[#B59A68] focus-visible:ring-offset-2 focus-visible:ring-offset-[#151716] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_16px_rgba(110,38,52,0.35)]'
-          : 'bg-[#1D211F] text-[#F4EFE5] border border-[#3B3A33] hover:bg-[#242925] hover:border-[#3B3A33]/90 focus-visible:ring-2 focus-visible:ring-[#6E2634] disabled:opacity-50 disabled:cursor-not-allowed'
+          : 'bg-[#1D211F] text-[#F4EFE5] border border-[#3B3A33] hover:bg-[#242925] hover:border-[#B59A68]/40 focus-visible:ring-2 focus-visible:ring-[#B59A68] disabled:opacity-50 disabled:cursor-not-allowed'
       } ${className}`}
       {...props}
     >
