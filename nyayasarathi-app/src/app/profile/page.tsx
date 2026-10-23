@@ -220,7 +220,6 @@ export default function ProfilePage() {
     ADMIN: 'border-[#8A3545] bg-[#6E2634]/30 text-[#F4EFE5]',
     USER: 'border-[#3B3A33] bg-[#1D211F] text-[#A9A49A]',
     ADVOCATE: 'border-[#B59A68]/60 bg-[#1D211F] text-[#F4EFE5]',
-    DEACTIVATED_JUDGE: 'border-amber-500/30 bg-amber-500/10 text-amber-400 line-through',
   };
 
   return (

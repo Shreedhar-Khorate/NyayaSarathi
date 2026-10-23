@@ -256,7 +256,6 @@ export default function AdminUsersPage() {
                       const isSelf = currentAdmin?.id === u.id;
                       const isAdmin = u.role === 'ADMIN';
                       const isAdvocate = u.role === 'ADVOCATE';
-                      const isDeactivatedJudge = u.role === 'DEACTIVATED_JUDGE';
 
                       return (
                         <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
@@ -279,12 +278,10 @@ export default function AdminUsersPage() {
                                   ? 'bg-[#B59A68]/20 text-[#B59A68] border border-[#B59A68]/40'
                                   : isAdvocate
                                   ? 'bg-[#6E2634]/30 text-[#E25C6F] border border-[#6E2634]/50'
-                                  : isDeactivatedJudge
-                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 line-through'
                                   : 'bg-[#242925] text-[#A9A49A] border border-[#3B3A33]'
                               }`}
                             >
-                              {isDeactivatedJudge ? 'Legacy Judge (Inactive)' : u.role}
+                              {u.role}
                             </span>
                           </td>
 
