@@ -26,7 +26,12 @@ class GroqProvider(BaseLLMProvider):
 
     @property
     def api_key(self) -> str:
-        return (self._api_key or os.environ.get("GROQ_API_KEY", "")).strip()
+        return (
+            self._api_key
+            or os.environ.get("GROQ_API_KEY", "")
+            or os.environ.get("CONTRACTS_GROQ_API_KEY", "")
+            or os.environ.get("WAR_ROOM_GROQ_API_KEY", "")
+        ).strip()
 
     def is_available(self) -> bool:
         return bool(self.api_key)
@@ -50,8 +55,6 @@ class GroqProvider(BaseLLMProvider):
             "openai/gpt-oss-120b",
             "openai/gpt-oss-20b",
             "qwen/qwen3.8-27b",
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant",
         ]
         # De-duplicate while preserving order
         unique_models = []

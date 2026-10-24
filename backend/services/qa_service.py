@@ -80,11 +80,41 @@ def answer_question(request: QARequest, user_id: Optional[str] = None) -> QAResp
         for c in evidence_pack.chunks
     ]
 
-    # 2. Generate answer via Provider Manager (Groq / Cerebras / Grounded Synthesis)
-    llm_result = llm_manager.generate_grounded_answer(
-        question=question,
-        evidence_chunks=chunk_dicts,
+    # 2. Generate answer via dedicated Research Gemini Key (Gemini API 3) or Provider Manager fallback
+    research_key = (
+        os.environ.get("RESEARCH_GEMINI_API_KEY", "").strip()
+        or os.environ.get("GEMINI_API_KEY", "").strip()
     )
+    llm_result = None
+    if research_key:
+        try:
+            from services.llm.gemini_provider import GeminiProvider
+            model_name = os.environ.get("RESEARCH_GEMINI_MODEL", os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"))
+            gemini_prov = GeminiProvider(api_key=research_key, model=model_name)
+            system_prompt = (
+                "You are NyayaSarathi's Senior Legal Research Intelligence Assistant.\n"
+                "Answer the user's legal question strictly and truthfully using the retrieved evidence passages.\n"
+                "CRITICAL RULES:\n"
+                "1. Every factual assertion must be cited with its corresponding bracket notation, e.g. [S1], [S2].\n"
+                "2. Do not invent facts, citations, or precedents not present in the evidence.\n"
+                "3. If evidence is insufficient, state clearly that the provided legal documents do not contain sufficient information."
+            )
+            user_prompt = llm_manager._build_user_prompt(question, chunk_dicts)
+            llm_result = gemini_prov.generate_grounded_answer(
+                question=question,
+                evidence_chunks=chunk_dicts,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                timeout_seconds=25.0,
+            )
+        except Exception as e:
+            logger.warning(f"Research Gemini call failed, falling back to Provider Manager: {e}")
+
+    if not llm_result:
+        llm_result = llm_manager.generate_grounded_answer(
+            question=question,
+            evidence_chunks=chunk_dicts,
+        )
 
     # 3. Validate citations and resolve stored excerpt provenance
     validation_result = citation_validator.validate_and_resolve(

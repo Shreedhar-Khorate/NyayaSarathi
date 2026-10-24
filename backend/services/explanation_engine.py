@@ -211,7 +211,35 @@ VERIFIED HISTORICAL PRECEDENTS:
 
 Produce the structured grounded explanation in JSON now.
 """
-            data, provider, model, _, _ = _call_llm_json(system_prompt, user_prompt)
+            # Prioritize dedicated Predictor Gemini Key (Gemini API 1)
+            predictor_key = os.environ.get("PREDICTOR_GEMINI_API_KEY", "").strip() or os.environ.get("GEMINI_API_KEY", "").strip()
+            data = None
+            provider = "gemini"
+            model = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+            if predictor_key:
+                try:
+                    from services.llm.gemini_provider import GeminiProvider
+                    gemini_prov = GeminiProvider(api_key=predictor_key, model=model)
+                    full_user = (
+                        f"{user_prompt}\n\n"
+                        "IMPORTANT: Respond with pure, valid JSON ONLY. Escape internal quotes with backslashes. "
+                        "No markdown fences, no explanatory preamble."
+                    )
+                    res = gemini_prov.generate_grounded_answer(
+                        question="Synthesize Case Explanation",
+                        evidence_chunks=[],
+                        system_prompt=system_prompt,
+                        user_prompt=full_user,
+                        timeout_seconds=20.0,
+                    )
+                    from services.war_room_service import _parse_llm_json
+                    data = _parse_llm_json(res.answer.strip())
+                except Exception:
+                    data = None
+
+            if not data or not isinstance(data, dict) or not data.get("takeaway"):
+                data, provider, model, _, _ = _call_llm_json(system_prompt, user_prompt)
+
             if isinstance(data, dict) and data.get("takeaway"):
                 return GroundedExplanation(
                     takeaway=str(data.get("takeaway", "")),

@@ -406,13 +406,18 @@ def _call_contract_llm(
     """
     from services.llm.provider_manager import get_llm_provider_manager
 
-    war_room_key = os.environ.get("WAR_ROOM_GROQ_API_KEY", "").strip()
+    contracts_key = (
+        os.environ.get("CONTRACTS_GROQ_API_KEY", "").strip()
+        or os.environ.get("GROQ_API_KEY", "").strip()
+        or os.environ.get("WAR_ROOM_GROQ_API_KEY", "").strip()
+    )
     manager = get_llm_provider_manager()
 
     provider = None
-    if war_room_key:
+    if contracts_key:
         from services.llm.groq_provider import GroqProvider
-        provider = GroqProvider(api_key=war_room_key, model=os.environ.get("WAR_ROOM_MODEL", "llama-3.3-70b-versatile"))
+        contracts_model = os.environ.get("CONTRACTS_MODEL", os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")).strip()
+        provider = GroqProvider(api_key=contracts_key, model=contracts_model)
     else:
         candidates = [manager.primary_name, manager.fallback_name, "groq", "cerebras", "gemini"]
         for name in candidates:

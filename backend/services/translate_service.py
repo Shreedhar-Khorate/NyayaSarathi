@@ -101,7 +101,52 @@ def translate_legal_text(request: TranslationRequest, is_drafting_feature: bool 
             provider="Native Engine"
         )
 
-    # Deterministic legal replacement dictionary
+    # 1. Attempt translation with dedicated TRANSLATE_GEMINI_API_KEY (Gemini API 4)
+    translate_key = (
+        os.environ.get("TRANSLATE_GEMINI_API_KEY", "").strip()
+        or os.environ.get("GEMINI_API_KEY", "").strip()
+    )
+    if translate_key:
+        try:
+            import httpx
+            model_name = os.environ.get("TRANSLATE_GEMINI_MODEL", "gemini-1.5-flash").strip()
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+            lang_name = LANGUAGE_NAMES.get(target_lang, target_lang.upper())
+            prompt = (
+                f"You are a professional legal translator specialized in Indian jurisprudence.\n"
+                f"Translate the following legal brief into {lang_name}.\n"
+                "CRITICAL RULES:\n"
+                "- Preserve all legal citations, section numbers, act names, and CNR codes exactly (e.g. Section 438 CrPC, Section 420 IPC, BNS §103).\n"
+                "- Keep court names, party designations, and Latin legal maxims easily recognizable.\n"
+                "- Output ONLY the translated legal text with no preamble, no markdown fences, and no conversational notes.\n\n"
+                f"Text to translate:\n{text}"
+            )
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 2048}
+            }
+            with httpx.Client(timeout=12.0) as client:
+                res = client.post(
+                    url,
+                    json=payload,
+                    headers={"Content-Type": "application/json", "x-goog-api-key": translate_key}
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts and parts[0].get("text"):
+                            return TranslationResponse(
+                                translated_text=parts[0]["text"].strip(),
+                                source_language=request.source_language or "en",
+                                target_language=target_lang,
+                                provider=f"Gemini 1.5 Flash ({lang_name})"
+                            )
+        except Exception:
+            pass
+
+    # 2. Deterministic legal replacement dictionary fallback
     translated = text
     if target_lang in COMMON_LEGAL_TERMS:
         for pattern, repl in COMMON_LEGAL_TERMS[target_lang]:

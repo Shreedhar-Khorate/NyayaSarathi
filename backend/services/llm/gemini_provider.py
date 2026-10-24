@@ -27,7 +27,12 @@ class GeminiProvider(BaseLLMProvider):
 
     @property
     def api_key(self) -> str:
-        key = (self._api_key or os.environ.get("GEMINI_API_KEY", "")).strip()
+        key = (
+            self._api_key
+            or os.environ.get("GEMINI_API_KEY", "")
+            or os.environ.get("PREDICTOR_GEMINI_API_KEY", "")
+            or os.environ.get("RESEARCH_GEMINI_API_KEY", "")
+        ).strip()
         if not key:
             env_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
             if os.path.exists(env_file):
