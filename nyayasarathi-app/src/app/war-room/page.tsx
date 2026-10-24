@@ -482,60 +482,68 @@ export default function WarRoomPage() {
   const overviewSummary = currentSession?.case_overview?.case_summary || currentSession?.description || '';
 
   return (
-    <div className="min-h-screen bg-ink text-ivory flex flex-col font-sans selection:bg-oxblood selection:text-ivory">
+    <div className="min-h-screen bg-ink text-ivory flex flex-col font-sans selection:bg-oxblood selection:text-ivory relative">
+      {/* Ambient background glows */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(110,38,52,0.12),transparent_70%)]" />
+        <div className="absolute top-1/3 -left-48 w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(181,154,104,0.06),transparent_70%)]" />
+      </div>
+
       <Navbar />
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-24 pb-16 px-4 md:px-8 max-w-7xl mx-auto w-full">
+      <main className="relative z-10 flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
 
         {/* ── Top Bar & Case Workspace Switcher ─────────────────────────── */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-olive border border-border text-brass">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-olive to-charcoal border border-brass/30 text-brass shadow-brass shrink-0">
               <Swords className="h-6 w-6 text-brass" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold tracking-wide text-brass font-sans">
+                <span className="text-xs font-mono font-semibold tracking-wider text-brass uppercase">
                   Trial Strategy War Room
                 </span>
-                <span className="text-xs text-stone">· Adversarial Strategy Workspace</span>
+                <span className="text-xs text-stone/70">· Adversarial Strategy Workspace</span>
               </div>
               <div className="relative mt-1 flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setShowSessionDropdown(!showSessionDropdown)}
-                  className="group flex items-center gap-2 text-xl md:text-2xl font-serif font-semibold text-ivory hover:text-brass transition-colors"
+                  className="group flex items-center gap-2 text-xl sm:text-2xl font-display font-semibold text-ivory hover:text-brass transition-colors"
                 >
-                  <span className="truncate max-w-md">{currentSession ? currentSession.title : 'Select or Create a Case'}</span>
-                  <ChevronDown className="h-4 w-4 text-stone group-hover:text-brass transition-colors shrink-0" />
+                  <span className="truncate max-w-md sm:max-w-xl">{currentSession ? currentSession.title : 'Select or Create a Case'}</span>
+                  <ChevronDown className="h-4 w-4 text-brass/70 group-hover:text-brass transition-transform shrink-0" />
                 </button>
 
                 {/* Session Selector Dropdown */}
                 {showSessionDropdown && (
-                  <div className="absolute top-full left-0 mt-2 w-84 max-h-96 overflow-y-auto doc-scroll rounded-xl border border-border bg-charcoal shadow-2xl p-2 z-50">
-                    <div className="px-3 py-2 text-xs font-mono text-stone border-b border-border/50 uppercase tracking-wider flex items-center justify-between">
+                  <div className="absolute top-full left-0 mt-2.5 w-84 sm:w-96 max-h-96 overflow-y-auto doc-scroll rounded-xl border border-border bg-charcoal/95 backdrop-blur-xl shadow-2xl p-2 z-50">
+                    <div className="px-3 py-2 text-xs font-mono text-stone border-b border-border/70 uppercase tracking-wider flex items-center justify-between">
                       <span>Case Workspaces</span>
-                      <span className="text-[10px] text-brass">{sessions.length} total</span>
+                      <span className="text-[10px] font-semibold text-brass bg-olive px-2 py-0.5 rounded border border-border">{sessions.length} total</span>
                     </div>
-                    {sessions.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          setCurrentSession(s);
-                          setShowSessionDropdown(false);
-                        }}
-                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-colors ${
-                          currentSession?.id === s.id
-                            ? 'bg-olive text-brass font-medium border border-brass/30'
-                            : 'text-stone hover:text-ivory hover:bg-olive/50'
-                        }`}
-                      >
-                        <span className="truncate pr-2">{s.title}</span>
-                        <span className="text-[10px] font-mono text-stone shrink-0 uppercase">{s.case_type}</span>
-                      </button>
-                    ))}
+                    <div className="mt-1 space-y-1">
+                      {sessions.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => {
+                            setCurrentSession(s);
+                            setShowSessionDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all ${
+                            currentSession?.id === s.id
+                              ? 'bg-olive text-brass font-medium border border-brass/40 shadow-sm'
+                              : 'text-stone hover:text-ivory hover:bg-olive/60 border border-transparent'
+                          }`}
+                        >
+                          <span className="truncate pr-2 font-display">{s.title}</span>
+                          <span className="text-[10px] font-mono text-stone/80 shrink-0 uppercase bg-ink/70 px-1.5 py-0.5 rounded border border-border/60">{s.case_type}</span>
+                        </button>
+                      ))}
+                    </div>
                     {sessions.length === 0 && (
                       <div className="px-3 py-4 text-center text-xs text-stone">No active workspaces.</div>
                     )}
@@ -550,7 +558,7 @@ export default function WarRoomPage() {
             <button
               type="button"
               onClick={() => setShowNewModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-olive hover:bg-oxblood text-ivory border border-border hover:border-oxblood-light transition-all shadow-sm"
+              className="btn-oxblood px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-oxblood"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>New Workspace</span>
@@ -559,7 +567,7 @@ export default function WarRoomPage() {
             <button
               type="button"
               onClick={() => setShowDocModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-olive hover:bg-white/10 text-ivory border border-border transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium bg-olive hover:bg-olive/80 text-ivory border border-border hover:border-brass/40 transition-colors shadow-sm"
             >
               <FileText className="h-3.5 w-3.5 text-brass" />
               <span>
@@ -571,7 +579,7 @@ export default function WarRoomPage() {
               <button
                 type="button"
                 onClick={handleExportReport}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-brass/15 hover:bg-brass/25 text-brass border border-brass/30 transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-brass/15 hover:bg-brass/25 text-brass border border-brass/35 transition-colors shadow-sm"
                 title="Download complete strategy brief as Markdown"
               >
                 <Download className="h-3.5 w-3.5" />
@@ -583,7 +591,7 @@ export default function WarRoomPage() {
               <button
                 type="button"
                 onClick={() => handleDeleteSession(currentSession.id)}
-                className="p-2 rounded-lg text-stone/60 hover:text-red-400 hover:bg-red-950/20 transition-colors border border-transparent hover:border-red-900/40"
+                className="p-2 rounded-lg text-stone/50 hover:text-oxblood-light hover:bg-oxblood/15 transition-colors border border-transparent hover:border-oxblood/40"
                 title="Delete this War Room case"
               >
                 <Trash2 className="h-4 w-4" />
@@ -594,15 +602,15 @@ export default function WarRoomPage() {
 
         {/* ── Error Banner ────────────────────────────────────────────────── */}
         {errorMsg && (
-          <div className="my-4 p-3.5 rounded-lg bg-red-950/40 border border-red-800/60 text-red-200 text-xs flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
+          <div className="my-4 p-4 rounded-xl bg-oxblood/20 border border-oxblood-light/60 text-ivory text-xs flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-oxblood-light shrink-0" />
               <span>{errorMsg}</span>
             </div>
             <button
               type="button"
               onClick={() => setErrorMsg(null)}
-              className="text-red-400 hover:text-red-200"
+              className="text-stone hover:text-ivory transition-colors text-base leading-none px-1"
             >
               &times;
             </button>
@@ -611,27 +619,30 @@ export default function WarRoomPage() {
 
         {/* ── Case Context Strip ──────────────────────────────────────────── */}
         {currentSession && (
-          <div className="mt-4 p-4 rounded-xl bg-charcoal border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="mt-5 p-4 sm:p-5 rounded-xl bg-charcoal border border-border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="px-2.5 py-1 rounded bg-olive text-stone border border-border">
-                Forum: <strong className="text-ivory font-medium">{currentSession.court || 'Court of Record'}</strong>
+              <span className="px-3 py-1 rounded-md bg-olive text-stone border border-border flex items-center gap-1.5">
+                <span className="text-stone/70">Forum:</span>
+                <strong className="text-ivory font-medium">{currentSession.court || 'Court of Record'}</strong>
               </span>
-              <span className="px-2.5 py-1 rounded bg-olive text-stone border border-border">
-                Standing:{' '}
-                <strong className="text-brass font-medium uppercase">{currentSession.user_position}</strong>
+              <span className="px-3 py-1 rounded-md bg-oxblood/20 text-brass border border-brass/30 flex items-center gap-1.5">
+                <span className="text-brass/70">Standing:</span>
+                <strong className="text-brass font-semibold uppercase">{currentSession.user_position}</strong>
               </span>
-              <span className="px-2.5 py-1 rounded bg-olive text-stone border border-border">
-                Domain:{' '}
-                <strong className="text-ivory font-medium uppercase">{currentSession.case_type}</strong>
+              <span className="px-3 py-1 rounded-md bg-olive text-stone border border-border flex items-center gap-1.5">
+                <span className="text-stone/70">Domain:</span>
+                <strong className="text-ivory font-medium uppercase font-mono text-[11px]">{currentSession.case_type}</strong>
               </span>
               {currentSession.opposing_party && (
-                <span className="px-2.5 py-1 rounded bg-olive text-stone border border-border">
-                  Opposing: <strong className="text-ivory font-medium">{currentSession.opposing_party}</strong>
+                <span className="px-3 py-1 rounded-md bg-olive text-stone border border-border flex items-center gap-1.5">
+                  <span className="text-stone/70">Opposing:</span>
+                  <strong className="text-ivory font-medium">{currentSession.opposing_party}</strong>
                 </span>
               )}
               {currentSession.case_id && (
-                <span className="px-2.5 py-1 rounded bg-olive/80 text-verdigris border border-border">
-                  Linked Case: <strong className="font-mono text-xs">{currentSession.case_id.slice(0, 8)}</strong>
+                <span className="px-3 py-1 rounded-md bg-verdigris/15 text-verdigris border border-verdigris/30 flex items-center gap-1.5 font-mono">
+                  <span>Linked Case:</span>
+                  <strong className="font-semibold">{currentSession.case_id.slice(0, 8)}</strong>
                 </span>
               )}
             </div>
@@ -639,7 +650,7 @@ export default function WarRoomPage() {
             {/* Token & Cache Efficiency Badge */}
             <div className="flex items-center gap-2 text-[11px] font-mono text-stone/80 shrink-0">
               {lastUsageInfo ? (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-olive/80 border border-border">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-olive border border-border shadow-sm">
                   {lastUsageInfo.cache_hit ? (
                     <>
                       <Zap className="h-3 w-3 text-verdigris" />
@@ -653,13 +664,13 @@ export default function WarRoomPage() {
                   )}
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-stone/60">
+                <span className="flex items-center gap-1.5 text-stone/60 px-2">
                   <Shield className="h-3 w-3 text-verdigris" /> Trial Strategy Simulation
                 </span>
               )}
 
               {saveSuccess && (
-                <span className="text-verdigris flex items-center gap-1 font-sans text-xs">
+                <span className="text-verdigris flex items-center gap-1 font-sans text-xs bg-verdigris/10 px-2.5 py-0.5 rounded border border-verdigris/30">
                   <Check className="h-3 w-3" /> Saved
                 </span>
               )}
@@ -669,7 +680,7 @@ export default function WarRoomPage() {
 
         {/* ── 6 Functional Navigation Tabs ─────────────────────────────────── */}
         {currentSession && (
-          <div className="mt-6 flex border-b border-border overflow-x-auto no-scrollbar scrollbar-none gap-1">
+          <div className="mt-6 flex border-b border-border overflow-x-auto no-scrollbar scrollbar-none gap-1 bg-charcoal/40 p-1 rounded-t-xl">
             {[
               { id: 'overview', label: 'Case Overview', icon: FileCheck, count: overviewFacts.length },
               { id: 'evidence', label: 'Evidence Analysis', icon: Search, count: currentSession.evidence_findings?.length },
@@ -682,16 +693,20 @@ export default function WarRoomPage() {
                 key={id}
                 type="button"
                 onClick={() => setActiveTab(id as TabType)}
-                className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap rounded-t-lg ${
                   activeTab === id
-                    ? 'border-brass text-brass bg-olive/30 font-semibold'
-                    : 'border-transparent text-stone hover:text-ivory hover:border-border'
+                    ? 'border-brass text-brass bg-olive font-semibold shadow-[0_-2px_10px_rgba(181,154,104,0.12)]'
+                    : 'border-transparent text-stone hover:text-ivory hover:bg-olive/40'
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className={`h-4 w-4 ${activeTab === id ? 'text-brass' : 'text-stone/70'}`} />
                 <span>{label}</span>
                 {typeof count === 'number' && count > 0 && (
-                  <span className="ml-1 text-[10px] font-mono px-1.5 py-0.2 rounded bg-olive border border-border text-stone">
+                  <span className={`ml-1 text-[10px] font-mono px-1.5 py-0.2 rounded border ${
+                    activeTab === id
+                      ? 'bg-brass/20 border-brass/40 text-brass font-bold'
+                      : 'bg-olive border-border text-stone'
+                  }`}>
                     {count}
                   </span>
                 )}
@@ -707,26 +722,26 @@ export default function WarRoomPage() {
             {/* TAB 1: CASE OVERVIEW (Feature A) */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-charcoal border border-border">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-charcoal border border-border shadow-md">
                   <div>
-                    <h3 className="font-serif text-lg font-semibold text-ivory">Case Overview & Facts</h3>
-                    <p className="text-xs text-stone mt-0.5">
+                    <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Case Overview & Facts</h3>
+                    <p className="text-xs text-stone mt-1 max-w-2xl leading-relaxed">
                       Synthesized case summary, documented facts, statutory legal issues, dates, and unverified allegations.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <button
                       type="button"
                       onClick={() => setShowAddFactModal(true)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-olive hover:bg-olive/80 text-ivory border border-border flex items-center gap-1.5"
+                      className="px-3.5 py-2 rounded-lg text-xs font-medium bg-olive hover:bg-olive/80 text-ivory border border-border hover:border-brass/40 flex items-center gap-1.5 transition-colors shadow-sm"
                     >
-                      <Plus className="h-3 w-3" /> Add Fact
+                      <Plus className="h-3.5 w-3.5 text-brass" /> Add Fact
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRunAnalysis('overview')}
                       disabled={analyzingOp === 'overview'}
-                      className="btn-oxblood px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                      className="btn-oxblood px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-oxblood"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${analyzingOp === 'overview' ? 'animate-spin' : ''}`} />
                       <span>{analyzingOp === 'overview' ? 'Extracting Overview...' : 'Generate Case Overview'}</span>
@@ -735,9 +750,9 @@ export default function WarRoomPage() {
                 </div>
 
                 {/* Section A1: Case Summary & Narrative */}
-                <div className="p-5 rounded-xl bg-charcoal border border-border space-y-3">
+                <div className="p-5 sm:p-6 rounded-xl bg-charcoal border border-border space-y-3.5 shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-brass font-mono uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-brass font-mono uppercase tracking-wider flex items-center gap-2">
                       <FileText className="h-3.5 w-3.5" /> Case Summary & Pleadings
                     </span>
                     <button
@@ -749,40 +764,40 @@ export default function WarRoomPage() {
                           setEditingNarrative(true);
                         }
                       }}
-                      className="text-xs text-brass hover:underline flex items-center gap-1 font-sans"
+                      className="text-xs text-brass hover:text-ivory transition-colors flex items-center gap-1.5 font-sans"
                     >
                       <Edit3 className="h-3 w-3" /> {editingNarrative ? 'Save Changes' : 'Edit Narrative'}
                     </button>
                   </div>
 
                   {editingNarrative ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <textarea
                         rows={5}
                         value={narrativeDraft}
                         onChange={(e) => setNarrativeDraft(e.target.value)}
-                        className="w-full bg-olive rounded-lg p-3 text-xs md:text-sm text-ivory border border-border focus:border-brass/60 focus:outline-none leading-relaxed"
+                        className="w-full bg-olive rounded-lg p-3.5 text-xs md:text-sm text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none leading-relaxed transition-colors"
                         placeholder="Enter the case factual background, allegations, or contractual dispute details..."
                       />
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2.5">
                         <button
                           type="button"
                           onClick={() => setEditingNarrative(false)}
-                          className="px-3 py-1 rounded text-xs text-stone hover:text-ivory"
+                          className="px-3.5 py-1.5 rounded-lg text-xs text-stone hover:text-ivory transition-colors"
                         >
                           Cancel
                         </button>
                         <button
                           type="button"
                           onClick={handleSaveNarrative}
-                          className="btn-oxblood px-3.5 py-1 rounded text-xs font-semibold"
+                          className="btn-oxblood px-4 py-1.5 rounded-lg text-xs font-semibold shadow-oxblood"
                         >
                           Save
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs md:text-sm text-ivory/90 leading-relaxed font-sans bg-olive/30 p-3.5 rounded-lg border border-border/40 whitespace-pre-wrap">
+                    <p className="text-xs md:text-sm text-ivory/90 leading-relaxed font-sans bg-olive/40 p-4 rounded-lg border border-border/70 whitespace-pre-wrap">
                       {overviewSummary || 'No case narrative entered yet. Click "Edit Narrative" or "Generate Case Overview" above to extract a summary from your case details.'}
                     </p>
                   )}
@@ -790,14 +805,14 @@ export default function WarRoomPage() {
 
                 {/* Section A2: Main Legal Issues */}
                 {overviewIssues.length > 0 && (
-                  <div className="p-5 rounded-xl bg-charcoal border border-border space-y-3">
-                    <span className="text-xs font-semibold text-brass font-mono uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="p-5 sm:p-6 rounded-xl bg-charcoal border border-border space-y-3.5 shadow-md">
+                    <span className="text-xs font-semibold text-brass font-mono uppercase tracking-wider flex items-center gap-2">
                       <Scale className="h-3.5 w-3.5" /> Main Legal Issues for Determination
                     </span>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                       {overviewIssues.map((issue: string, idx: number) => (
-                        <div key={idx} className="p-3 rounded-lg bg-olive/40 border border-border/60 flex items-start gap-2.5">
-                          <span className="text-[11px] font-mono text-brass font-bold shrink-0 mt-0.5">#{idx + 1}</span>
+                        <div key={idx} className="p-3.5 rounded-lg bg-olive/50 border border-border/80 hover:border-brass/30 transition-colors flex items-start gap-3">
+                          <span className="text-[11px] font-mono text-brass bg-ink px-2 py-0.5 rounded border border-brass/30 font-bold shrink-0 mt-0.5">#{idx + 1}</span>
                           <span className="text-xs md:text-sm text-ivory/90 leading-relaxed">{issue}</span>
                         </div>
                       ))}
@@ -807,21 +822,21 @@ export default function WarRoomPage() {
 
                 {/* Section A3: Relevant Dates & Chronology */}
                 {overviewDates.length > 0 && (
-                  <div className="p-5 rounded-xl bg-charcoal border border-border space-y-3">
-                    <span className="text-xs font-semibold text-brass font-mono uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="p-5 sm:p-6 rounded-xl bg-charcoal border border-border space-y-3.5 shadow-md">
+                    <span className="text-xs font-semibold text-brass font-mono uppercase tracking-wider flex items-center gap-2">
                       <Calendar className="h-3.5 w-3.5" /> Chronology of Relevant Dates & Events
                     </span>
-                    <div className="space-y-2 pt-1">
+                    <div className="space-y-2.5 pt-1">
                       {overviewDates.map((item: RelevantDate, idx: number) => (
-                        <div key={idx} className="p-3 rounded-lg bg-olive/40 border border-border flex items-center justify-between gap-3 text-xs">
+                        <div key={idx} className="p-3.5 rounded-lg bg-olive/50 border border-border flex items-center justify-between gap-3 text-xs hover:border-brass/30 transition-colors">
                           <div className="flex items-center gap-3">
-                            <span className="font-mono text-brass bg-olive px-2 py-0.5 rounded border border-border shrink-0">
+                            <span className="font-mono text-brass bg-ink px-2.5 py-1 rounded border border-brass/30 shrink-0 font-medium">
                               {item.event_date}
                             </span>
                             <span className="text-ivory/90 font-sans">{item.description}</span>
                           </div>
                           {item.source_reference && (
-                            <span className="text-[10px] font-mono text-stone bg-charcoal px-2 py-0.5 rounded border border-border/60 shrink-0">
+                            <span className="text-[10px] font-mono text-stone bg-ink px-2 py-0.5 rounded border border-border/70 shrink-0">
                               {item.source_reference}
                             </span>
                           )}
@@ -832,9 +847,9 @@ export default function WarRoomPage() {
                 )}
 
                 {/* Section A4: Important Documented Facts */}
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-brass font-mono uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-brass font-mono uppercase tracking-wider flex items-center gap-2">
                       <FileCheck className="h-3.5 w-3.5" /> Documented & Verified Facts ({overviewFacts.length})
                     </span>
                     <span className="text-[11px] text-stone">Strictly distinguished from unadjudicated allegations</span>
@@ -850,21 +865,21 @@ export default function WarRoomPage() {
                       const isWitness = cat === 'witness_testimony';
 
                       const badgeStyle = isHolding
-                        ? 'bg-purple-950/50 text-purple-200 border-purple-800'
+                        ? 'bg-oxblood/30 text-ivory border-oxblood-light/60'
                         : isFinding
                         ? 'bg-verdigris/20 text-verdigris border-verdigris/40'
                         : isProcedural
-                        ? 'bg-sky-950/50 text-sky-300 border-sky-800'
-                        : isDoc
                         ? 'bg-olive text-brass border-brass/40'
+                        : isDoc
+                        ? 'bg-olive text-ivory border-border'
                         : isWitness
-                        ? 'bg-amber-950/40 text-amber-200 border-amber-800'
-                        : 'bg-stone/20 text-stone border-border';
+                        ? 'bg-brass/15 text-brass border-brass/35'
+                        : 'bg-stone/15 text-stone border-border';
 
                       return (
                         <div
                           key={fact.id}
-                          className="p-4 rounded-xl bg-charcoal border border-border hover:border-brass/30 transition-all"
+                          className="p-4 sm:p-5 rounded-xl bg-charcoal border border-border hover:border-brass/40 transition-all shadow-md"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex flex-wrap items-center gap-1.5">
@@ -882,7 +897,7 @@ export default function WarRoomPage() {
                               )}
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => handleToggleFactReviewed(fact.id)}
@@ -896,7 +911,7 @@ export default function WarRoomPage() {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteFact(fact.id)}
-                                className="p-1 rounded text-stone/40 hover:text-red-400 transition-colors"
+                                className="p-1 rounded text-stone/40 hover:text-oxblood-light transition-colors"
                                 title="Delete fact"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -908,7 +923,7 @@ export default function WarRoomPage() {
                             {fact.fact}
                           </p>
 
-                          <div className="mt-3 pt-2 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-stone">
+                          <div className="mt-3 pt-2.5 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-stone">
                             <span className="flex items-center gap-1.5">
                               <FileText className="h-3 w-3 text-brass" />
                               <span className="truncate max-w-[200px]">{fact.source_doc_title || 'Case Record'}</span>
@@ -917,14 +932,14 @@ export default function WarRoomPage() {
                               )}
                             </span>
                             {fact.page_number && (
-                              <span className="px-1.5 py-0.5 rounded bg-olive border border-border text-ivory font-mono">
+                              <span className="px-2 py-0.5 rounded bg-olive border border-border text-ivory font-mono text-[10px]">
                                 p. {fact.page_number}
                               </span>
                             )}
                           </div>
 
                           {fact.excerpt && (
-                            <p className="mt-2 p-2 rounded bg-olive/40 border border-border/50 text-[11px] text-stone italic font-legal">
+                            <p className="mt-2.5 p-2.5 rounded bg-olive/50 border-l-2 border-brass text-[11px] text-stone italic font-legal">
                               &ldquo;{fact.excerpt}&rdquo;
                             </p>
                           )}
@@ -946,7 +961,7 @@ export default function WarRoomPage() {
 
                 {/* Section A5: Unverified Allegations & Missing Information */}
                 {(overviewAllegations.length > 0 || overviewGaps.length > 0) && (
-                  <div className="p-5 rounded-xl bg-oxblood/10 border border-oxblood/30 space-y-4">
+                  <div className="p-5 sm:p-6 rounded-xl bg-oxblood/10 border border-oxblood/35 space-y-4 shadow-md">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-oxblood-light shrink-0" />
                       <span className="text-xs font-semibold text-oxblood-light font-mono uppercase tracking-wider">
@@ -959,16 +974,16 @@ export default function WarRoomPage() {
                         <span className="text-[11px] font-mono uppercase text-stone block">Unverified Allegations (Lacking Independent Proof):</span>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {overviewAllegations.map((al: any, idx: number) => (
-                            <div key={idx} className="p-3 rounded-lg bg-charcoal border border-oxblood/40 text-xs text-ivory/90 space-y-1">
+                            <div key={idx} className="p-3.5 rounded-lg bg-charcoal border border-oxblood/40 text-xs text-ivory/90 space-y-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-oxblood/30 text-oxblood-light border border-oxblood/50">
+                                <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-oxblood/30 text-oxblood-light border border-oxblood/50 font-semibold">
                                   Allegation
                                 </span>
-                                <span className="text-[10px] font-mono text-amber-300">Verification Required</span>
+                                <span className="text-[10px] font-mono text-brass font-medium">Verification Required</span>
                               </div>
                               <p className="text-xs text-ivory/90 leading-relaxed pt-1">{al.fact || al.allegation}</p>
                               {al.missing_proof && (
-                                <p className="text-[10px] font-mono text-stone pt-1 border-t border-border/40">
+                                <p className="text-[10px] font-mono text-stone/80 pt-1 border-t border-border/50">
                                   Missing Proof: {al.missing_proof}
                                 </p>
                               )}
@@ -996,10 +1011,10 @@ export default function WarRoomPage() {
             {/* TAB 2: EVIDENCE ANALYZER (Feature B) */}
             {activeTab === 'evidence' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-charcoal border border-border">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-charcoal border border-border shadow-md">
                   <div>
-                    <h3 className="font-serif text-lg font-semibold text-ivory">Document Evidence Analyzer</h3>
-                    <p className="text-xs text-stone mt-0.5">
+                    <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Document Evidence Analyzer</h3>
+                    <p className="text-xs text-stone mt-1 max-w-2xl leading-relaxed">
                       Evaluates exhibits for factual statements, spots contradictory assertions across documents, and highlights missing proof.
                     </p>
                   </div>
@@ -1007,7 +1022,7 @@ export default function WarRoomPage() {
                     type="button"
                     onClick={() => handleRunAnalysis('evidence')}
                     disabled={analyzingOp === 'evidence'}
-                    className="btn-oxblood px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                    className="btn-oxblood px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-oxblood"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${analyzingOp === 'evidence' ? 'animate-spin' : ''}`} />
                     <span>{analyzingOp === 'evidence' ? 'Analyzing Evidence...' : 'Analyze Evidence'}</span>
@@ -1020,26 +1035,26 @@ export default function WarRoomPage() {
                     return (
                       <div
                         key={ev.id}
-                        className={`p-5 rounded-xl bg-charcoal border transition-all ${
-                          isContradiction ? 'border-amber-700/60 bg-amber-950/10' : 'border-border'
+                        className={`p-5 rounded-xl bg-charcoal border transition-all shadow-md ${
+                          isContradiction ? 'border-oxblood/60 bg-oxblood/10' : 'border-border hover:border-brass/30'
                         }`}
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-olive border border-border text-brass">
+                            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-olive border border-border text-brass font-medium">
                               {ev.evidence_type?.replace(/_/g, ' ') || 'FACTUAL STATEMENT'}
                             </span>
                             {ev.evidentiary_status && (
                               <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border ${
                                 ev.evidentiary_status === 'established' || ev.evidentiary_status === 'corroborated_by_record'
-                                  ? 'bg-verdigris/15 text-verdigris border-verdigris/30'
-                                  : 'bg-amber-950/40 text-amber-300 border-amber-800'
+                                  ? 'bg-verdigris/15 text-verdigris border-verdigris/30 font-semibold'
+                                  : 'bg-oxblood/25 text-oxblood-light border-oxblood/40 font-semibold'
                               }`}>
                                 {ev.evidentiary_status.replace(/_/g, ' ')}
                               </span>
                             )}
                             {ev.legal_relevance && (
-                              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-olive/60 text-stone border border-border">
+                              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-olive text-stone border border-border">
                                 {ev.legal_relevance.replace(/_/g, ' ')}
                               </span>
                             )}
@@ -1064,20 +1079,20 @@ export default function WarRoomPage() {
 
                         {/* Why this finding matters */}
                         {ev.why_it_matters && (
-                          <div className="mt-2.5 p-2.5 rounded bg-olive/40 border border-border text-xs text-stone leading-relaxed">
+                          <div className="mt-3 p-3 rounded-lg bg-olive/50 border border-border text-xs text-stone leading-relaxed">
                             <strong className="text-brass uppercase font-mono text-[10px] block mb-0.5">Why this finding matters:</strong>
                             <p className="text-ivory/90">{ev.why_it_matters}</p>
                           </div>
                         )}
 
                         {ev.excerpt && (
-                          <blockquote className="mt-2.5 p-2.5 rounded bg-olive/50 border-l-2 border-brass text-xs font-legal italic text-stone">
+                          <blockquote className="mt-3 p-3 rounded-lg bg-olive/60 border-l-2 border-brass text-xs font-legal italic text-stone">
                             &ldquo;{ev.excerpt}&rdquo;
                           </blockquote>
                         )}
 
                         {ev.follow_up_question && (
-                          <div className="mt-3 p-2.5 rounded bg-oxblood/10 border border-oxblood/30 flex items-start gap-2">
+                          <div className="mt-3 p-3 rounded-lg bg-oxblood/15 border border-oxblood/35 flex items-start gap-2.5">
                             <HelpCircle className="h-4 w-4 text-oxblood-light shrink-0 mt-0.5" />
                             <div>
                               <span className="text-[10px] font-mono uppercase text-oxblood-light font-semibold">
@@ -1107,26 +1122,26 @@ export default function WarRoomPage() {
             {/* TAB 3: ARGUMENT BUILDER (Feature C) */}
             {activeTab === 'arguments' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-charcoal border border-border">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-charcoal border border-border shadow-md">
                   <div>
-                    <h3 className="font-serif text-lg font-semibold text-ivory">Affirmative Argument Builder</h3>
-                    <p className="text-xs text-stone mt-0.5">
+                    <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Affirmative Argument Builder</h3>
+                    <p className="text-xs text-stone mt-1 max-w-2xl leading-relaxed">
                       Generates arguments supporting your standing ({currentSession.user_position}), linking claims to evidence references and doctrinal reasoning.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <button
                       type="button"
                       onClick={() => setShowAddArgModal(true)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-olive hover:bg-olive/80 text-ivory border border-border flex items-center gap-1.5"
+                      className="px-3.5 py-2 rounded-lg text-xs font-medium bg-olive hover:bg-olive/80 text-ivory border border-border hover:border-brass/40 flex items-center gap-1.5 transition-colors shadow-sm"
                     >
-                      <Plus className="h-3 w-3" /> Custom Argument
+                      <Plus className="h-3.5 w-3.5 text-brass" /> Custom Argument
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRunAnalysis('arguments')}
                       disabled={analyzingOp === 'arguments'}
-                      className="btn-oxblood px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                      className="btn-oxblood px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-oxblood"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${analyzingOp === 'arguments' ? 'animate-spin' : ''}`} />
                       <span>{analyzingOp === 'arguments' ? 'Building Arguments...' : 'Build Arguments'}</span>
@@ -1136,22 +1151,22 @@ export default function WarRoomPage() {
 
                 <div className="space-y-4">
                   {currentSession.arguments?.map((arg: any, idx: number) => (
-                    <div key={arg.id || idx} className="p-5 rounded-xl bg-charcoal border border-border space-y-3">
+                    <div key={arg.id || idx} className="p-5 sm:p-6 rounded-xl bg-charcoal border border-border hover:border-brass/40 transition-all space-y-3.5 shadow-md">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-brass/15 text-brass border border-brass/30 font-semibold">
+                            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-brass/15 text-brass border border-brass/35 font-semibold">
                               Argument #{idx + 1}
                             </span>
                             {arg.is_custom && (
-                              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-olive text-stone">
+                              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-olive border border-border text-stone">
                                 Custom
                               </span>
                             )}
                           </div>
-                          <h4 className="mt-1.5 font-serif text-base font-semibold text-ivory">{arg.title}</h4>
+                          <h4 className="mt-2 font-display text-base sm:text-lg font-semibold text-ivory">{arg.title}</h4>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleRunAnalysis('arguments', arg.id)}
@@ -1163,7 +1178,7 @@ export default function WarRoomPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteArgument(arg.id)}
-                            className="p-1.5 rounded text-stone/50 hover:text-red-400 transition-colors"
+                            className="p-1.5 rounded text-stone/50 hover:text-oxblood-light transition-colors"
                             title="Delete argument"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -1172,13 +1187,13 @@ export default function WarRoomPage() {
                       </div>
 
                       {arg.legal_issue && (
-                        <div className="text-xs text-stone leading-relaxed bg-olive/20 p-2.5 rounded border border-border/40">
+                        <div className="text-xs text-stone leading-relaxed bg-olive/40 p-3 rounded-lg border border-border/60">
                           <strong className="text-brass font-mono uppercase text-[10px] block mb-0.5">Legal Issue:</strong>
                           <span>{arg.legal_issue}</span>
                         </div>
                       )}
 
-                      <div className="p-3 rounded-lg bg-olive/40 border border-border text-xs md:text-sm text-ivory leading-relaxed font-sans">
+                      <div className="p-3.5 rounded-lg bg-olive/60 border border-border text-xs md:text-sm text-ivory leading-relaxed font-sans">
                         <strong className="text-brass font-medium">Main Claim:</strong> {arg.main_claim}
                       </div>
 
@@ -1231,30 +1246,30 @@ export default function WarRoomPage() {
 
                       {/* Evidence Still Required or Potential Weaknesses */}
                       {(safeArray(arg.evidence_still_required).length > 0 || safeArray(arg.potential_weaknesses).length > 0) && (
-                        <div className="mt-2 p-2.5 rounded bg-amber-950/20 border border-amber-800/40 text-xs text-amber-200/90 space-y-1">
-                          <div className="flex items-center gap-1.5 font-semibold text-amber-300">
-                            <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                        <div className="mt-3 p-3 rounded-lg bg-oxblood/15 border border-oxblood/35 text-xs text-ivory/90 space-y-1.5">
+                          <div className="flex items-center gap-1.5 font-semibold text-oxblood-light">
+                            <AlertTriangle className="h-3.5 w-3.5 text-oxblood-light" />
                             <span>Weaknesses & Missing Proof to Address:</span>
                           </div>
                           {safeArray(arg.evidence_still_required).length > 0 && (
-                            <p className="text-[11px] font-mono">Proof Needed: {safeArray(arg.evidence_still_required).join('; ')}</p>
+                            <p className="text-[11px] font-mono text-stone">Proof Needed: {safeArray(arg.evidence_still_required).join('; ')}</p>
                           )}
                           {safeArray(arg.potential_weaknesses).length > 0 && (
-                            <p className="text-[11px]">Vulnerabilities: {safeArray(arg.potential_weaknesses).join('; ')}</p>
+                            <p className="text-[11px] text-stone">Vulnerabilities: {safeArray(arg.potential_weaknesses).join('; ')}</p>
                           )}
                         </div>
                       )}
 
                       {/* Counter-argument & Rebuttal */}
                       {arg.strongest_opposing_argument && (
-                        <div className="p-2.5 rounded bg-oxblood/10 border border-oxblood/30 text-xs text-ivory/90 space-y-1">
+                        <div className="p-3 rounded-lg bg-olive/50 border border-border text-xs text-ivory/90 space-y-2">
                           <div>
-                            <strong className="text-oxblood-light font-mono uppercase text-[10px]">Opposing Counter-Argument:</strong>{' '}
+                            <strong className="text-oxblood-light font-mono uppercase text-[10px] block mb-0.5">Opposing Counter-Argument:</strong>
                             <span>{arg.strongest_opposing_argument}</span>
                           </div>
                           {arg.rebuttal_and_weaknesses && (
-                            <div className="pt-1 border-t border-oxblood/20">
-                              <strong className="text-verdigris font-mono uppercase text-[10px]">Evidence-Based Rebuttal:</strong>{' '}
+                            <div className="pt-2 border-t border-border/60">
+                              <strong className="text-verdigris font-mono uppercase text-[10px] block mb-0.5">Evidence-Based Rebuttal:</strong>
                               <span>{arg.rebuttal_and_weaknesses}</span>
                             </div>
                           )}
@@ -1279,10 +1294,10 @@ export default function WarRoomPage() {
             {/* TAB 4: OPPOSITION SIMULATOR (Feature D) */}
             {activeTab === 'opposition' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-charcoal border border-border">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-charcoal border border-border shadow-md">
                   <div>
-                    <h3 className="font-serif text-lg font-semibold text-ivory">Opposition Simulator (Devil&apos;s Advocate)</h3>
-                    <p className="text-xs text-stone mt-0.5">
+                    <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Opposition Simulator (Devil&apos;s Advocate)</h3>
+                    <p className="text-xs text-stone mt-1 max-w-2xl leading-relaxed">
                       Generates plausible counterarguments the opposing party may raise, based on available evidence, and formulates rebuttal tactics.
                     </p>
                   </div>
@@ -1290,7 +1305,7 @@ export default function WarRoomPage() {
                     type="button"
                     onClick={() => handleRunAnalysis('opposition')}
                     disabled={analyzingOp === 'opposition'}
-                    className="btn-oxblood px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                    className="btn-oxblood px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-oxblood"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${analyzingOp === 'opposition' ? 'animate-spin' : ''}`} />
                     <span>{analyzingOp === 'opposition' ? 'Simulating...' : 'Run Opposition Simulation'}</span>
@@ -1299,7 +1314,7 @@ export default function WarRoomPage() {
 
                 <div className="space-y-4">
                   {currentSession.opposition?.map((opp: any, idx: number) => (
-                    <div key={opp.id || idx} className="p-5 rounded-xl bg-charcoal border border-oxblood/40 space-y-3">
+                    <div key={opp.id || idx} className="p-5 sm:p-6 rounded-xl bg-charcoal border border-oxblood/40 hover:border-oxblood-light/60 transition-all space-y-3.5 shadow-md">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-oxblood/30 text-oxblood-light border border-oxblood/50 font-semibold">
                           Hostile Contention #{idx + 1}
@@ -1307,11 +1322,11 @@ export default function WarRoomPage() {
                         <span className="text-xs text-stone">Anticipated Opposing Argument</span>
                       </div>
 
-                      <h4 className="font-serif text-base font-semibold text-ivory">{opp.opposing_claim}</h4>
+                      <h4 className="font-display text-base sm:text-lg font-semibold text-ivory">{opp.opposing_claim}</h4>
 
                       {/* Supporting facts or evidence opponent will cite */}
                       {safeArray(opp.supporting_facts_evidence).length > 0 && (
-                        <div className="p-3 rounded-lg bg-olive/50 border border-border text-xs text-stone leading-relaxed">
+                        <div className="p-3.5 rounded-lg bg-olive/50 border border-border text-xs text-stone leading-relaxed">
                           <strong className="text-oxblood-light font-medium uppercase font-mono text-[10px] block mb-0.5">
                             Facts / Evidence Opponent Will Cite:
                           </strong>
@@ -1326,19 +1341,19 @@ export default function WarRoomPage() {
                       {/* Weaknesses in user argument */}
                       {safeArray(opp.user_position_weaknesses).length > 0 && (
                         <div className="text-xs text-stone leading-relaxed pt-1">
-                          <strong className="text-amber-400 font-medium">Weaknesses in Client Argument:</strong>{' '}
+                          <strong className="text-brass font-medium">Weaknesses in Client Argument:</strong>{' '}
                           {safeArray(opp.user_position_weaknesses).join('; ')}
                         </div>
                       )}
 
                       {/* Adverse precedents */}
                       {safeArray(opp.adverse_precedents).length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
                           <span className="text-[10px] font-mono text-stone uppercase mr-1">Hostile Authorities:</span>
                           {safeArray(opp.adverse_precedents).map((ap: string, apIdx: number) => (
                             <span
                               key={apIdx}
-                              className="text-[11px] font-serif italic px-2 py-0.5 rounded bg-red-950/40 border border-red-900/60 text-red-200"
+                              className="text-[11px] font-serif italic px-2.5 py-1 rounded bg-oxblood/25 border border-oxblood/50 text-ivory"
                             >
                               {ap}
                             </span>
@@ -1348,7 +1363,7 @@ export default function WarRoomPage() {
 
                       {/* Possible responses / Rebuttal */}
                       {safeArray(opp.suggested_rebuttal_counterarguments).length > 0 && (
-                        <div className="p-3 rounded-lg bg-verdigris/10 border border-verdigris/30 text-xs text-ivory flex items-start gap-2">
+                        <div className="p-3.5 rounded-lg bg-verdigris/10 border border-verdigris/30 text-xs text-ivory flex items-start gap-2.5">
                           <CheckCircle2 className="h-4 w-4 text-verdigris shrink-0 mt-0.5" />
                           <div>
                             <span className="font-semibold text-verdigris uppercase font-mono text-[10px]">
@@ -1385,10 +1400,10 @@ export default function WarRoomPage() {
             {/* TAB 5: RISK ASSESSMENT (Feature E) */}
             {activeTab === 'risks' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-charcoal border border-border">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-charcoal border border-border shadow-md">
                   <div>
-                    <h3 className="font-serif text-lg font-semibold text-ivory">Risk Assessment & Evidentiary Pitfalls</h3>
-                    <p className="text-xs text-stone mt-0.5">
+                    <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Risk Assessment & Evidentiary Pitfalls</h3>
+                    <p className="text-xs text-stone mt-1 max-w-2xl leading-relaxed">
                       Identifies unsupported claims, weak arguments, missing evidence, and limitations. Explains why each risk matters without arbitrary win scores.
                     </p>
                   </div>
@@ -1396,7 +1411,7 @@ export default function WarRoomPage() {
                     type="button"
                     onClick={() => handleRunAnalysis('risks')}
                     disabled={analyzingOp === 'risks'}
-                    className="btn-oxblood px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                    className="btn-oxblood px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-oxblood"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${analyzingOp === 'risks' ? 'animate-spin' : ''}`} />
                     <span>{analyzingOp === 'risks' ? 'Assessing Risks...' : 'Assess Case Risks'}</span>
@@ -1409,17 +1424,17 @@ export default function WarRoomPage() {
                     return (
                       <div
                         key={r.id || idx}
-                        className={`p-5 rounded-xl bg-charcoal border transition-all ${
-                          isHigh ? 'border-red-900/60 bg-red-950/10' : 'border-border'
+                        className={`p-5 rounded-xl bg-charcoal border transition-all shadow-md ${
+                          isHigh ? 'border-oxblood-light/60 bg-oxblood/15' : 'border-border hover:border-brass/30'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <span
-                              className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-semibold ${
+                              className={`text-[10px] font-mono uppercase px-2.5 py-0.5 rounded font-semibold border ${
                                 isHigh
-                                  ? 'bg-red-950/50 text-red-300 border border-red-800'
-                                  : 'bg-olive text-stone border border-border'
+                                  ? 'bg-oxblood/40 text-oxblood-light border-oxblood-light/60'
+                                  : 'bg-olive text-stone border-border'
                               }`}
                             >
                               {r.severity} Risk
@@ -1438,7 +1453,7 @@ export default function WarRoomPage() {
                         )}
 
                         {safeArray(r.mitigation_steps).length > 0 && (
-                          <div className="mt-3 p-3 rounded-lg bg-olive/40 border border-border text-xs text-stone space-y-1">
+                          <div className="mt-3 p-3.5 rounded-lg bg-olive/50 border border-border text-xs text-stone space-y-1">
                             <strong className="text-verdigris font-medium uppercase font-mono text-[10px] block">
                               Mitigation Strategy:
                             </strong>
@@ -1473,22 +1488,21 @@ export default function WarRoomPage() {
               </div>
             )}
 
-
-            {/* TAB 7: STRATEGY REPORT */}
+            {/* TAB 6: STRATEGY REPORT */}
             {activeTab === 'report' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-charcoal border border-border">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-charcoal border border-border shadow-md">
                   <div>
-                    <h3 className="font-serif text-lg font-semibold text-ivory">Comprehensive Legal Strategy Report</h3>
-                    <p className="text-xs text-stone mt-0.5">
+                    <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Comprehensive Legal Strategy Report</h3>
+                    <p className="text-xs text-stone mt-1 max-w-2xl leading-relaxed">
                       Unified 10-section strategic brief aggregating factual chronology, affirmative arguments, devil&apos;s advocate stress test, and action plan.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <button
                       type="button"
                       onClick={handleExportReport}
-                      className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brass/20 text-brass border border-brass/40 flex items-center gap-1.5 hover:bg-brass/30 transition-colors"
+                      className="px-4 py-2 rounded-lg text-xs font-semibold bg-brass/20 text-brass border border-brass/40 flex items-center gap-1.5 hover:bg-brass/30 transition-colors shadow-sm"
                     >
                       <Download className="h-3.5 w-3.5" /> Download (.MD)
                     </button>
@@ -1496,7 +1510,7 @@ export default function WarRoomPage() {
                       type="button"
                       onClick={() => handleRunAnalysis('report')}
                       disabled={analyzingOp === 'report'}
-                      className="btn-oxblood px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                      className="btn-oxblood px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-oxblood"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${analyzingOp === 'report' ? 'animate-spin' : ''}`} />
                       <span>{analyzingOp === 'report' ? 'Generating Report...' : 'Synthesize Report'}</span>
@@ -1505,16 +1519,16 @@ export default function WarRoomPage() {
                 </div>
 
                 {Object.keys(currentSession.report || {}).length > 0 ? (
-                  <div className="p-6 md:p-8 rounded-xl bg-charcoal border border-border space-y-6 font-sans">
-                    <div className="border-b border-border pb-4">
+                  <div className="p-6 sm:p-8 md:p-10 rounded-2xl bg-charcoal border border-border space-y-7 font-sans shadow-2xl">
+                    <div className="border-b border-border pb-5">
                       <div className="text-xs font-mono uppercase tracking-widest text-brass">
                         NyayaSarathi Legal War Room Strategy Brief
                       </div>
-                      <h2 className="font-serif text-2xl font-bold text-ivory mt-1">{currentSession.title}</h2>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-stone">
-                        <span>Forum: {currentSession.court}</span>
+                      <h2 className="font-display text-2xl sm:text-3xl font-bold text-ivory mt-2">{currentSession.title}</h2>
+                      <div className="mt-3 flex flex-wrap gap-3 text-xs text-stone">
+                        <span>Forum: <strong className="text-ivory font-medium">{currentSession.court}</strong></span>
                         <span>&bull;</span>
-                        <span>Standing: {currentSession.user_position.toUpperCase()}</span>
+                        <span>Standing: <strong className="text-brass font-medium uppercase">{currentSession.user_position}</strong></span>
                         <span>&bull;</span>
                         <span>Generated: {currentSession.report.generated_at || 'Recent'}</span>
                       </div>
@@ -1522,82 +1536,82 @@ export default function WarRoomPage() {
 
                     {/* Section 1: Executive Summary */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">1. Executive Summary</h3>
-                      <p className="text-xs md:text-sm text-ivory/90 leading-relaxed bg-olive/30 p-3.5 rounded-lg border border-border/50">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">1. Executive Summary</h3>
+                      <p className="text-xs md:text-sm text-ivory/90 leading-relaxed bg-olive/40 p-4 rounded-xl border border-border/60 whitespace-pre-wrap">
                         {currentSession.report.executive_summary}
                       </p>
                     </div>
 
                     {/* Section 2: Parties & Procedural Posture */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">2. Parties & Procedural Posture</h3>
-                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/30 p-3.5 rounded-lg border border-border/50">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">2. Parties & Procedural Posture</h3>
+                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/40 p-4 rounded-xl border border-border/60 leading-relaxed">
                         {currentSession.report.parties_and_procedural_posture || currentSession.report.parties_and_issues}
                       </pre>
                     </div>
 
                     {/* Section 3: Verified Factual Chronology */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">3. Verified Factual Chronology</h3>
-                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/30 p-3.5 rounded-lg border border-border/50">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">3. Verified Factual Chronology</h3>
+                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/40 p-4 rounded-xl border border-border/60 leading-relaxed">
                         {currentSession.report.verified_factual_chronology || currentSession.report.factual_chronology}
                       </pre>
                     </div>
 
                     {/* Section 4: Issues for Determination */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">4. Issues for Determination</h3>
-                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/30 p-3.5 rounded-lg border border-border/50">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">4. Issues for Determination</h3>
+                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/40 p-4 rounded-xl border border-border/60 leading-relaxed">
                         {currentSession.report.issues_for_determination || currentSession.report.parties_and_issues}
                       </pre>
                     </div>
 
                     {/* Section 5: Evidence Matrix */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">5. Evidence Matrix with Source References</h3>
-                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/30 p-3.5 rounded-lg border border-border/50 leading-relaxed">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">5. Evidence Matrix with Source References</h3>
+                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/40 p-4 rounded-xl border border-border/60 leading-relaxed">
                         {currentSession.report.evidence_matrix || currentSession.report.evidence_analysis || 'Refer to the Evidence Analyzer tab for detailed evidentiary classification.'}
                       </pre>
                     </div>
 
                     {/* Section 6: Arguments & Counter-Arguments */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">6. Arguments & Counter-Arguments</h3>
-                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/30 p-3.5 rounded-lg border border-border/50 leading-relaxed">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">6. Arguments & Counter-Arguments</h3>
+                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/40 p-4 rounded-xl border border-border/60 leading-relaxed">
                         {currentSession.report.arguments_and_counterarguments || currentSession.report.affirmative_arguments}
                       </pre>
                     </div>
 
                     {/* Section 7: Relevant Verified Precedents */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">7. Relevant Verified Precedents</h3>
-                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/30 p-3.5 rounded-lg border border-border/50 leading-relaxed">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">7. Relevant Verified Precedents</h3>
+                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/40 p-4 rounded-xl border border-border/60 leading-relaxed">
                         {currentSession.report.precedent_landscape || 'Refer to the Precedents tab for full judicial holdings.'}
                       </pre>
                     </div>
 
                     {/* Section 8: Risks, Evidentiary Gaps & Unresolved Questions */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">
                         8. Risks, Evidentiary Gaps & Unresolved Questions
                       </h3>
-                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/30 p-3.5 rounded-lg border border-border/50 leading-relaxed">
+                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/40 p-4 rounded-xl border border-border/60 leading-relaxed">
                         {currentSession.report.risks_evidentiary_gaps_questions || currentSession.report.risks_and_weaknesses}
                       </pre>
                     </div>
 
                     {/* Section 9: Practical Next Steps */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">9. Practical Next Steps (Stage-Appropriate)</h3>
-                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/30 p-3.5 rounded-lg border border-border/50 leading-relaxed">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">9. Practical Next Steps (Stage-Appropriate)</h3>
+                      <pre className="text-xs md:text-sm text-ivory/80 whitespace-pre-wrap font-sans bg-olive/40 p-4 rounded-xl border border-border/60 leading-relaxed">
                         {currentSession.report.practical_next_steps || currentSession.report.action_plan}
                       </pre>
                     </div>
 
                     {/* Section 10: Limitations & Verification Warnings */}
                     <div>
-                      <h3 className="font-serif text-base font-semibold text-brass mb-1.5">10. Limitations & Verification Warnings</h3>
-                      <div className="p-3.5 rounded-lg bg-red-950/20 border border-red-900/40 text-xs md:text-sm text-red-200/90 leading-relaxed">
+                      <h3 className="font-display text-base font-semibold text-brass mb-2 flex items-center gap-2 border-b border-border/60 pb-1">10. Limitations & Verification Warnings</h3>
+                      <div className="p-4 rounded-xl bg-oxblood/15 border border-oxblood/35 text-xs md:text-sm text-ivory/90 leading-relaxed">
                         {currentSession.report.limitations_and_verification_warnings || currentSession.report.disclaimer || 'All legal findings require independent verification by practicing advocates.'}
                       </div>
                     </div>
@@ -1617,16 +1631,16 @@ export default function WarRoomPage() {
           </div>
         ) : (
           /* Empty state when no sessions exist */
-          <div className="mt-12 p-12 rounded-2xl bg-charcoal border border-dashed border-border text-center max-w-lg mx-auto">
+          <div className="mt-12 p-12 rounded-2xl bg-charcoal border border-dashed border-border text-center max-w-lg mx-auto shadow-xl">
             <Swords className="h-12 w-12 text-brass mx-auto mb-3" />
-            <h3 className="font-serif text-xl font-semibold text-ivory">Welcome to Legal War Room</h3>
-            <p className="text-xs text-stone mt-1.5 leading-relaxed">
+            <h3 className="font-display text-2xl font-semibold text-ivory">Welcome to Legal War Room</h3>
+            <p className="text-xs text-stone mt-2 leading-relaxed">
               Create an AI-assisted case workspace to stress-test your arguments, review documentary evidence, and formulate winning litigation strategies.
             </p>
             <button
               type="button"
               onClick={() => setShowNewModal(true)}
-              className="mt-6 btn-oxblood px-5 py-2.5 rounded-lg text-sm font-semibold inline-flex items-center gap-2 shadow-oxblood"
+              className="mt-6 btn-oxblood px-6 py-3 rounded-xl text-sm font-semibold inline-flex items-center gap-2 shadow-oxblood"
             >
               <Plus className="h-4 w-4" />
               <span>Create Your First Workspace</span>
@@ -1638,24 +1652,24 @@ export default function WarRoomPage() {
 
       {/* ── MODAL: Create New Case Workspace ──────────────────────────────── */}
       {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl bg-charcoal border border-border p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto doc-scroll">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="font-serif text-lg font-semibold text-ivory">New Legal War Room Workspace</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-2xl bg-charcoal border border-border p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto doc-scroll">
+            <div className="flex items-center justify-between pb-3.5 border-b border-border">
+              <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">New Legal War Room Workspace</h3>
               <button
                 type="button"
                 onClick={() => setShowNewModal(false)}
-                className="text-stone hover:text-ivory text-xl"
+                className="text-stone hover:text-ivory text-2xl leading-none transition-colors"
               >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleCreateSession} className="mt-4 space-y-4">
+            <form onSubmit={handleCreateSession} className="mt-5 space-y-4">
               {/* Optional Existing Case selector */}
               {existingCases.length > 0 && (
                 <div>
-                  <label className="text-xs font-mono text-stone uppercase block mb-1">
+                  <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">
                     Link with Existing Case (Optional)
                   </label>
                   <select
@@ -1668,7 +1682,7 @@ export default function WarRoomPage() {
                         setNewTitle(found.title);
                       }
                     }}
-                    className="w-full bg-olive rounded-lg px-3 py-2 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                    className="w-full bg-olive rounded-lg px-3.5 py-2.5 text-xs text-ivory border border-border focus:border-brass focus:outline-none transition-colors"
                   >
                     <option value="">-- Start from scratch or select existing case --</option>
                     {existingCases.map((c) => (
@@ -1681,34 +1695,34 @@ export default function WarRoomPage() {
               )}
 
               <div>
-                <label className="text-xs font-mono text-stone uppercase block mb-1">Case Title *</label>
+                <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Case Title *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. State of Maharashtra v. Rajesh Sharma"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full bg-olive rounded-lg px-3 py-2 text-sm text-ivory border border-border focus:border-brass focus:outline-none"
+                  className="w-full bg-olive rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-mono text-stone uppercase block mb-1">Court / Forum</label>
+                  <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Court / Forum</label>
                   <input
                     type="text"
-                    placeholder="e.g. Bombay High Court / Supreme Court"
+                    placeholder="e.g. Bombay High Court"
                     value={newCourt}
                     onChange={(e) => setNewCourt(e.target.value)}
-                    className="w-full bg-olive rounded-lg px-3 py-2 text-sm text-ivory border border-border focus:border-brass focus:outline-none"
+                    className="w-full bg-olive rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-mono text-stone uppercase block mb-1">Case Type / Domain</label>
+                  <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Case Type / Domain</label>
                   <select
                     value={newCaseType}
                     onChange={(e) => setNewCaseType(e.target.value)}
-                    className="w-full bg-olive rounded-lg px-3 py-2 text-sm text-ivory border border-border focus:border-brass focus:outline-none"
+                    className="w-full bg-olive rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-ivory border border-border focus:border-brass focus:outline-none transition-colors"
                   >
                     <option value="bail">Bail / Anticipatory Bail</option>
                     <option value="criminal">Criminal Appeal / Revision</option>
@@ -1724,11 +1738,11 @@ export default function WarRoomPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-mono text-stone uppercase block mb-1">Procedural Role</label>
+                  <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Procedural Role</label>
                   <select
                     value={newUserPosition}
                     onChange={(e) => setNewUserPosition(e.target.value)}
-                    className="w-full bg-olive rounded-lg px-3 py-2 text-sm text-ivory border border-border focus:border-brass focus:outline-none"
+                    className="w-full bg-olive rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-ivory border border-border focus:border-brass focus:outline-none transition-colors"
                   >
                     <option value="applicant">Applicant / Petitioner</option>
                     <option value="respondent">Respondent / Accused</option>
@@ -1738,39 +1752,39 @@ export default function WarRoomPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-mono text-stone uppercase block mb-1">Opposing Party</label>
+                  <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Opposing Party</label>
                   <input
                     type="text"
-                    placeholder="e.g. State of Maharashtra / Complainant"
+                    placeholder="e.g. State of Maharashtra"
                     value={newOpposingParty}
                     onChange={(e) => setNewOpposingParty(e.target.value)}
-                    className="w-full bg-olive rounded-lg px-3 py-2 text-sm text-ivory border border-border focus:border-brass focus:outline-none"
+                    className="w-full bg-olive rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-mono text-stone uppercase block mb-1">Initial Facts / Narrative</label>
+                <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Initial Facts / Narrative</label>
                 <textarea
                   rows={3}
                   placeholder="Summarize the core dispute, allegations, or background facts..."
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  className="w-full bg-olive rounded-lg p-3 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                  className="w-full bg-olive rounded-lg p-3.5 text-xs text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowNewModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-stone hover:text-ivory"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-stone hover:text-ivory transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn-oxblood px-5 py-2 rounded-lg text-xs font-semibold shadow-sm"
+                  className="btn-oxblood px-5 py-2 rounded-lg text-xs font-semibold shadow-oxblood"
                 >
                   Create Case Workspace
                 </button>
@@ -1782,20 +1796,20 @@ export default function WarRoomPage() {
 
       {/* ── MODAL: Select Evidence Documents ──────────────────────────────── */}
       {showDocModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-2xl bg-charcoal border border-border p-6 shadow-2xl relative max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="font-serif text-lg font-semibold text-ivory">Select Case Documents</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-xl rounded-2xl bg-charcoal border border-border p-6 sm:p-7 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3.5 border-b border-border">
+              <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Select Case Documents</h3>
               <button
                 type="button"
                 onClick={() => setShowDocModal(false)}
-                className="text-stone hover:text-ivory text-xl"
+                className="text-stone hover:text-ivory text-2xl leading-none transition-colors"
               >
                 &times;
               </button>
             </div>
 
-            <p className="text-xs text-stone mt-2">
+            <p className="text-xs text-stone mt-2.5">
               Attach uploaded documents (FIR, charge sheet, affidavits, depositions) to ground analysis strictly in document evidence.
             </p>
 
@@ -1807,15 +1821,15 @@ export default function WarRoomPage() {
                     key={doc.id}
                     type="button"
                     onClick={() => toggleDocumentSelection(doc.id)}
-                    className={`w-full p-3 rounded-lg border text-left flex items-center justify-between transition-colors ${
+                    className={`w-full p-3.5 rounded-lg border text-left flex items-center justify-between transition-all ${
                       isSelected
-                        ? 'bg-olive border-brass/60 text-ivory'
-                        : 'bg-olive/40 border-border text-stone hover:text-ivory'
+                        ? 'bg-olive border-brass/60 text-ivory shadow-sm'
+                        : 'bg-olive/40 border-border text-stone hover:text-ivory hover:border-border/80'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-4 w-4 rounded border flex items-center justify-center ${
+                        className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${
                           isSelected ? 'bg-brass border-brass text-ink' : 'border-stone/40'
                         }`}
                       >
@@ -1828,7 +1842,7 @@ export default function WarRoomPage() {
                         </div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-charcoal text-stone">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-ink text-stone border border-border/70">
                       {doc.file_type}
                     </span>
                   </button>
@@ -1842,11 +1856,11 @@ export default function WarRoomPage() {
               )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-border flex justify-end">
+            <div className="mt-5 pt-3.5 border-t border-border flex justify-end">
               <button
                 type="button"
                 onClick={() => setShowDocModal(false)}
-                className="btn-oxblood px-5 py-2 rounded-lg text-xs font-semibold"
+                className="btn-oxblood px-5 py-2 rounded-lg text-xs font-semibold shadow-oxblood"
               >
                 Done
               </button>
@@ -1857,37 +1871,37 @@ export default function WarRoomPage() {
 
       {/* ── MODAL: Add Custom Fact ────────────────────────────────────────── */}
       {showAddFactModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-charcoal border border-border p-6 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="font-serif text-lg font-semibold text-ivory">Add Case Fact</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-2xl bg-charcoal border border-border p-6 sm:p-7 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3.5 border-b border-border">
+              <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Add Case Fact</h3>
               <button
                 type="button"
                 onClick={() => setShowAddFactModal(false)}
-                className="text-stone hover:text-ivory text-xl"
+                className="text-stone hover:text-ivory text-2xl leading-none transition-colors"
               >
                 &times;
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3.5">
               <div>
-                <label className="text-xs font-mono text-stone uppercase block mb-1">Fact Statement *</label>
+                <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Fact Statement *</label>
                 <textarea
                   rows={3}
                   value={factText}
                   onChange={(e) => setFactText(e.target.value)}
                   placeholder="Enter specific factual finding or recorded event..."
-                  className="w-full bg-olive rounded-lg p-2.5 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                  className="w-full bg-olive rounded-lg p-3 text-xs text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-mono text-stone uppercase block mb-1">Category</label>
+                <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Category</label>
                 <select
                   value={factCategory}
                   onChange={(e) => setFactCategory(e.target.value)}
-                  className="w-full bg-olive rounded-lg px-3 py-2 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                  className="w-full bg-olive rounded-lg px-3.5 py-2.5 text-xs text-ivory border border-border focus:border-brass focus:outline-none transition-colors"
                 >
                   <option value="established_fact">Established Fact (Documented)</option>
                   <option value="procedural_event">Procedural Event (Court Record)</option>
@@ -1898,41 +1912,41 @@ export default function WarRoomPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-mono text-stone uppercase block mb-1">Source Doc Title</label>
+                  <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Source Doc Title</label>
                   <input
                     type="text"
                     value={factDocTitle}
                     onChange={(e) => setFactDocTitle(e.target.value)}
                     placeholder="e.g. FIR No. 102/2024"
-                    className="w-full bg-olive rounded-lg px-3 py-2 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                    className="w-full bg-olive rounded-lg px-3 py-2 text-xs text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-mono text-stone uppercase block mb-1">Page #</label>
+                  <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Page #</label>
                   <input
                     type="number"
                     value={factPage}
                     onChange={(e) => setFactPage(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="e.g. 3"
-                    className="w-full bg-olive rounded-lg px-3 py-2 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                    className="w-full bg-olive rounded-lg px-3 py-2 text-xs text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowAddFactModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-stone hover:text-ivory"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-stone hover:text-ivory transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleAddCustomFact}
-                  className="btn-oxblood px-5 py-2 rounded-lg text-xs font-semibold"
+                  className="btn-oxblood px-5 py-2 rounded-lg text-xs font-semibold shadow-oxblood"
                 >
                   Save Fact
                 </button>
@@ -1944,76 +1958,76 @@ export default function WarRoomPage() {
 
       {/* ── MODAL: Add Custom Argument ─────────────────────────────────────── */}
       {showAddArgModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-charcoal border border-border p-6 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="font-serif text-lg font-semibold text-ivory">Add Affirmative Argument</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-2xl bg-charcoal border border-border p-6 sm:p-7 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3.5 border-b border-border">
+              <h3 className="font-display text-lg sm:text-xl font-semibold text-ivory">Add Affirmative Argument</h3>
               <button
                 type="button"
                 onClick={() => setShowAddArgModal(false)}
-                className="text-stone hover:text-ivory text-xl"
+                className="text-stone hover:text-ivory text-2xl leading-none transition-colors"
               >
                 &times;
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3.5">
               <div>
-                <label className="text-xs font-mono text-stone uppercase block mb-1">Argument Headline *</label>
+                <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Argument Headline *</label>
                 <input
                   type="text"
                   value={argTitle}
                   onChange={(e) => setArgTitle(e.target.value)}
                   placeholder="e.g. Inapplicability of S. 420 IPC in Pure Breach of Contract"
-                  className="w-full bg-olive rounded-lg px-3 py-2 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                  className="w-full bg-olive rounded-lg px-3.5 py-2 text-xs text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-mono text-stone uppercase block mb-1">Main Claim *</label>
+                <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Main Claim *</label>
                 <textarea
                   rows={2}
                   value={argClaim}
                   onChange={(e) => setArgClaim(e.target.value)}
                   placeholder="State the core legal ground or proposition..."
-                  className="w-full bg-olive rounded-lg p-2.5 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                  className="w-full bg-olive rounded-lg p-2.5 text-xs text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-mono text-stone uppercase block mb-1">Statutory Provisions (comma-separated)</label>
+                <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Statutory Provisions (comma-separated)</label>
                 <input
                   type="text"
                   value={argProvisions}
                   onChange={(e) => setArgProvisions(e.target.value)}
                   placeholder="e.g. Section 420 IPC, Section 438 CrPC, Section 41A CrPC"
-                  className="w-full bg-olive rounded-lg px-3 py-2 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                  className="w-full bg-olive rounded-lg px-3.5 py-2 text-xs text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-mono text-stone uppercase block mb-1">Doctrinal Reasoning</label>
+                <label className="text-xs font-mono text-brass uppercase block mb-1.5 font-medium">Doctrinal Reasoning</label>
                 <textarea
                   rows={3}
                   value={argReasoning}
                   onChange={(e) => setArgReasoning(e.target.value)}
                   placeholder="Explain how the statutory ingredients apply to these specific facts..."
-                  className="w-full bg-olive rounded-lg p-2.5 text-xs text-ivory border border-border focus:border-brass focus:outline-none"
+                  className="w-full bg-olive rounded-lg p-2.5 text-xs text-ivory border border-border focus:border-brass focus:ring-1 focus:ring-brass focus:outline-none transition-colors placeholder:text-stone/50"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowAddArgModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-stone hover:text-ivory"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-stone hover:text-ivory transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleAddCustomArgument}
-                  className="btn-oxblood px-5 py-2 rounded-lg text-xs font-semibold"
+                  className="btn-oxblood px-5 py-2 rounded-lg text-xs font-semibold shadow-oxblood"
                 >
                   Save Argument
                 </button>
@@ -2027,3 +2041,4 @@ export default function WarRoomPage() {
     </div>
   );
 }
+

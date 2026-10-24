@@ -20,7 +20,10 @@ import {
   RefreshCw,
   Plus,
   X,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
 import { Navbar, Footer } from '@/components/layout/NavAndFooter';
 import { API_BASE_URL } from '@/lib/config';
@@ -116,6 +119,57 @@ const SUPPORTED_LANGUAGES = [
   { code: 'mr', label: 'Marathi', native: 'मराठी', flag: '🇮🇳' }
 ];
 
+const DRAFTING_SAMPLES = [
+  {
+    title: 'S. 138 NI Act Cheque Dishonour Notice',
+    docType: 'legal_notice',
+    category: 'Commercial & Contracts',
+    jurisdiction: 'Chief Judicial Magistrate, Mumbai',
+    senderName: 'Apex Logistics Pvt. Ltd.',
+    senderDetails: 'Regd. Office: Nariman Point, Mumbai',
+    recipientName: 'Vikas Trading Corporation',
+    recipientDetails: 'Proprietor Mr. Vikas Mehta, Andheri East, Mumbai',
+    noticePeriod: '15 Days',
+    causeOfActionDate: '10 October 2024',
+    applicableSections: 'Section 138 of Negotiable Instruments Act, 1881',
+    requestedRelief: 'Demand payment of Rs. 18,50,000 within 15 days failing which criminal proceedings will be initiated.',
+    facts: 'The client supplied commercial cargo goods worth Rs. 18,50,000 under Invoice No. AL/2024/889 dated 15.08.2024. In discharge of this legally enforceable debt, the addressee issued Cheque No. 441029 dated 01.10.2024 drawn on HDFC Bank. Upon presentation on 10.10.2024, the cheque was returned dishonoured with the remark "Funds Insufficient" as evidenced by the bank return memo dated 11.10.2024. Despite repeated oral requests, the outstanding amount remains unpaid.',
+    dates: ['15.08.2024 - Goods delivered under invoice AL/2024/889', '01.10.2024 - Cheque No. 441029 issued', '10.10.2024 - Cheque presented for clearing', '11.10.2024 - Bank return memo: Funds Insufficient']
+  },
+  {
+    title: 'Anticipatory Bail Application (S. 438 CrPC / 482 BNSS)',
+    docType: 'bail_application',
+    category: 'Criminal & Bail',
+    jurisdiction: 'Sessions Court, Greater Mumbai',
+    senderName: 'Sanjay Deshmukh',
+    senderDetails: 'Age 42 years, Resident of Dadar, Mumbai',
+    recipientName: 'State of Maharashtra',
+    recipientDetails: 'Through Dadar Police Station',
+    noticePeriod: 'Immediate',
+    causeOfActionDate: '05 October 2024',
+    applicableSections: 'Section 438 CrPC / Section 482 BNSS, Section 420, 406 IPC / BNS',
+    requestedRelief: 'Grant of anticipatory bail in the event of arrest on reasonable bail bonds.',
+    facts: 'The applicant is an IT consultant with clean antecedents and a reputed family background. An FIR No. 340/2024 was registered on 05.10.2024 alleging offenses under Sections 406 and 420 of IPC arising out of a purely civil contractual disagreement over software development deliverables. The applicant has cooperated fully with the investigating agency and there is no risk of flight, tampering with evidence, or influencing witnesses.',
+    dates: ['01.03.2024 - Service agreement executed', '05.10.2024 - FIR registered at Dadar Police Station', '12.10.2024 - Notice under Section 41A received']
+  },
+  {
+    title: 'Section 80 CPC Notice to Government Authority',
+    docType: 'legal_notice',
+    category: 'Civil & Property',
+    jurisdiction: 'Civil Judge Senior Division, Pune',
+    senderName: 'Sunita Patil & Others',
+    senderDetails: 'Landowners, Survey No. 45/2, Haveli, Pune',
+    recipientName: 'State of Maharashtra & District Collector',
+    recipientDetails: 'Collector Office, Pune District',
+    noticePeriod: '60 Days',
+    causeOfActionDate: '01 September 2024',
+    applicableSections: 'Section 80 Code of Civil Procedure, 1908, Right to Fair Compensation in Land Acquisition Act',
+    requestedRelief: 'Immediate disbursement of statutory compensation with 12% interest as per statutory award.',
+    facts: 'The noticees acquired land belonging to the clients measuring 2.5 Hectares at Village Haveli for public road widening project without passing a final compensation award under the 2013 Act or releasing mandatory solatium. Continuous representations since January 2024 have remained unaddressed by the revenue authorities.',
+    dates: ['14.01.2024 - Preliminary acquisition notification', '01.09.2024 - Physical possession taken without compensation disbursement']
+  }
+];
+
 export default function LegalDraftingPage() {
   // Client mount state to prevent hydration errors from browser autofill extensions (e.g. fdprocessedid)
   const [isMounted, setIsMounted] = useState(false);
@@ -123,6 +177,24 @@ export default function LegalDraftingPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const loadSample = (sample: typeof DRAFTING_SAMPLES[0]) => {
+    setDocType(sample.docType);
+    setCategory(sample.category);
+    setJurisdiction(sample.jurisdiction);
+    setCaseTitle(sample.title);
+    setSenderName(sample.senderName);
+    setSenderDetails(sample.senderDetails);
+    setRecipientName(sample.recipientName);
+    setRecipientDetails(sample.recipientDetails);
+    setNoticePeriod(sample.noticePeriod);
+    setCauseOfActionDate(sample.causeOfActionDate);
+    setApplicableSections(sample.applicableSections);
+    setRequestedRelief(sample.requestedRelief);
+    setFacts(sample.facts);
+    setDatesList(sample.dates);
+    setGenError(null);
+  };
 
   // Step 1: Configuration
   const [docType, setDocType] = useState('legal_notice');
@@ -430,52 +502,38 @@ export default function LegalDraftingPage() {
 
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-[#151716] text-[#F4EFE5] flex flex-col font-sans selection:bg-[#B59A68]/30" suppressHydrationWarning>
+      <div className="min-h-screen bg-ink text-ivory flex flex-col font-sans selection:bg-oxblood selection:text-ivory" suppressHydrationWarning>
         <Navbar />
 
-        <main className="flex-1 pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto w-full" suppressHydrationWarning>
-          <div className="mb-8 border-b border-[#3B3A33]/70 pb-6">
-            <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-[#F4EFE5]">
+        <main className="flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" suppressHydrationWarning>
+          <div className="mb-8 border-b border-border pb-6">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold tracking-tight text-ivory">
               Legal Drafting & Notice Generator
             </h1>
-            <p className="text-sm text-stone-400 mt-1 max-w-3xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-stone mt-1.5 max-w-3xl leading-relaxed">
               Generate court-ready first drafts of legal petitions, bail applications, affidavits, and notices formatted to standard court practice.
             </p>
-
-            <div className="mt-4 p-3.5 rounded-xl border border-[#B59A68]/30 bg-[#B59A68]/5 flex items-start gap-3">
-              <ShieldAlert className="w-4 h-4 text-[#B59A68] shrink-0 mt-0.5" />
-              <div className="text-xs text-stone-300 leading-relaxed">
-                <strong className="text-[#B59A68] font-semibold">Important Legal Notice: </strong>
-                The drafts generated by NyayaSarathi are preliminary working drafts for assistance to advocates and legal professionals.
-                Prior to execution or court filing, a qualified advocate must thoroughly review all factual averments and statutory provisions.
-              </div>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-5 space-y-6">
-              <div className="p-6 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-lg animate-pulse space-y-4">
-                <div className="h-4 bg-stone-800 rounded w-1/3"></div>
+              <div className="p-6 rounded-2xl border border-border bg-charcoal shadow-lg animate-pulse space-y-4">
+                <div className="h-4 bg-olive rounded w-1/3"></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="h-20 bg-stone-800/60 rounded-xl"></div>
-                  <div className="h-20 bg-stone-800/60 rounded-xl"></div>
-                  <div className="h-20 bg-stone-800/60 rounded-xl"></div>
-                  <div className="h-20 bg-stone-800/60 rounded-xl"></div>
+                  <div className="h-20 bg-olive/60 rounded-xl"></div>
+                  <div className="h-20 bg-olive/60 rounded-xl"></div>
+                  <div className="h-20 bg-olive/60 rounded-xl"></div>
+                  <div className="h-20 bg-olive/60 rounded-xl"></div>
                 </div>
-                <div className="h-10 bg-stone-800/50 rounded-lg"></div>
-              </div>
-              <div className="p-6 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-lg animate-pulse space-y-4">
-                <div className="h-4 bg-stone-800 rounded w-1/2"></div>
-                <div className="h-10 bg-stone-800/50 rounded-lg"></div>
-                <div className="h-32 bg-stone-800/50 rounded-xl"></div>
+                <div className="h-10 bg-olive/50 rounded-lg"></div>
               </div>
             </div>
 
             <div className="lg:col-span-7">
-              <div className="p-8 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-lg animate-pulse flex flex-col items-center justify-center min-h-[460px] text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-stone-800/80"></div>
-                <div className="h-4 bg-stone-800 rounded w-1/3"></div>
-                <div className="h-3 bg-stone-800/60 rounded w-1/2"></div>
+              <div className="p-8 rounded-2xl border border-border bg-charcoal shadow-lg animate-pulse flex flex-col items-center justify-center min-h-[460px] text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-olive/80"></div>
+                <div className="h-4 bg-olive rounded w-1/3"></div>
+                <div className="h-3 bg-olive/60 rounded w-1/2"></div>
               </div>
             </div>
           </div>
@@ -487,19 +545,31 @@ export default function LegalDraftingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#151716] text-[#F4EFE5] flex flex-col font-sans selection:bg-[#B59A68]/30" suppressHydrationWarning>
+    <div className="min-h-screen bg-ink text-ivory flex flex-col font-sans selection:bg-oxblood selection:text-ivory relative" suppressHydrationWarning>
+      {/* Ambient background glows */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(110,38,52,0.12),transparent_70%)]" />
+        <div className="absolute top-1/3 -right-48 w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(181,154,104,0.06),transparent_70%)]" />
+      </div>
+
       <Navbar />
 
-      <main className="flex-1 pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto w-full" suppressHydrationWarning>
+      <main className="relative z-10 flex-1 pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" suppressHydrationWarning>
         {/* Header & Notice Banner */}
-        <div className="mb-8 border-b border-[#3B3A33]/70 pb-6">
+        <div className="mb-8 border-b border-border pb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-[#F4EFE5]">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-xs font-mono font-semibold tracking-wider text-brass uppercase">
+                  Judicial Drafting Studio
+                </span>
+                <span className="text-xs text-stone/70">· Court-Ready Pleading Generator</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold tracking-tight text-ivory">
                 Legal Drafting & Notice Generator
               </h1>
-              <p className="text-sm text-stone-400 mt-1 max-w-3xl leading-relaxed">
-                Generate court-ready first drafts of legal petitions, bail applications, affidavits, and notices formatted to standard court practice.
+              <p className="text-xs sm:text-sm text-stone mt-1.5 max-w-3xl leading-relaxed">
+                Generate court-ready first drafts of legal notices, bail applications, civil petitions, and written statements formatted to Indian procedural standards.
               </p>
             </div>
 
@@ -508,9 +578,9 @@ export default function LegalDraftingPage() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#3B3A33] bg-[#1D211F] text-xs font-medium text-stone-300 hover:text-white hover:border-stone-500 transition-colors"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border bg-charcoal text-xs font-medium text-stone hover:text-ivory hover:border-brass/40 transition-colors shadow-sm"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-stone-400" />
+                  <RotateCcw className="w-3.5 h-3.5 text-brass" />
                   <span>New Draft</span>
                 </button>
               </div>
@@ -518,13 +588,14 @@ export default function LegalDraftingPage() {
           </div>
 
           {/* Statutory Review Disclaimer Banner */}
-          <div className="mt-4 p-3.5 rounded-xl border border-[#B59A68]/30 bg-[#B59A68]/5 flex items-start gap-3">
-            <ShieldAlert className="w-4 h-4 text-[#B59A68] shrink-0 mt-0.5" />
-            <div className="text-xs text-stone-300 leading-relaxed">
-              <strong className="text-[#B59A68] font-semibold">Important Legal Notice: </strong>
-              The drafts generated by NyayaSarathi are preliminary working drafts for assistance to advocates and legal professionals.
-              They do not constitute formal legal certification or certified pleadings. Prior to execution, dispatch, or court filing,
-              a qualified advocate must thoroughly review all factual averments, jurisdiction clauses, and applicable statutory provisions.
+          <div className="mt-5 p-4 rounded-xl border border-brass/35 bg-brass/10 flex items-start gap-3 shadow-sm">
+            <ShieldAlert className="w-4 h-4 text-brass shrink-0 mt-0.5" />
+            <div className="text-xs text-ivory/90 leading-relaxed font-sans">
+              <strong className="text-brass font-semibold font-mono uppercase text-[11px] block sm:inline mr-1.5">
+                Statutory Notice:
+              </strong>
+              Drafts generated by NyayaSarathi are preliminary working drafts for legal research and advocate drafting assistance.
+              Prior to dispatch or filing before any court, forum, or tribunal, a qualified practicing advocate must independently examine all averments, party names, limitation dates, and applicable statutory provisions.
             </div>
           </div>
         </div>
@@ -534,21 +605,57 @@ export default function LegalDraftingPage() {
           
           {/* LEFT COLUMN: Configuration & Case Facts Form */}
           <div className={`lg:col-span-5 space-y-6 ${currentResult ? 'hidden lg:block' : 'block'}`}>
+
+            {/* Quick Judicial Presets Card */}
+            <div className="p-4 sm:p-5 rounded-2xl border border-border bg-charcoal shadow-md space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-brass" />
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-brass">
+                    One-Click Case Presets
+                  </span>
+                </div>
+                <span className="text-[11px] text-stone/70">Click to instantly populate realistic facts</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {DRAFTING_SAMPLES.map((sample, sIdx) => (
+                  <button
+                    key={sIdx}
+                    type="button"
+                    onClick={() => loadSample(sample)}
+                    className="p-3 rounded-xl border border-border bg-ink hover:bg-olive/60 hover:border-brass/50 text-left transition-all group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="text-xs font-medium text-ivory group-hover:text-brass transition-colors line-clamp-1">
+                        {sample.title}
+                      </div>
+                      <div className="text-[10px] font-mono text-stone/70 mt-1 uppercase">
+                        {sample.category}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-stone/60 pt-2 mt-2 border-t border-border/50">
+                      <span>{sample.noticePeriod}</span>
+                      <ArrowRight className="w-3 h-3 text-brass opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
             
             {/* Step 1: Document Configuration Card */}
-            <div className="p-5 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-lg">
-              <div className="flex items-center gap-2 pb-3 mb-4 border-b border-[#3B3A33]">
-                <div className="w-6 h-6 rounded-full bg-[#B59A68]/20 flex items-center justify-center text-xs font-bold text-[#B59A68]">
+            <div className="p-5 sm:p-6 rounded-2xl border border-border bg-charcoal shadow-md">
+              <div className="flex items-center gap-2.5 pb-3.5 mb-4 border-b border-border">
+                <div className="w-6 h-6 rounded-full bg-brass/20 border border-brass/40 flex items-center justify-center text-xs font-bold text-brass">
                   1
                 </div>
-                <h2 className="text-sm font-bold uppercase tracking-wider text-stone-200">
+                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-brass">
                   Document Configuration
                 </h2>
               </div>
 
               {/* Document Type Selector Grid */}
               <div className="space-y-2 mb-4">
-                <label className="text-xs font-semibold text-stone-300">Select Document Type</label>
+                <label className="text-xs font-mono text-brass uppercase block font-medium">Select Document Type</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {DOCUMENT_TYPES.map((t) => {
                     const isSelected = docType === t.id;
@@ -558,22 +665,26 @@ export default function LegalDraftingPage() {
                         key={t.id}
                         type="button"
                         onClick={() => setDocType(t.id)}
-                        className={`p-3 rounded-xl border text-left transition-all ${
+                        className={`p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
                           isSelected
-                            ? 'border-[#B59A68] bg-[#B59A68]/15 shadow-sm ring-1 ring-[#B59A68]/50'
-                            : 'border-[#3B3A33] bg-[#151716] hover:border-stone-500 hover:bg-white/[0.02]'
+                            ? 'border-brass bg-brass/15 shadow-brass ring-1 ring-brass/40'
+                            : 'border-border bg-ink hover:border-brass/30 hover:bg-olive/40'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-1">
-                          <Icon className={`w-4 h-4 ${isSelected ? 'text-[#B59A68]' : 'text-stone-400'}`} />
-                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${isSelected ? 'bg-[#B59A68]/20 text-[#B59A68]' : 'bg-[#242926] text-stone-400'}`}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <Icon className={`w-4 h-4 ${isSelected ? 'text-brass' : 'text-stone'}`} />
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold border ${
+                            isSelected
+                              ? 'bg-brass/20 text-brass border-brass/40'
+                              : 'bg-olive text-stone border-border'
+                          }`}>
                             {t.badge}
                           </span>
                         </div>
-                        <div className={`text-xs font-bold ${isSelected ? 'text-[#F4EFE5]' : 'text-stone-300'}`}>
+                        <div className={`text-xs font-bold font-display ${isSelected ? 'text-ivory' : 'text-ivory/80'}`}>
                           {t.name}
                         </div>
-                        <p className="text-[10px] text-stone-400 mt-1 line-clamp-2 leading-tight">
+                        <p className="text-[10px] text-stone mt-1 line-clamp-2 leading-relaxed font-sans">
                           {t.desc}
                         </p>
                       </button>
@@ -585,13 +696,13 @@ export default function LegalDraftingPage() {
               {/* Case Category & Jurisdiction */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
+                  <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                     Case Category
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors"
                   >
                     {CASE_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
@@ -602,7 +713,7 @@ export default function LegalDraftingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
+                  <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                     Court / Jurisdiction
                   </label>
                   <input
@@ -610,20 +721,20 @@ export default function LegalDraftingPage() {
                     value={jurisdiction}
                     onChange={(e) => setJurisdiction(e.target.value)}
                     placeholder="e.g. Bombay High Court, Sessions Delhi"
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors placeholder:text-stone/40"
                   />
                 </div>
               </div>
 
               {/* Language Preference */}
-              <div className="pt-2 border-t border-[#3B3A33]/50">
-                <label className="block text-xs font-semibold text-stone-300 mb-1">
+              <div className="pt-3 border-t border-border/70">
+                <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                   Output Language
                 </label>
                 <select
                   value={targetLanguage}
                   onChange={(e) => setTargetLanguage(e.target.value)}
-                  className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                  className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors"
                 >
                   {SUPPORTED_LANGUAGES.map((lang) => (
                     <option key={lang.code} value={lang.code}>
@@ -634,20 +745,20 @@ export default function LegalDraftingPage() {
               </div>
 
               {/* Citations Control */}
-              <div className="pt-3 border-t border-[#3B3A33]/50">
-                <label className="flex items-start gap-2.5 cursor-pointer">
+              <div className="pt-3.5 border-t border-border/70">
+                <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     id="include-citations-toggle"
                     checked={includeCitations}
                     onChange={(e) => setIncludeCitations(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 accent-[#B59A68] rounded cursor-pointer"
+                    className="mt-0.5 w-4 h-4 accent-brass rounded cursor-pointer"
                   />
                   <div>
-                    <span className="text-xs font-semibold text-stone-200 block">
+                    <span className="text-xs font-semibold text-ivory block">
                       Include Verified Legal Citations & Precedents
                     </span>
-                    <span className="text-[10px] text-stone-400 block leading-tight mt-0.5">
+                    <span className="text-[11px] text-stone block leading-tight mt-0.5">
                       Embeds certified Supreme Court / High Court precedents without fabricated citations.
                     </span>
                   </div>
@@ -656,19 +767,19 @@ export default function LegalDraftingPage() {
             </div>
 
             {/* Step 2: Case Information Card */}
-            <div className="p-5 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-lg space-y-4">
-              <div className="flex items-center gap-2 pb-3 border-b border-[#3B3A33]">
-                <div className="w-6 h-6 rounded-full bg-[#B59A68]/20 flex items-center justify-center text-xs font-bold text-[#B59A68]">
+            <div className="p-5 sm:p-6 rounded-2xl border border-border bg-charcoal shadow-md space-y-4">
+              <div className="flex items-center gap-2.5 pb-3.5 border-b border-border">
+                <div className="w-6 h-6 rounded-full bg-brass/20 border border-brass/40 flex items-center justify-center text-xs font-bold text-brass">
                   2
                 </div>
-                <h2 className="text-sm font-bold uppercase tracking-wider text-stone-200">
+                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-brass">
                   Case Information & Facts
                 </h2>
               </div>
 
               {/* Case Title */}
               <div>
-                <label className="block text-xs font-semibold text-stone-300 mb-1">
+                <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                   Case Title or Matter Caption (Optional)
                 </label>
                 <input
@@ -676,14 +787,14 @@ export default function LegalDraftingPage() {
                   value={caseTitle}
                   onChange={(e) => setCaseTitle(e.target.value)}
                   placeholder="e.g. Ramesh Kumar v. State of Maharashtra"
-                  className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                  className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors placeholder:text-stone/40"
                 />
               </div>
 
               {/* Parties Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
+                  <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                     {docType === 'legal_notice' ? 'Client / Sender' : 'Applicant / Petitioner'}
                   </label>
                   <input
@@ -691,19 +802,19 @@ export default function LegalDraftingPage() {
                     value={senderName}
                     onChange={(e) => setSenderName(e.target.value)}
                     placeholder="Full legal name"
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68] mb-1.5"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors placeholder:text-stone/40 mb-2"
                   />
                   <input
                     type="text"
                     value={senderDetails}
                     onChange={(e) => setSenderDetails(e.target.value)}
                     placeholder="Address / Designation / Age"
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-1.5 text-[11px] text-stone-300 focus:outline-none focus:border-[#B59A68]"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2 text-[11px] text-stone focus:outline-none focus:border-brass transition-colors placeholder:text-stone/40"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
+                  <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                     {docType === 'legal_notice' ? 'Recipient / Addressee' : 'Opposing Party / Respondent'}
                   </label>
                   <input
@@ -711,14 +822,14 @@ export default function LegalDraftingPage() {
                     value={recipientName}
                     onChange={(e) => setRecipientName(e.target.value)}
                     placeholder="Full name or Authority"
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68] mb-1.5"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors placeholder:text-stone/40 mb-2"
                   />
                   <input
                     type="text"
                     value={recipientDetails}
                     onChange={(e) => setRecipientDetails(e.target.value)}
                     placeholder="Address / Jurisdiction"
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-1.5 text-[11px] text-stone-300 focus:outline-none focus:border-[#B59A68]"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2 text-[11px] text-stone focus:outline-none focus:border-brass transition-colors placeholder:text-stone/40"
                   />
                 </div>
               </div>
@@ -726,13 +837,13 @@ export default function LegalDraftingPage() {
               {/* Statutory Notice Period & Date of Cause of Action */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
+                  <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                     Statutory Notice / Cure Period
                   </label>
                   <select
                     value={noticePeriod}
                     onChange={(e) => setNoticePeriod(e.target.value)}
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors"
                   >
                     <option value="15 Days">15 Days (Section 138 NI Act / Standard Notice)</option>
                     <option value="30 Days">30 Days (Standard Commercial / Contractual)</option>
@@ -743,71 +854,71 @@ export default function LegalDraftingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
-                    Date of Contract / Default / Cause of Action
+                  <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
+                    Cause of Action Date
                   </label>
                   <input
                     type="text"
                     value={causeOfActionDate}
                     onChange={(e) => setCauseOfActionDate(e.target.value)}
-                    placeholder="e.g. 15 March 2024 (Cheque dishonour / Default date)"
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                    placeholder="e.g. 15 March 2024"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors placeholder:text-stone/40"
                   />
                 </div>
               </div>
 
               {/* Issuing Advocate / Counsel Coordinates */}
-              <div className="p-3.5 rounded-xl border border-[#3B3A33] bg-[#151716]/60 space-y-3">
+              <div className="p-4 rounded-xl border border-border bg-olive/50 space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-stone-300 flex items-center gap-1.5">
-                    <Scale className="w-3.5 h-3.5 text-[#B59A68]" />
+                  <label className="text-xs font-mono font-semibold text-brass flex items-center gap-1.5 uppercase">
+                    <Scale className="w-3.5 h-3.5 text-brass" />
                     <span>Issuing Advocate / Counsel Details</span>
                   </label>
-                  <span className="text-[10px] text-stone-400">Header & Signature Block</span>
+                  <span className="text-[10px] font-mono text-stone">Header & Signature Block</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-[11px] text-stone-400 mb-1">Advocate / Counsel Name</label>
+                    <label className="block text-[11px] text-stone mb-1 font-mono uppercase">Counsel Name</label>
                     <input
                       type="text"
                       value={advocateName}
                       onChange={(e) => setAdvocateName(e.target.value)}
                       placeholder="e.g. Adv. Rajesh Sharma"
-                      className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                      className="w-full bg-ink border border-border rounded-lg px-3 py-2 text-xs text-ivory focus:outline-none focus:border-brass transition-colors placeholder:text-stone/40"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-stone-400 mb-1">Bar Council Enrollment No.</label>
+                    <label className="block text-[11px] text-stone mb-1 font-mono uppercase">Enrollment No.</label>
                     <input
                       type="text"
                       value={advocateEnrollment}
                       onChange={(e) => setAdvocateEnrollment(e.target.value)}
                       placeholder="e.g. MAH/2456/2014"
-                      className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                      className="w-full bg-ink border border-border rounded-lg px-3 py-2 text-xs text-ivory focus:outline-none focus:border-brass transition-colors placeholder:text-stone/40"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-stone-400 mb-1">Chambers / Office Address</label>
+                    <label className="block text-[11px] text-stone mb-1 font-mono uppercase">Chambers Address</label>
                     <input
                       type="text"
                       value={advocateChambers}
                       onChange={(e) => setAdvocateChambers(e.target.value)}
-                      placeholder="e.g. Chamber No. 42, High Court premises"
-                      className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                      placeholder="e.g. Chamber No. 42, High Court"
+                      className="w-full bg-ink border border-border rounded-lg px-3 py-2 text-xs text-ivory focus:outline-none focus:border-brass transition-colors placeholder:text-stone/40"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-stone-400 mb-1">Contact Phone / Email</label>
+                    <label className="block text-[11px] text-stone mb-1 font-mono uppercase">Contact Phone / Email</label>
                     <input
                       type="text"
                       value={advocateContact}
                       onChange={(e) => setAdvocateContact(e.target.value)}
-                      placeholder="e.g. +91 9876543210 | adv.sharma@law.in"
-                      className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                      placeholder="e.g. +91 9876543210"
+                      className="w-full bg-ink border border-border rounded-lg px-3 py-2 text-xs text-ivory focus:outline-none focus:border-brass transition-colors placeholder:text-stone/40"
                     />
                   </div>
                 </div>
@@ -815,8 +926,8 @@ export default function LegalDraftingPage() {
 
               {/* Important Dates */}
               <div>
-                <label className="block text-xs font-semibold text-stone-300 mb-1">
-                  Important Dates & Chronology
+                <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
+                  Chronology Dates & Milestones
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
@@ -825,14 +936,14 @@ export default function LegalDraftingPage() {
                     onChange={(e) => setNewDateInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddDate())}
                     placeholder="e.g. 15.01.2024 - Agreement signed"
-                    className="flex-1 bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                    className="flex-1 bg-ink border border-border rounded-lg px-3.5 py-2 text-xs text-ivory focus:outline-none focus:border-brass transition-colors placeholder:text-stone/40"
                   />
                   <button
                     type="button"
                     onClick={handleAddDate}
-                    className="px-3 py-1.5 bg-[#242926] hover:bg-[#3B3A33] border border-[#3B3A33] rounded-lg text-xs font-medium text-stone-200 flex items-center gap-1"
+                    className="px-3.5 py-2 bg-olive hover:bg-olive/80 border border-border hover:border-brass/40 rounded-lg text-xs font-medium text-ivory flex items-center gap-1 transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-3.5 h-3.5 text-brass" />
                     <span>Add</span>
                   </button>
                 </div>
@@ -842,14 +953,14 @@ export default function LegalDraftingPage() {
                     {datesList.map((dt, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1 text-[11px] bg-[#151716] border border-[#3B3A33] text-stone-300 px-2 py-0.5 rounded-md"
+                        className="inline-flex items-center gap-1.5 text-[11px] bg-olive border border-border text-ivory px-2.5 py-1 rounded-md"
                       >
-                        <Calendar className="w-3 h-3 text-[#B59A68]" />
+                        <Calendar className="w-3 h-3 text-brass" />
                         <span>{dt}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveDate(idx)}
-                          className="text-stone-500 hover:text-red-400 ml-0.5"
+                          className="text-stone hover:text-oxblood-light ml-0.5 transition-colors"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -861,11 +972,11 @@ export default function LegalDraftingPage() {
 
               {/* Core Case Facts (Required) */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-stone-300">
-                    Chronological Facts & Grievance <span className="text-[#E25C6F]">*</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-mono text-brass uppercase font-medium">
+                    Chronological Facts & Grievance <span className="text-oxblood-light">*</span>
                   </label>
-                  <span className={`text-[10px] font-mono ${facts.length < 10 ? 'text-[#E25C6F]' : 'text-stone-400'}`}>
+                  <span className={`text-[10px] font-mono ${facts.length < 10 ? 'text-oxblood-light' : 'text-stone'}`}>
                     {facts.length} / 50000 chars
                   </span>
                 </div>
@@ -874,14 +985,14 @@ export default function LegalDraftingPage() {
                   value={facts}
                   onChange={(e) => setFacts(e.target.value)}
                   placeholder="Set out the chronological sequence of material facts, transactions, contract terms, breach or FIR details, custody duration, and specific grievances..."
-                  className="w-full bg-[#151716] border border-[#3B3A33] rounded-xl p-3 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68] leading-relaxed resize-y"
+                  className="w-full bg-ink border border-border rounded-xl p-3.5 text-xs md:text-sm text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 leading-relaxed resize-y font-sans placeholder:text-stone/40 transition-colors"
                 />
               </div>
 
               {/* Relief & Applicable Sections */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
+                  <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                     Relief / Demands Requested
                   </label>
                   <input
@@ -889,12 +1000,12 @@ export default function LegalDraftingPage() {
                     value={requestedRelief}
                     onChange={(e) => setRequestedRelief(e.target.value)}
                     placeholder="e.g. Regular bail on surety, Pay Rs. 5,00,000"
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors placeholder:text-stone/40"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-stone-300 mb-1">
+                  <label className="block text-xs font-mono text-brass uppercase mb-1.5 font-medium">
                     Applicable Sections (Optional)
                   </label>
                   <input
@@ -902,15 +1013,15 @@ export default function LegalDraftingPage() {
                     value={applicableSections}
                     onChange={(e) => setApplicableSections(e.target.value)}
                     placeholder="e.g. S. 138 NI Act, S. 439 CrPC"
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-lg px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#B59A68]"
+                    className="w-full bg-ink border border-border rounded-lg px-3.5 py-2.5 text-xs text-ivory focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 transition-colors placeholder:text-stone/40"
                   />
                 </div>
               </div>
 
               {/* Generation Button & Inline Validation Error */}
               {genError && (
-                <div className="p-3 rounded-lg bg-red-950/40 border border-red-800/60 text-xs text-red-200 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <div className="p-3.5 rounded-xl bg-oxblood/20 border border-oxblood-light/60 text-xs text-ivory flex items-start gap-2 shadow-md">
+                  <AlertCircle className="w-4 h-4 text-oxblood-light shrink-0 mt-0.5" />
                   <span>{genError}</span>
                 </div>
               )}
@@ -920,16 +1031,16 @@ export default function LegalDraftingPage() {
                 id="generate-draft-btn"
                 disabled={isGenerating || facts.trim().length < 10}
                 onClick={handleGenerateDraft}
-                className="w-full py-3 px-4 rounded-xl font-sans text-xs md:text-sm font-bold tracking-wide uppercase flex items-center justify-center gap-2 transition-all shadow-md bg-[#6E2634] hover:bg-[#8A3545] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-oxblood w-full py-3.5 px-5 rounded-xl font-sans text-xs md:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all shadow-oxblood disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isGenerating ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-brass" />
                     <span>{progressMsg || 'Generating Structured Draft...'}</span>
                   </>
                 ) : (
                   <>
-                    <Scale className="w-4 h-4 text-[#B59A68]" />
+                    <Scale className="w-4 h-4 text-brass" />
                     <span>Generate Structured Legal Draft</span>
                   </>
                 )}
@@ -941,22 +1052,21 @@ export default function LegalDraftingPage() {
           <div className="lg:col-span-7 space-y-6">
             {!currentResult ? (
               // Empty State
-              <div className="p-12 rounded-2xl border border-dashed border-[#3B3A33] bg-[#1D211F]/50 text-center flex flex-col items-center justify-center min-h-[500px]">
-                <div className="w-16 h-16 rounded-full bg-[#242926] border border-[#3B3A33] flex items-center justify-center mb-4">
-                  <Scale className="w-8 h-8 text-[#B59A68]/80" strokeWidth={1.5} />
+              <div className="p-10 sm:p-14 rounded-2xl border border-dashed border-border bg-charcoal/40 text-center flex flex-col items-center justify-center min-h-[520px] shadow-lg">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-olive to-charcoal border border-brass/30 flex items-center justify-center mb-4 text-brass shadow-brass">
+                  <Scale className="w-8 h-8 text-brass" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg font-display font-semibold text-stone-200 mb-2">
+                <h3 className="text-xl font-display font-semibold text-ivory mb-2">
                   No Legal Draft Generated Yet
                 </h3>
-                <p className="text-xs text-stone-400 max-w-md leading-relaxed mb-6">
-                  Configure your document type on the left, input the chronological case facts,
-                  and click &ldquo;Generate Structured Legal Draft&rdquo; to begin.
+                <p className="text-xs sm:text-sm text-stone max-w-md leading-relaxed mb-6 font-sans">
+                  Configure your document type on the left, input the chronological case facts, or choose one of the one-click presets above to generate a court-ready draft.
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-left w-full max-w-lg">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-left w-full max-w-lg">
                   {DOCUMENT_TYPES.map((t) => (
-                    <div key={t.id} className="p-2.5 rounded-lg border border-[#3B3A33] bg-[#151716] text-[11px]">
-                      <span className="font-bold text-[#B59A68] block">{t.name}</span>
-                      <span className="text-[10px] text-stone-400">{t.badge}</span>
+                    <div key={t.id} className="p-3 rounded-xl border border-border bg-ink text-[11px] shadow-sm">
+                      <span className="font-bold font-display text-brass block">{t.name}</span>
+                      <span className="text-[10px] text-stone/80 font-mono mt-0.5 block">{t.badge}</span>
                     </div>
                   ))}
                 </div>
@@ -965,24 +1075,24 @@ export default function LegalDraftingPage() {
               // Active Draft Review & Editor Workspace
               <div className="space-y-6">
                 
-                {/* Action Bar: Export PDF, DOCX, Copy, Language Switcher */}
-                <div className="p-4 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-lg flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-[#6E2634]/40 border border-[#6E2634] text-red-200 uppercase">
+                {/* Action Bar: Export PDF, DOCX, Copy */}
+                <div className="p-4 sm:p-5 rounded-2xl border border-border bg-charcoal shadow-md flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-mono font-bold px-3 py-1 rounded-md bg-oxblood/25 border border-oxblood-light/60 text-ivory uppercase">
                       {currentResult.document_type.replace('_', ' ')}
                     </span>
-                    <span className="text-xs text-[#B59A68] font-medium bg-[#B59A68]/10 border border-[#B59A68]/30 px-2 py-0.5 rounded">
+                    <span className="text-xs text-brass font-medium bg-brass/15 border border-brass/35 px-2.5 py-1 rounded-md font-mono">
                       Single Output Document
                     </span>
                     {isDirty && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-semibold text-amber-400 bg-amber-950/30 border border-amber-800 px-2 py-0.5 rounded">
+                        <span className="text-[11px] font-semibold text-brass bg-brass/20 border border-brass/40 px-2 py-0.5 rounded font-mono">
                           Unsaved Edits
                         </span>
                         <button
                           type="button"
                           onClick={handleResetToOriginal}
-                          className="text-[11px] text-stone-400 hover:text-white underline ml-1"
+                          className="text-[11px] text-stone hover:text-ivory underline ml-1 transition-colors"
                         >
                           Reset
                         </button>
@@ -997,17 +1107,17 @@ export default function LegalDraftingPage() {
                       type="button"
                       id="copy-draft-btn"
                       onClick={handleCopyDraft}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#3B3A33] bg-[#151716] text-xs font-medium text-stone-200 hover:text-white hover:border-[#B59A68] transition-colors"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border bg-ink text-xs font-medium text-stone hover:text-ivory hover:border-brass/50 transition-colors shadow-sm"
                       title="Copy full draft text"
                     >
                       {copySuccess ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-emerald-400">Copied!</span>
+                          <Check className="w-3.5 h-3.5 text-verdigris" />
+                          <span className="text-verdigris font-semibold">Copied!</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-3.5 h-3.5 text-stone-400" />
+                          <Copy className="w-3.5 h-3.5 text-brass" />
                           <span>Copy Letter</span>
                         </>
                       )}
@@ -1019,7 +1129,7 @@ export default function LegalDraftingPage() {
                       id="export-pdf-btn"
                       disabled={isExportingPdf}
                       onClick={handleExportPdf}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#B59A68]/40 bg-[#B59A68]/10 text-xs font-semibold text-[#B59A68] hover:bg-[#B59A68]/20 transition-all disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-brass/40 bg-brass/15 text-xs font-semibold text-brass hover:bg-brass/25 transition-all shadow-sm disabled:opacity-50"
                     >
                       {isExportingPdf ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1035,7 +1145,7 @@ export default function LegalDraftingPage() {
                       id="export-docx-btn"
                       disabled={isExportingDocx}
                       onClick={handleExportDocx}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#3B3A33] bg-[#242926] text-xs font-semibold text-stone-200 hover:border-stone-400 transition-all disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border bg-olive text-xs font-semibold text-ivory hover:border-brass/40 transition-all shadow-sm disabled:opacity-50"
                     >
                       {isExportingDocx ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1049,12 +1159,12 @@ export default function LegalDraftingPage() {
 
                 {/* Warnings & Contradiction Notices */}
                 {currentResult.warnings && currentResult.warnings.length > 0 && (
-                  <div className="p-4 rounded-2xl border border-amber-600/40 bg-amber-950/20 space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                  <div className="p-4 sm:p-5 rounded-2xl border border-oxblood/40 bg-oxblood/10 space-y-2 shadow-md">
+                    <div className="flex items-center gap-2 text-xs font-bold text-oxblood-light font-mono uppercase tracking-wider">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-oxblood-light" />
                       <span>Legal Review & Chronology Notices ({currentResult.warnings.length})</span>
                     </div>
-                    <ul className="text-xs text-amber-200/90 list-disc list-inside space-y-1 pl-1 font-sans">
+                    <ul className="text-xs text-ivory/90 list-disc list-inside space-y-1 pl-1 font-sans">
                       {currentResult.warnings.map((warn, wIdx) => (
                         <li key={wIdx} className="leading-relaxed">
                           {warn}
@@ -1066,19 +1176,19 @@ export default function LegalDraftingPage() {
 
                 {/* Missing Information / Required Advocate Fill-ins */}
                 {currentResult.missing_information && currentResult.missing_information.length > 0 && (
-                  <div className="p-4 rounded-2xl border border-sky-600/40 bg-sky-950/20 space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-bold text-sky-400">
-                      <Info className="w-4 h-4 shrink-0 text-sky-400" />
+                  <div className="p-4 sm:p-5 rounded-2xl border border-brass/35 bg-brass/10 space-y-2 shadow-md">
+                    <div className="flex items-center gap-2 text-xs font-bold text-brass font-mono uppercase tracking-wider">
+                      <Info className="w-4 h-4 shrink-0 text-brass" />
                       <span>Missing Case Data Flagged with [INFORMATION REQUIRED] ({currentResult.missing_information.length})</span>
                     </div>
-                    <p className="text-[11px] text-stone-300">
+                    <p className="text-[11px] text-stone">
                       To prevent factual hallucinations, the generator has not invented these details. Placeholders have been inserted in the draft for counsel confirmation:
                     </p>
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {currentResult.missing_information.map((item, mIdx) => (
                         <span
                           key={mIdx}
-                          className="px-2 py-0.5 rounded-md bg-sky-900/40 border border-sky-700/60 text-sky-200 text-[11px] font-mono"
+                          className="px-2.5 py-1 rounded-md bg-olive border border-brass/30 text-brass text-[11px] font-mono"
                         >
                           {item}
                         </span>
@@ -1087,24 +1197,26 @@ export default function LegalDraftingPage() {
                   </div>
                 )}
 
-
-
                 {/* Single Continuous Legal Draft Document Editor */}
-                <div className="p-5 md:p-6 rounded-2xl border border-[#3B3A33] bg-[#1D211F] shadow-xl space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#3B3A33]">
+                <div className="p-6 sm:p-8 rounded-2xl border border-border bg-charcoal shadow-2xl space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#B59A68] block font-semibold">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-brass block font-semibold">
                         {currentResult.language === 'hi' ? 'विधिक प्रारूप (हिंदी)' : currentResult.language === 'mr' ? 'कायदेशीर मसुदा (मराठी)' : 'OFFICIAL LEGAL DRAFT'}
                       </span>
-                      <h3 className="text-sm md:text-base font-display font-bold text-stone-100">
+                      <h3 className="text-base sm:text-lg font-display font-bold text-ivory mt-0.5">
                         {currentResult.draft.title}
                       </h3>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-stone-400 font-mono">
-                      <span>{editedFullText.trim() ? editedFullText.trim().split(/\s+/).filter(Boolean).length : 0} words</span>
+                    <div className="flex items-center gap-3 text-xs text-stone font-mono">
+                      <span className="bg-ink px-2.5 py-1 rounded border border-border">
+                        {editedFullText.trim() ? editedFullText.trim().split(/\s+/).filter(Boolean).length : 0} words
+                      </span>
                       <span>•</span>
-                      <span>{editedFullText.length} chars</span>
+                      <span className="bg-ink px-2.5 py-1 rounded border border-border">
+                        {editedFullText.length} chars
+                      </span>
                     </div>
                   </div>
 
@@ -1114,18 +1226,17 @@ export default function LegalDraftingPage() {
                     value={editedFullText}
                     onChange={(e) => handleFullTextChange(e.target.value)}
                     placeholder="Legal draft will appear here..."
-                    className="w-full bg-[#151716] border border-[#3B3A33] rounded-xl p-4 md:p-5 text-xs md:text-sm text-stone-100 focus:outline-none focus:border-[#B59A68] leading-relaxed resize-y font-mono whitespace-pre-wrap selection:bg-[#B59A68]/30"
+                    className="w-full bg-ink border border-border rounded-xl p-5 text-xs md:text-sm text-ivory/95 focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/40 leading-relaxed resize-y font-legal whitespace-pre-wrap selection:bg-oxblood selection:text-ivory shadow-inner transition-colors"
                   />
 
-                  <div className="flex flex-wrap items-center justify-between text-[11px] text-stone-400 pt-1 border-t border-[#3B3A33]/50">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      <span>Single Output Section • Complete Draft Ready for Review</span>
+                  <div className="flex flex-wrap items-center justify-between text-[11px] text-stone pt-2 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-verdigris animate-pulse"></span>
+                      <span className="text-ivory font-medium">Single Output Section • Complete Draft Ready for Review</span>
                     </div>
                     <span>Placeholders marked as [MISSING: ...] can be edited directly before export.</span>
                   </div>
                 </div>
-
 
               </div>
             )}
