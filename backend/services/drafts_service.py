@@ -985,11 +985,15 @@ def _validate_draft_output(
     if not parsed_sections:
         return False, "All returned sections were empty or malformed", None
 
+    # Clean escaped newline characters in all parsed sections
+    for s in parsed_sections:
+        s.content = s.content.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\r", "\n").strip()
+
     # Deterministically construct continuous full text from validated title and sections
     full_text = "\n\n".join(s.content.strip() for s in parsed_sections if s.content.strip())
     raw_full = str(data.get("full_draft_text", "") or data.get("full_text", "")).strip()
     if raw_full:
-        full_text = raw_full
+        full_text = raw_full.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\r", "\n").strip()
 
     full_lower = full_text.lower()
 

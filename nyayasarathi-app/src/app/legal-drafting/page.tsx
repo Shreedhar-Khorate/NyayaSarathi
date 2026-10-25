@@ -352,8 +352,14 @@ export default function LegalDraftingPage() {
       setCurrentResult(data);
       setOriginalDraft(data.draft);
 
-      const fullText = data.draft.full_text || data.draft.sections?.[0]?.content || '';
-      setEditedFullText(fullText);
+      const rawText = data.draft.full_text || data.draft.sections?.[0]?.content || '';
+      const formatted = rawText
+        .replace(/\\r\\n/g, '\n')
+        .replace(/\\n/g, '\n')
+        .replace(/\\r/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      setEditedFullText(formatted);
       setIsDirty(false);
     } catch (err: any) {
       setGenError(err.message || 'An unexpected error occurred while generating the draft.');
@@ -373,7 +379,14 @@ export default function LegalDraftingPage() {
 
   const handleResetToOriginal = () => {
     if (originalDraft) {
-      setEditedFullText(originalDraft.full_text || originalDraft.sections?.[0]?.content || '');
+      const raw = originalDraft.full_text || originalDraft.sections?.[0]?.content || '';
+      const formatted = raw
+        .replace(/\\r\\n/g, '\n')
+        .replace(/\\n/g, '\n')
+        .replace(/\\r/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      setEditedFullText(formatted);
       setIsDirty(false);
     }
   };
