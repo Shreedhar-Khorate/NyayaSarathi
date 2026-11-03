@@ -1,4 +1,4 @@
-# NyayaSarathi — Complete USER–ADVOCATE Chat UI Implementation
+# NyayaSarathi -— Complete USER–ADVOCATE Chat UI Implementation
 
 ## Project Objective
 
