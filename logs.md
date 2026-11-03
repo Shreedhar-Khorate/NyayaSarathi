@@ -249,3 +249,38 @@ Complete the implementation of:
 
 **Final Status:**
 **COMPLETED — ALL MILESTONES VERIFIED**
+
+
+---
+
+### [2026-11-04 00:29] – Backend Comprehensive Dependency Audit & requirements.txt Remediation
+
+**Objective:**
+Perform an AST-level recursive static scan of all Python files under `backend/` to identify missing packages in `backend/requirements.txt` that could cause deployment crashes on Render (such as `ModuleNotFoundError: No module named 'reportlab'`).
+
+**Files Inspected:**
+- All `.py` files across `backend/` (`main.py`, `routers/`, `services/`, `models/`, `schemas/`, `tests/`)
+- `backend/requirements.txt`
+- `backend/services/draft_export.py`
+
+**Files Modified:**
+- `backend/requirements.txt`
+- `logs.md`
+
+**Changes Implemented:**
+- Identified missing external dependencies via AST parser:
+  1. `reportlab>=4.0.0` (required by `backend/services/draft_export.py` for PDF court pleading generation).
+  2. `requests>=2.31.0` (required by `backend/routers/chat.py` for Supabase Realtime broadcast and `google_oauth.py`).
+  3. `python-dotenv>=1.0.0` (required by `logger.py`, `main.py`, `supabase_client.py`, `user_repository.py`).
+  4. `bcrypt>=4.0.0` (required alongside `passlib` for safe password hashing).
+- Added all four packages explicitly to `backend/requirements.txt`.
+
+**Tests Executed & Results:**
+1. AST scan of all imports: verified every external import has an explicit package in `requirements.txt`.
+2. Python import test: imported all 18 backend routers and 12 services cleanly without any `ModuleNotFoundError` (PASSED).
+3. Draft export test: `generate_draft_pdf` and `generate_draft_docx` in `services.draft_export` executed cleanly, producing valid PDF (40,543 bytes) and DOCX (37,883 bytes) (PASSED).
+4. Export REST endpoints test: `POST /api/drafts/export/pdf` and `POST /api/drafts/export/docx` returned `HTTP 200 OK` (PASSED).
+5. Pytest regression suite: `python -m pytest backend/tests -q`: **260 passed, 0 failed, 5 subtests passed** in 48.74s (PASSED).
+
+**Final Status:**
+**COMPLETED — DEPENDENCIES FULLY REMEDIATED**
