@@ -275,7 +275,10 @@ def get_document_file(
     document_id: str,
     user_id: Optional[str] = Depends(get_optional_user_id),
 ):
-    """Serves the raw document file for in-browser PDF / document rendering."""
+    """
+    Serves the raw document file for in-browser PDF / document rendering.
+    Supports streaming from local disk or direct retrieval from Supabase Storage.
+    """
     doc = get_document_by_id(document_id, user_id)
     if not doc:
         raise HTTPException(
@@ -284,17 +287,36 @@ def get_document_file(
         )
 
     file_path = doc.get("storage_path")
-    if not file_path or not os.path.exists(file_path):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Physical file does not exist on storage.",
+    media_type = "application/pdf" if doc["file_type"] == ".pdf" else "application/octet-stream"
+
+    # 1. Check local file system
+    if file_path and os.path.exists(file_path):
+        return FileResponse(
+            path=file_path,
+            media_type=media_type,
+            filename=doc["filename"],
         )
 
-    media_type = "application/pdf" if doc["file_type"] == ".pdf" else "application/octet-stream"
-    return FileResponse(
-        path=file_path,
-        media_type=media_type,
-        filename=doc["filename"],
+    # 2. Check Supabase Storage if file_path is a storage object key or if local copy is missing
+    from services.supabase_client import get_supabase_client
+    supabase = get_supabase_client()
+    if supabase and file_path:
+        try:
+            from fastapi.responses import Response
+            bucket = "document-uploads"
+            file_bytes = supabase.storage.from_(bucket).download(file_path)
+            if file_bytes:
+                return Response(
+                    content=file_bytes,
+                    media_type=media_type,
+                    headers={"Content-Disposition": f'inline; filename="{doc["filename"]}"'},
+                )
+        except Exception:
+            pass
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Physical file does not exist on storage.",
     )
 
 

@@ -29,20 +29,38 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def get_optional_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
-    """Extracts user ID from Authorization header if present, else returns None."""
+    """
+    Extracts user ID from Authorization header if present.
+    In production (ENVIRONMENT=production), authentication is mandatory to prevent anonymous compute exhaustion.
+    In development/testing, anonymous uploads remain supported for automated testing.
+    """
+    is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
     if not authorization or not authorization.startswith("Bearer "):
+        if is_prod:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required for OCR processing in production.",
+            )
         return None
     token = authorization.split(" ")[1]
     try:
         payload = decode_access_token(token)
         return payload.get("sub")
     except Exception:
+        if is_prod:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired authentication token.",
+            )
         return None
 
 
 @router.post("/process", response_model=OCRDocumentResponse, summary="Extract Text from Legal Document")
 @router.post("/upload", response_model=OCRDocumentResponse, include_in_schema=False)
-async def process_document(file: UploadFile = File(...)) -> OCRDocumentResponse:
+async def process_document(
+    file: UploadFile = File(...),
+    user_id: Optional[str] = Depends(get_optional_user_id),
+) -> OCRDocumentResponse:
     """
     Accepts a legal document (PDF, DOCX, JPG, PNG).
     1. Validates format and size limits.
@@ -63,6 +81,23 @@ async def process_document(file: UploadFile = File(...)) -> OCRDocumentResponse:
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+
+        # Upload copy to Supabase Storage bucket 'document-uploads' if configured
+        try:
+            from services.supabase_client import get_supabase_client
+            supabase = get_supabase_client()
+            if supabase:
+                storage_user = user_id or "anonymous"
+                storage_key = f"documents/{storage_user}/{document_id}/{safe_filename}"
+                with open(file_path, "rb") as f_up:
+                    file_bytes = f_up.read()
+                supabase.storage.from_("document-uploads").upload(
+                    path=storage_key,
+                    file=file_bytes,
+                    file_options={"content-type": file.content_type or "application/octet-stream", "upsert": "true"}
+                )
+        except Exception as storage_err:
+            logger.debug(f"Optional Supabase Storage backup skipped: {storage_err}")
 
         result = LegalOCRProcessor.process_document(file_path, safe_filename)
 

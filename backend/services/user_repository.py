@@ -37,13 +37,30 @@ def is_postgres_authoritative() -> bool:
     """
     Determine if PostgreSQL is the authoritative production database.
     Can be explicitly disabled for offline unit tests via NYAYASARATHI_USE_SQLITE=1.
+
+    Production Enforcement:
+    When ENVIRONMENT == 'production', PostgreSQL is strictly required. Missing DATABASE_URL
+    or missing driver raises a RuntimeError rather than silently falling back to SQLite.
     """
+    is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
+
     if os.getenv("NYAYASARATHI_USE_SQLITE", "0") == "1":
+        if is_prod:
+            raise RuntimeError("CRITICAL: NYAYASARATHI_USE_SQLITE is prohibited in production!")
         return False
+
     if not PSYCOPG2_AVAILABLE:
+        if is_prod:
+            raise RuntimeError("CRITICAL: psycopg2 is not installed in production environment!")
         return False
+
     db_url = os.getenv("DATABASE_URL")
-    return bool(db_url and db_url.strip() and "dummy" not in db_url.lower())
+    has_valid_url = bool(db_url and db_url.strip() and "dummy" not in db_url.lower())
+
+    if is_prod and not has_valid_url:
+        raise RuntimeError("CRITICAL: Valid DATABASE_URL is required in production environment!")
+
+    return has_valid_url
 
 
 _PG_POOL: Optional[Any] = None
@@ -70,17 +87,32 @@ def _get_pg_pool():
 
 @contextmanager
 def pg_connection_scope():
-    """Context manager yielding a pooled PostgreSQL connection for high throughput."""
+    """
+    Context manager yielding a pooled PostgreSQL connection for high throughput.
+    Safely handles connection errors by closing broken connections rather than
+    returning corrupted sockets back into the pool.
+    """
     pool = _get_pg_pool()
     if pool is not None:
         conn = pool.getconn()
+        broken = False
         try:
             if conn.closed:
                 conn = psycopg2.connect(os.getenv("DATABASE_URL"), connect_timeout=5)
             yield conn
+        except Exception as e:
+            broken = True
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            raise e
         finally:
             try:
-                pool.putconn(conn)
+                if broken or conn.closed:
+                    pool.putconn(conn, close=True)
+                else:
+                    pool.putconn(conn)
             except Exception:
                 pass
     else:

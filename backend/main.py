@@ -40,15 +40,37 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
+import os
+import json
+
+def _get_cors_origins():
+    cors_env = os.getenv("CORS_ORIGINS", "").strip()
+    origins = []
+    if cors_env:
+        try:
+            parsed = json.loads(cors_env)
+            if isinstance(parsed, list):
+                origins.extend([o.strip() for o in parsed if o and isinstance(o, str)])
+        except Exception:
+            origins.extend([o.strip() for o in cors_env.split(",") if o.strip()])
+
+    is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
+    if not is_prod:
+        # Default local development origins
+        dev_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+        for do in dev_origins:
+            if do not in origins:
+                origins.append(do)
+    return origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_origin_regex=r"https?://.*",
+    allow_origins=_get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -210,7 +232,7 @@ app.include_router(advocate.router,      prefix="/api/advocate",        tags=["A
 app.include_router(news.router,          prefix="/api/news",            tags=["Legal News"])
 app.include_router(chat.router,          prefix="/api/chat",            tags=["Chat"])
 
-# ── Root & Health ─────────────────────────────────────────────────────────────
+# ── Root & Health / Readiness ──────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
 def root():
     return {"service": "NyayaSarathi API", "version": "1.0.0", "docs": "/docs"}
@@ -218,7 +240,57 @@ def root():
 
 @app.get("/health", tags=["Health"])
 def health_check():
+    """Liveness probe: verifies process is alive and responding."""
     return {"status": "ok", "service": "NyayaSarathi API", "version": "1.0.0"}
+
+
+@app.get("/ready", tags=["Health"])
+def readiness_check():
+    """
+    Readiness probe: verifies application dependencies (authoritative PostgreSQL).
+    Returns 200 if ready to serve traffic, 503 if primary database connection fails in production.
+    """
+    is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
+    from services.user_repository import is_postgres_authoritative, pg_connection_scope
+
+    try:
+        authoritative = is_postgres_authoritative()
+    except Exception as e:
+        if is_prod:
+            return JSONResponse(
+                status_code=503,
+                content={"status": "unhealthy", "database": "configuration_error", "detail": str(e)},
+            )
+        authoritative = False
+
+    db_status = "connected"
+    if authoritative:
+        try:
+            with pg_connection_scope() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT 1;")
+                    cur.fetchone()
+        except Exception:
+            db_status = "unavailable"
+            if is_prod:
+                return JSONResponse(
+                    status_code=503,
+                    content={"status": "unhealthy", "database": "unavailable", "detail": "PostgreSQL connection failed"},
+                )
+    else:
+        db_status = "sqlite_fallback"
+        if is_prod:
+            return JSONResponse(
+                status_code=503,
+                content={"status": "unhealthy", "database": "sqlite_unauthorized", "detail": "Production requires PostgreSQL"},
+            )
+
+    return {
+        "status": "ready",
+        "service": "NyayaSarathi API",
+        "database": db_status,
+        "authoritative_postgres": authoritative,
+    }
 
 
 # ── Startup / Shutdown Events ─────────────────────────────────────────────────

@@ -139,14 +139,31 @@ class DocumentProcessor:
         storage_filename = f"{doc_id}{ext}"
         storage_path = os.path.join(UPLOADS_DIR, storage_filename)
 
-        # Write file to storage
+        # Write file to local disk for processing
         with open(storage_path, "wb") as f:
             f.write(file_bytes)
+
+        # Upload to Supabase Storage bucket 'document-uploads' if configured
+        persisted_storage_path = storage_path
+        try:
+            from services.supabase_client import get_supabase_client
+            supabase = get_supabase_client()
+            if supabase:
+                storage_user = user_id or "shared"
+                storage_key = f"documents/{storage_user}/{doc_id}/{storage_filename}"
+                supabase.storage.from_("document-uploads").upload(
+                    path=storage_key,
+                    file=file_bytes,
+                    file_options={"content-type": content_type or "application/octet-stream", "upsert": "true"}
+                )
+                persisted_storage_path = storage_key
+        except Exception as e:
+            logger.debug(f"Optional Supabase Storage document upload skipped: {e}")
 
         title = custom_title.strip() if custom_title and custom_title.strip() else os.path.splitext(filename)[0].replace("_", " ").replace("-", " ").title()
         now = datetime.now(timezone.utc).isoformat()
 
-        # Insert initial record
+        # Insert initial record (store Supabase object path or local fallback)
         conn = _get_db_connection()
         try:
             conn.execute("""
@@ -156,7 +173,7 @@ class DocumentProcessor:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 doc_id, user_id, title, filename, ext, len(file_bytes), file_hash,
-                storage_path, 1, 0, 'processing', now, now
+                persisted_storage_path, 1, 0, 'processing', now, now
             ))
             conn.commit()
         finally:
