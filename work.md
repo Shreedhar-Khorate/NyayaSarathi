@@ -80,3 +80,15 @@ NyayaSarathi is an enterprise-grade AI-powered judicial intelligence and legal a
 | **Milestone C2** | Production Deployment Readiness Review | Critical | **COMPLETED** | Verified zero secret leakage; updated audit artifacts. |
 
 ### Final Readiness Verdict: **READY FOR DEPLOYMENT**
+
+---
+
+## 7. Frontend-Backend Integration & Production CORS Milestone
+
+| Milestone | Title | Priority | Status | Verification Criteria |
+|---|---|---|---|---|
+| **Milestone INT-1** | Frontend API Architecture & URL Centralization | Critical | **COMPLETED** | Verified all 32 endpoints route through `API_BASE_URL` (`NEXT_PUBLIC_API_URL` or fallback). Created `nyayasarathi-app/.env.example`. |
+| **Milestone INT-2** | Production CORS & Origin Hardening | Critical | **COMPLETED** | Verified dynamic CORS parser in `backend/main.py`. Verified OPTIONS preflight behavior against live Render backend. |
+| **Milestone INT-3** | Live Backend Service Verification | Critical | **COMPLETED** | Verified live Render backend (`https://nyayasarathi.onrender.com`): `GET /health` (200), `GET /ready` (200, authoritative Postgres), `GET /docs` (200). |
+| **Milestone INT-4** | End-to-End Build & Test Regression | Critical | **COMPLETED** | Frontend Next.js build clean (26/26 routes). Backend pytest (260/260 tests passed in 46s). Full documentation in `API_INTEGRATION_REPORT.md`. |
+

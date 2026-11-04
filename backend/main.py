@@ -232,16 +232,14 @@ app.include_router(advocate.router,      prefix="/api/advocate",        tags=["A
 app.include_router(news.router,          prefix="/api/news",            tags=["Legal News"])
 app.include_router(chat.router,          prefix="/api/chat",            tags=["Chat"])
 
-# ── Root & Health / Readiness ──────────────────────────────────────────────────
-@app.get("/", tags=["Health"])
-def root():
-    return {"service": "NyayaSarathi API", "version": "1.0.0", "docs": "/docs"}
+# ── REST endpoints ────────────────────────────────────────────────────────────
 
-
-@app.get("/health", tags=["Health"])
-def health_check():
-    """Liveness probe: verifies process is alive and responding."""
-    return {"status": "ok", "service": "NyayaSarathi API", "version": "1.0.0"}
+@app.get("/")
+@app.get("/health")
+@app.head("/")
+@app.head("/health")
+async def health():
+    return {"status": "ok", "version": "2.0.0"}
 
 
 @app.get("/ready", tags=["Health"])

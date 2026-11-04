@@ -284,3 +284,40 @@ Perform an AST-level recursive static scan of all Python files under `backend/` 
 
 **Final Status:**
 **COMPLETED — DEPENDENCIES FULLY REMEDIATED**
+
+
+---
+
+### [2026-11-04 11:24] – Added Unified GET & HEAD Root and Health REST Endpoints
+
+**Objective:**
+Add unified `@app.get("/")`, `@app.get("/health")`, `@app.head("/")`, and `@app.head("/health")` returning `{"status": "ok", "version": "2.0.0"}` in `backend/main.py`.
+
+**Files Modified:**
+- `backend/main.py`
+- `logs.md`
+
+**Changes Implemented:**
+- Configured REST endpoints in `backend/main.py`:
+  ```python
+  # ── REST endpoints ────────────────────────────────────────────────────────────
+
+  @app.get("/")
+  @app.get("/health")
+  @app.head("/")
+  @app.head("/health")
+  async def health():
+      return {"status": "ok", "version": "2.0.0"}
+  ```
+- Retained `@app.get("/ready")` probe for authoritative PostgreSQL deep readiness checks.
+
+**Tests Executed & Results:**
+1. Direct HTTP method verification via FastAPI `TestClient`:
+   - `GET /` -> 200 OK (`{"status": "ok", "version": "2.0.0"}`)
+   - `HEAD /` -> 200 OK
+   - `GET /health` -> 200 OK (`{"status": "ok", "version": "2.0.0"}`)
+   - `HEAD /health` -> 200 OK
+2. Pytest suite: `python -m pytest backend/tests -q`: **260 passed, 0 failed, 5 subtests passed** in 41.05s (PASSED).
+
+**Final Status:**
+**COMPLETED & VERIFIED**
