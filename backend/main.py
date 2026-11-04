@@ -3,16 +3,25 @@ NyayaSarathi Backend — Main Entry Point
 AI-Powered Judicial Case Intelligence & Decision Support API
 """
 
-# ── Logging must be configured FIRST ─────────────────────────────────────────
-from logger import setup_logging, get_logger
-setup_logging()
-
+# ── Load environment before configuring logging ──────────────────────────────
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
+import re
+import json
 import time
 import uuid
 import logging
+
+from logger import (
+    setup_logging, get_logger,
+    RESET as _R, BOLD as _BOLD, DIM as _DIM,
+    GREEN as _GREEN, YELLOW as _YELLOW, RED as _RED,
+    BLUE as _BLUE, CYAN as _CYAN, MAGENTA as _MAGENTA,
+    WHITE as _WHITE, GRAY as _GRAY
+)
+setup_logging()
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,15 +43,12 @@ log = get_logger("nyayasarathi")
 app = FastAPI(
     title="NyayaSarathi API",
     description="AI-Powered Judicial Case Intelligence & Decision Support API",
-    version="1.0.0",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-import os
-import json
-
 def _get_cors_origins():
     cors_env = os.getenv("CORS_ORIGINS", "").strip()
     origins = []
@@ -77,18 +83,19 @@ app.add_middleware(
 )
 
 # ── Request / Response Logging Middleware ─────────────────────────────────────
-# ANSI helpers (reuse from logger module constants)
-_R = "\033[0m"
-_BOLD = "\033[1m"
-_DIM = "\033[2m"
-_GRAY = "\033[90m"
-_GREEN = "\033[92m"
-_YELLOW = "\033[93m"
-_RED = "\033[91m"
-_BLUE = "\033[94m"
-_CYAN = "\033[96m"
-_MAGENTA = "\033[95m"
-_WHITE = "\033[97m"
+LOG_HEALTH_CHECKS = os.getenv("LOG_HEALTH_CHECKS", "").strip().lower() in ("1", "true", "yes")
+HEALTH_PROBE_PATHS = {"/health", "/ready", "/favicon.ico"}
+
+_SENSITIVE_PARAM_RE = re.compile(
+    r"((?:token|password|secret|key|access_token|authorization)=)([^&]+)",
+    re.IGNORECASE,
+)
+
+def _sanitize_query(query: str) -> str:
+    """Mask sensitive query parameter values in logs."""
+    if not query:
+        return ""
+    return _SENSITIVE_PARAM_RE.sub(r"\1[REDACTED]", query)
 
 
 def _method_color(method: str) -> str:
@@ -99,6 +106,7 @@ def _method_color(method: str) -> str:
         "PATCH":   f"{_BOLD}{_YELLOW}",
         "DELETE":  f"{_BOLD}{_RED}",
         "OPTIONS": f"{_DIM}{_GRAY}",
+        "HEAD":    f"{_DIM}{_GRAY}",
     }.get(method, _WHITE)
 
 
@@ -126,26 +134,35 @@ async def logging_middleware(request: Request, call_next):
     if request.method == "OPTIONS":
         return await call_next(request)
 
-    # Assign a short request ID
-    req_id = uuid.uuid4().hex[:8].upper()
+    path = request.url.path
+    method = request.method
+    is_health_probe = (path in HEALTH_PROBE_PATHS) or (path == "/" and method in ("GET", "HEAD"))
+    should_suppress_log = is_health_probe and not LOG_HEALTH_CHECKS
+
+    req_id = request.headers.get("x-request-id") or uuid.uuid4().hex[:8].upper()
     start = time.perf_counter()
 
     client_ip = request.client.host if request.client else "unknown"
-    method = request.method
-    path = request.url.path
-    query = f"?{request.url.query}" if request.url.query else ""
+    raw_query = f"?{request.url.query}" if request.url.query else ""
+    query = _sanitize_query(raw_query)
 
     method_col = _method_color(method)
 
-    try:
-        log.info(
-            f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
-            f"{_WHITE}{path}{query}{_R}  "
-            f"{_GRAY}<- {client_ip}{_R}",
-            extra={"component": "REQUEST"},
+    if not should_suppress_log:
+        try:
+            log.info(
+                f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
+                f"{_WHITE}{path}{query}{_R}  "
+                f"{_GRAY}<- {client_ip}{_R}",
+                extra={"component": "REQUEST"},
+            )
+        except Exception:
+            pass
+    elif log.isEnabledFor(logging.DEBUG):
+        log.debug(
+            f"[{req_id}] {method} {path} <- {client_ip}",
+            extra={"component": "HEALTH"},
         )
-    except Exception:
-        pass
 
     # Process request
     try:
@@ -159,7 +176,8 @@ async def logging_middleware(request: Request, call_next):
                 f"{_BOLD}{_RED}500 INTERNAL ERROR{_R}  "
                 f"{_RED}{elapsed_ms:.0f}ms{_R}  "
                 f"{_GRAY}{exc}{_R}",
-                extra={"component": "RESPONSE"},
+                extra={"component": "ERROR"},
+                exc_info=True,
             )
         except Exception:
             pass
@@ -167,21 +185,37 @@ async def logging_middleware(request: Request, call_next):
 
     elapsed_ms = (time.perf_counter() - start) * 1000
     status = response.status_code
+
+    # Always inject X-Request-ID into response headers for traceability
+    response.headers["X-Request-ID"] = req_id
+
+    # Suppress successful health check probe responses to keep logs clean on Render
+    if should_suppress_log and status < 400:
+        return response
+
     status_col = _status_color(status)
     dur_col = _duration_color(elapsed_ms)
 
+    level = logging.INFO
+    if status >= 500:
+        level = logging.ERROR
+    elif status >= 400:
+        level = logging.WARNING
+
     try:
-        log.info(
+        log.log(
+            level,
             f"{_GRAY}[{req_id}]{_R} {method_col}{method}{_R} "
             f"{_WHITE}{path}{query}{_R}  "
             f"{status_col}{status}{_R}  "
             f"{dur_col}{elapsed_ms:.0f}ms{_R}",
-            extra={"component": "RESPONSE"},
+            extra={"component": "RESPONSE" if status < 400 else "ERROR"},
         )
     except Exception:
         pass
 
     return response
+
 
 
 # ── Exception Handlers ────────────────────────────────────────────────────────
@@ -320,16 +354,47 @@ async def on_startup():
     except Exception as e:
         log.error(f"Failed to initialize chat database tables: {e}", extra={"component": "STARTUP"})
 
-    import os
-    port = int(os.environ.get("PORT", 8001))
+    # Startup Diagnostics Summary
+    port = int(os.environ.get("PORT", 8000))
+    is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
+    from services.user_repository import is_postgres_authoritative
+
+    try:
+        authoritative = is_postgres_authoritative()
+        db_mode = f"Authoritative PostgreSQL Pooler {_GREEN}[CONNECTED]{_R}" if authoritative else f"SQLite Fallback {_YELLOW}[DEV_MODE]{_R}"
+    except Exception as e:
+        db_mode = f"{_RED}[ERROR: {e}]{_R}"
+
+    sb_url = os.getenv("SUPABASE_URL", "")
+    storage_mode = f"Supabase Storage (chat-attachments, document-uploads) {_GREEN}[CONFIGURED]{_R}" if sb_url else f"{_YELLOW}[LOCAL_ONLY]{_R}"
+    
+    gemini_ready = bool(os.getenv("GEMINI_API_KEY") or os.getenv("PREDICTOR_GEMINI_API_KEY"))
+    groq_ready = bool(os.getenv("GROQ_API_KEY") or os.getenv("WAR_ROOM_GROQ_API_KEY"))
+    ai_status = f"Gemini: {'OK' if gemini_ready else 'MISSING'} | Groq: {'OK' if groq_ready else 'MISSING'}"
+    
+    health_mode = "Active (Silenced on 200 OK — set LOG_HEALTH_CHECKS=true to show all)" if not LOG_HEALTH_CHECKS else "Active (Verbose Logging)"
+
     log.info(
-        f"\033[1m\033[92mNyayaSarathi API\033[0m  "
-        f"\033[90mv1.0.0 · http://0.0.0.0:{port} · docs -> /docs\033[0m",
+        f"{_BOLD}{_GREEN}========================================================================{_R}",
         extra={"component": "STARTUP"},
     )
     log.info(
-        "Routes: /api/auth  /api/analyze  /api/cases  /api/contracts  /api/drafts  "
-        "/api/news  /api/ocr  /api/qa  /api/search  /api/statutes  /api/translate  /api/war-room",
+        f"{_BOLD}{_GREEN} NyayaSarathi API v2.0.0 — Production Diagnostics{_R}",
+        extra={"component": "STARTUP"},
+    )
+    log.info(
+        f"{_BOLD}{_GREEN}========================================================================{_R}",
+        extra={"component": "STARTUP"},
+    )
+    log.info(f"  Environment   : {'PRODUCTION (Render)' if is_prod else 'DEVELOPMENT (Local)'}", extra={"component": "STARTUP"})
+    log.info(f"  Database      : {db_mode}", extra={"component": "STARTUP"})
+    log.info(f"  File Storage  : {storage_mode}", extra={"component": "STARTUP"})
+    log.info(f"  AI Engines    : {ai_status}", extra={"component": "STARTUP"})
+    log.info(f"  Health Probes : {health_mode}", extra={"component": "STARTUP"})
+    log.info(f"  CORS Allowed  : {len(_get_cors_origins())} origin(s) configured", extra={"component": "STARTUP"})
+    log.info(f"  Service Port  : {port} · Swagger UI: http://0.0.0.0:{port}/docs", extra={"component": "STARTUP"})
+    log.info(
+        f"{_BOLD}{_GREEN}========================================================================{_R}",
         extra={"component": "STARTUP"},
     )
 

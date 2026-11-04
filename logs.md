@@ -321,3 +321,49 @@ Add unified `@app.get("/")`, `@app.get("/health")`, `@app.head("/")`, and `@app.
 
 **Final Status:**
 **COMPLETED & VERIFIED**
+
+
+---
+
+### [2026-11-04 12:09] – Production Cloud Logging Overhaul & Health Probe De-noising
+
+**Problem Identified:**
+Render's container load balancer and uptime monitors hit `GET /health` constantly (every 3–5 seconds), generating thousands of repetitive request and response lines:
+```text
+  06:00:38.941  INFO   | REQUEST   | [A17B0A5C] GET /health  <- 10.233.27.141
+  06:00:38.942  INFO   | RESPONSE  | [A17B0A5C] GET /health  200  1ms
+```
+This flooded Render's web log buffer, pushing out all real application logs.
+Furthermore, a root cause investigation revealed that importing `paddleocr` -> `paddle.distributed.utils.log_utils` was forcibly calling `logging.getLogger().setLevel(logging.WARNING)` (30), which silently muted all `INFO`-level application logs (table initializations, startup diagnostic banners, and service logs)!
+
+**Files Modified:**
+- `backend/logger.py`
+- `backend/main.py`
+- `logs.md`
+
+**Changes Implemented:**
+1. **Third-Party Log Level Protection (`backend/logger.py`):**
+   - Protected the Python root logger against external hijacking by libraries like PaddleOCR via `_protected_set_level()`.
+   - Updated `get_logger(name)` to explicitly set the child logger's level to `resolved_level` (`INFO` by default).
+2. **Health Check De-noising in Middleware (`backend/main.py`):**
+   - Added `LOG_HEALTH_CHECKS` environment variable (default: `False`).
+   - Suppresses 200 OK access logs for high-frequency health probes (`/health`, `/ready`, `/`, `/favicon.ico`) when successful.
+   - Preserves warning and error logging: if a health probe returns an error (>= 400, such as 503 on database disconnect) or raises an unhandled exception, it is immediately logged with status code, elapsed time, and error trace.
+3. **Traceability & Query Sanitization:**
+   - Injected `X-Request-ID` into response headers so frontend client requests can be correlated with backend logs.
+   - Added `_sanitize_query()` to automatically mask sensitive parameters (`token`, `password`, `key`, `secret`) as `[REDACTED]`.
+4. **Rich Production Startup Diagnostics Banner:**
+   - On startup, logs a formatted summary containing environment (`PRODUCTION (Render)`), database mode (authoritative PostgreSQL pooler), storage status, AI engine availability, health probe status, and CORS origins.
+5. **Multi-Format Support:**
+   - Added `NyayaJsonFormatter` for `LOG_FORMAT=json` in cloud log collectors (Datadog, CloudWatch, Loki).
+   - Added ANSI auto-detection with support for `NO_COLOR` and `LOG_COLORS`.
+
+**Tests Executed & Results:**
+1. Health probe silence check: `GET /health` executed silently with 200 OK, injecting `X-Request-ID` in response headers (PASSED).
+2. Error probe check: non-existent routes and 404/500 errors logged at `WARN`/`ERROR` with request ID (PASSED).
+3. Parameter masking check: `GET /api/news/legal?token=secret123` masked token value to `[REDACTED]` (PASSED).
+4. Startup diagnostics check: `on_startup()` cleanly output the production diagnostics banner (PASSED).
+5. Pytest regression suite: `python -m pytest backend/tests -q`: **260 passed, 0 failed, 5 subtests passed** in 39.58s (PASSED).
+
+**Final Status:**
+**COMPLETED & VERIFIED**
