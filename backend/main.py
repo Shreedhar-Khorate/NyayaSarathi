@@ -26,7 +26,7 @@ setup_logging()
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.encoders import jsonable_encoder
 
 from routers import admin, analyze, auth, cases, contracts, drafts, advocate, news, ocr, qa, search, statutes, translate, war_room
@@ -51,7 +51,9 @@ app = FastAPI(
 # ── CORS ──────────────────────────────────────────────────────────────────────
 def _get_cors_origins():
     cors_env = os.getenv("CORS_ORIGINS", "").strip()
-    origins = []
+    origins = [
+        "https://nyayasarathi.vercel.app",
+    ]
     if cors_env:
         try:
             parsed = json.loads(cors_env)
@@ -59,6 +61,10 @@ def _get_cors_origins():
                 origins.extend([o.strip() for o in parsed if o and isinstance(o, str)])
         except Exception:
             origins.extend([o.strip() for o in cors_env.split(",") if o.strip()])
+
+    frontend_url = os.getenv("FRONTEND_BASE_URL", "").strip()
+    if frontend_url and frontend_url not in origins:
+        origins.append(frontend_url)
 
     is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
     if not is_prod:
@@ -72,11 +78,12 @@ def _get_cors_origins():
         for do in dev_origins:
             if do not in origins:
                 origins.append(do)
-    return origins
+    return list(dict.fromkeys([o.rstrip("/") for o in origins if o]))
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_get_cors_origins(),
+    allow_origin_regex=r"^https://nyayasarathi.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -265,6 +272,12 @@ app.include_router(admin.router,         prefix="/api/admin",           tags=["A
 app.include_router(advocate.router,      prefix="/api/advocate",        tags=["Advocate Portal"])
 app.include_router(news.router,          prefix="/api/news",            tags=["Legal News"])
 app.include_router(chat.router,          prefix="/api/chat",            tags=["Chat"])
+
+@app.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
+def robots_txt():
+    """Polite crawler directives for web crawlers scanning Render host."""
+    return "User-agent: *\nDisallow: /api/\n"
+
 
 # ── REST endpoints ────────────────────────────────────────────────────────────
 

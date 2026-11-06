@@ -367,3 +367,41 @@ Furthermore, a root cause investigation revealed that importing `paddleocr` -> `
 
 **Final Status:**
 **COMPLETED & VERIFIED**
+
+
+---
+
+### [2026-11-06 11:53] – Fixed Frontend Production Base URL Fallback & Backend CORS Disallowed Origin
+
+**Problem Identified:**
+1. When navigating to `/legal-research`, `/find-advocate`, and `/news` on `https://nyayasarathi.vercel.app`, the frontend displayed connection errors pointing to `localhost` / `127.0.0.1:8000`. This happened because `API_BASE_URL` in `src/lib/config.ts` was statically falling back to `'http://127.0.0.1:8000'` when `NEXT_PUBLIC_API_URL` was undefined at Vercel build time.
+2. Direct inspection of the live Render backend (`https://nyayasarathi.onrender.com`) revealed that OPTIONS preflight requests from `Origin: https://nyayasarathi.vercel.app` failed with `HTTP 400: Disallowed CORS origin`. Because `CORS_ORIGINS` was not set on Render dashboard, `_get_cors_origins()` in `ENVIRONMENT=production` evaluated to an empty list `[]`.
+3. Web search spiders scanning `https://nyayasarathi.onrender.com/robots.txt` were generating 404 warning logs.
+
+**Files Modified:**
+- `backend/main.py`
+- `nyayasarathi-app/src/lib/config.ts`
+- `logs.md`
+
+**Changes Implemented:**
+1. **Frontend Dynamic URL Resolution (`nyayasarathi-app/src/lib/config.ts`):**
+   - Implemented `getApiBaseUrl()` with multi-tier origin resolution:
+     - If running in a browser on any non-localhost host (such as `nyayasarathi.vercel.app` or custom domain) and `NEXT_PUBLIC_API_URL` is unset or accidentally set to `localhost`, automatically upgrades to `https://nyayasarathi.onrender.com`.
+     - In server-side builds with `VERCEL` or `NODE_ENV=production`, defaults to `https://nyayasarathi.onrender.com`.
+     - In local development (`window.location.hostname === 'localhost'`), seamlessly defaults to `http://127.0.0.1:8000`.
+2. **Backend CORS Hardening & Vercel Preview Support (`backend/main.py`):**
+   - Seeded `_get_cors_origins()` with `https://nyayasarathi.vercel.app` and `FRONTEND_BASE_URL` by default.
+   - Added `allow_origin_regex=r"^https://nyayasarathi.*\.vercel\.app$"` to permit branch and pull request preview deployments.
+3. **Robots.txt Handler (`backend/main.py`):**
+   - Added `GET /robots.txt` route returning `User-agent: *\nDisallow: /api/\n` to eliminate 404 warnings from web crawlers.
+
+**Tests Executed & Results:**
+1. CORS Preflight: `OPTIONS /api/news` from `Origin: https://nyayasarathi.vercel.app` returned `200 OK` with `access-control-allow-origin: https://nyayasarathi.vercel.app` (PASSED).
+2. Preview CORS: `OPTIONS /api/news` from `Origin: https://nyayasarathi-preview-test.vercel.app` returned `200 OK` with matching allow-origin header (PASSED).
+3. Robots route: `GET /robots.txt` returned `200 OK` with plaintext crawler directives (PASSED).
+4. TypeScript check: `npx tsc --noEmit` -> 0 errors (PASSED).
+5. Frontend production build: `npm run build` -> all 26 static routes successfully generated and optimized (PASSED).
+6. Backend pytest suite: `python -m pytest backend/tests -q` -> **260 passed, 0 failed, 5 subtests passed** in 148.26s (PASSED).
+
+**Final Status:**
+**COMPLETED & VERIFIED**
