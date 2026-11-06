@@ -32,17 +32,7 @@ load_dotenv()
 log = get_logger("nyayasarathi.google_oauth")
 router = APIRouter()
 
-# ── OAuth Configuration (read from .env) ─────────────────────────────────────
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
-
-# This must exactly match the Authorized redirect URI set in Google Cloud Console
-GOOGLE_REDIRECT_URI = os.getenv(
-    "GOOGLE_REDIRECT_URI",
-    "http://localhost:8000/api/auth/google/callback"
-)
-
+# ── OAuth Configuration Helpers ──────────────────────────────────────────────
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
@@ -50,13 +40,63 @@ GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 SCOPE = "openid email profile"
 
 
+def get_google_config(request: Request):
+    """
+    Dynamically determines Google OAuth configuration and redirect targets:
+    - In production (Render) or non-localhost requests:
+      defaults redirect_uri to 'https://nyayasarathi.onrender.com/api/auth/google/callback'
+      and frontend_base to 'https://nyayasarathi.vercel.app'.
+    - In local development:
+      defaults redirect_uri to 'http://localhost:8000/api/auth/google/callback'
+      and frontend_base to 'http://localhost:3000'.
+    - Can be explicitly overridden via GOOGLE_REDIRECT_URI and FRONTEND_BASE_URL.
+    """
+    client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+    is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
+
+    # 1. Resolve redirect URI
+    configured_redirect = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
+    if configured_redirect:
+        redirect_uri = configured_redirect
+    else:
+        host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").lower()
+        is_local_host = any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0", "testserver")) or not host
+        if is_prod or (host and not is_local_host):
+            redirect_uri = "https://nyayasarathi.onrender.com/api/auth/google/callback"
+        else:
+            proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+            redirect_uri = f"{proto}://{host or 'localhost:8000'}/api/auth/google/callback"
+
+    # 2. Resolve frontend base URL
+    configured_frontend = os.getenv("FRONTEND_BASE_URL", "").strip()
+    if configured_frontend:
+        frontend_base = configured_frontend.rstrip("/")
+    elif is_prod or (host and not is_local_host):
+        frontend_base = "https://nyayasarathi.vercel.app"
+    else:
+        referer = request.headers.get("referer") or request.headers.get("origin")
+        if referer:
+            from urllib.parse import urlparse
+            parsed = urlparse(referer)
+            if parsed.netloc:
+                frontend_base = f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+            else:
+                frontend_base = "http://localhost:3000"
+        else:
+            frontend_base = "http://localhost:3000"
+
+    return client_id, client_secret, redirect_uri, frontend_base
+
+
 @router.get("", summary="Initiate Google OAuth 2.0 Login / Signup")
-def google_auth_redirect():
+def google_auth_redirect(request: Request):
     """
     Redirects the user to Google's OAuth 2.0 consent screen.
     Works for both login and signup flows.
     """
-    if not GOOGLE_CLIENT_ID or "your-google-client-id" in GOOGLE_CLIENT_ID:
+    client_id, _, redirect_uri, _ = get_google_config(request)
+    if not client_id or "your-google-client-id" in client_id:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth is not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to backend/.env"
@@ -64,36 +104,42 @@ def google_auth_redirect():
 
     google_url = (
         f"{GOOGLE_AUTH_URL}"
-        f"?client_id={GOOGLE_CLIENT_ID}"
-        f"&redirect_uri={GOOGLE_REDIRECT_URI}"
+        f"?client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
         f"&response_type=code"
         f"&scope={SCOPE.replace(' ', '+')}"
         f"&access_type=offline"
         f"&prompt=select_account"
     )
-    log.info("Redirecting user to Google OAuth consent screen.", extra={"component": "GOOGLE_OAUTH"})
+    log.info(f"Redirecting user to Google OAuth consent screen with redirect_uri: {redirect_uri}", extra={"component": "GOOGLE_OAUTH"})
     return RedirectResponse(url=google_url)
 
 
 @router.get("/callback", summary="Google OAuth 2.0 Callback Handler")
-async def google_auth_callback(code: Optional[str] = None, error: Optional[str] = None):
+async def google_auth_callback(
+    request: Request,
+    code: Optional[str] = None,
+    error: Optional[str] = None
+):
     """
     Handles Google OAuth callback:
     1. Exchanges authorization code for access token.
     2. Fetches user profile from Google (name, email, picture).
     3. Upserts user into Supabase + local SQLite.
     4. Issues a NyayaSarathi JWT token.
-    5. Redirects to frontend with token in URL fragment.
+    5. Redirects to frontend with token in URL query params.
     """
+    client_id, client_secret, redirect_uri, frontend_base = get_google_config(request)
+
     if error:
         log.warning(f"Google OAuth error: {error}", extra={"component": "GOOGLE_OAUTH"})
         return RedirectResponse(
-            url=f"{FRONTEND_BASE_URL}/login?error=google_auth_cancelled"
+            url=f"{frontend_base}/login?error=google_auth_cancelled"
         )
 
     if not code:
         return RedirectResponse(
-            url=f"{FRONTEND_BASE_URL}/login?error=missing_code"
+            url=f"{frontend_base}/login?error=missing_code"
         )
 
     # 1. Exchange code for tokens
@@ -102,9 +148,9 @@ async def google_auth_callback(code: Optional[str] = None, error: Optional[str] 
             GOOGLE_TOKEN_URL,
             data={
                 "code": code,
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "redirect_uri": GOOGLE_REDIRECT_URI,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
                 "grant_type": "authorization_code",
             },
         )
@@ -112,7 +158,7 @@ async def google_auth_callback(code: Optional[str] = None, error: Optional[str] 
     if token_res.status_code != 200:
         log.error(f"Failed to exchange Google code for token: {token_res.text}", extra={"component": "GOOGLE_OAUTH"})
         return RedirectResponse(
-            url=f"{FRONTEND_BASE_URL}/login?error=token_exchange_failed"
+            url=f"{frontend_base}/login?error=token_exchange_failed"
         )
 
     token_data = token_res.json()
@@ -128,7 +174,7 @@ async def google_auth_callback(code: Optional[str] = None, error: Optional[str] 
     if profile_res.status_code != 200:
         log.error(f"Failed to fetch Google profile: {profile_res.text}", extra={"component": "GOOGLE_OAUTH"})
         return RedirectResponse(
-            url=f"{FRONTEND_BASE_URL}/login?error=profile_fetch_failed"
+            url=f"{frontend_base}/login?error=profile_fetch_failed"
         )
 
     google_profile = profile_res.json()
@@ -184,7 +230,7 @@ async def google_auth_callback(code: Optional[str] = None, error: Optional[str] 
     completed_param = "true" if user.get("profile_completed") else "false"
 
     redirect_url = (
-        f"{FRONTEND_BASE_URL}/login"
+        f"{frontend_base}/login"
         f"?google_token={jwt_token}"
         f"&google_user_email={urllib.parse.quote_plus(user['email'])}"
         f"&google_user_name={user_param}"

@@ -405,3 +405,35 @@ Furthermore, a root cause investigation revealed that importing `paddleocr` -> `
 
 **Final Status:**
 **COMPLETED & VERIFIED**
+
+
+---
+
+### [2026-11-06 12:04] – Dynamic Google OAuth Redirect URI and Frontend Base Resolution
+
+**Problem Identified:**
+When clicking "Continue with Google" on the production frontend, the user was redirected to:
+`http://localhost:8000/api/auth/google/callback?iss=https://accounts.google.com&code=...`
+This occurred because `GOOGLE_REDIRECT_URI` and `FRONTEND_BASE_URL` were evaluated once at module load time in `backend/routers/google_oauth.py`, falling back to `http://localhost:8000` and `http://localhost:3000` respectively when unset on Render.
+
+**Files Modified:**
+- `backend/routers/google_oauth.py`
+- `backend/.gitignore`
+- `backend/.env.example`
+- `logs.md`
+
+**Changes Implemented:**
+1. Created `get_google_config(request: Request)` in `backend/routers/google_oauth.py`:
+   - Inspects `ENVIRONMENT` and request `Host` / `X-Forwarded-Host` / `X-Forwarded-Proto` dynamically.
+   - On Render / production requests, automatically resolves `redirect_uri` to `https://nyayasarathi.onrender.com/api/auth/google/callback` and `frontend_base` to `https://nyayasarathi.vercel.app`.
+   - On localhost development requests, safely defaults to `http://localhost:8000/api/auth/google/callback` and `http://localhost:3000`.
+   - Allows explicit overrides via `GOOGLE_REDIRECT_URI` and `FRONTEND_BASE_URL`.
+2. Passed `request` to `google_auth_redirect` and `google_auth_callback` so dynamic URIs are passed to both the Google consent URL and token exchange.
+3. Updated `backend/.env.example` to document Google Cloud Console redirect URI requirements for both production and development.
+
+**Tests Executed & Results:**
+1. Dev redirect test: `GET /api/auth/google` with `Host: localhost:8000` redirected to Google with `redirect_uri=http://localhost:8000/api/auth/google/callback` (PASSED).
+2. Production redirect test: `GET /api/auth/google` with `Host: nyayasarathi.onrender.com` redirected to Google with `redirect_uri=https://nyayasarathi.onrender.com/api/auth/google/callback` (PASSED).
+
+**Final Status:**
+**COMPLETED & VERIFIED**
