@@ -437,3 +437,29 @@ This occurred because `GOOGLE_REDIRECT_URI` and `FRONTEND_BASE_URL` were evaluat
 
 **Final Status:**
 **COMPLETED & VERIFIED**
+
+
+---
+
+### [2026-11-06 12:15] – Enforced Production Vercel Frontend Base URL on Google OAuth Callback
+
+**Problem Identified:**
+After successful Google authentication, the backend exchanged tokens and issued a valid JWT, but redirected to `http://localhost:3000/login?google_token=...` instead of `https://nyayasarathi.vercel.app/login?google_token=...` because `FRONTEND_BASE_URL` in `.env` was `http://localhost:3000` and took precedence.
+
+**Files Modified:**
+- `backend/routers/google_oauth.py`
+- `backend/.env`
+- `logs.md`
+
+**Changes Implemented:**
+- Updated `get_google_config()` in `backend/routers/google_oauth.py`:
+  - When a request is served on Render / production (`is_prod` or host `nyayasarathi.onrender.com`), any localhost value for `FRONTEND_BASE_URL` or `GOOGLE_REDIRECT_URI` is strictly ignored.
+  - Automatically redirects to `https://nyayasarathi.vercel.app/login?google_token=...` in production.
+  - Retains `http://localhost:3000` solely for local development on localhost.
+
+**Tests Executed & Results:**
+- MockRequest to `nyayasarathi.onrender.com` evaluated `frontend_base` to `https://nyayasarathi.vercel.app` (PASSED).
+- MockRequest to `localhost:8000` evaluated `frontend_base` to `http://localhost:3000` (PASSED).
+
+**Final Status:**
+**COMPLETED & VERIFIED**

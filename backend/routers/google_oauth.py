@@ -55,34 +55,35 @@ def get_google_config(request: Request):
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
     is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
 
+    host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").lower()
+    is_local_host = any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0", "testserver")) or not host
+    is_production_request = is_prod or (host and not is_local_host)
+
     # 1. Resolve redirect URI
     configured_redirect = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
-    if configured_redirect:
-        redirect_uri = configured_redirect
-    else:
-        host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").lower()
-        is_local_host = any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0", "testserver")) or not host
-        if is_prod or (host and not is_local_host):
+    if is_production_request:
+        if configured_redirect and "localhost" not in configured_redirect and "127.0.0.1" not in configured_redirect:
+            redirect_uri = configured_redirect
+        else:
             redirect_uri = "https://nyayasarathi.onrender.com/api/auth/google/callback"
+    else:
+        if configured_redirect:
+            redirect_uri = configured_redirect
         else:
             proto = request.headers.get("x-forwarded-proto", request.url.scheme)
             redirect_uri = f"{proto}://{host or 'localhost:8000'}/api/auth/google/callback"
 
     # 2. Resolve frontend base URL
     configured_frontend = os.getenv("FRONTEND_BASE_URL", "").strip()
-    if configured_frontend:
-        frontend_base = configured_frontend.rstrip("/")
-    elif is_prod or (host and not is_local_host):
-        frontend_base = "https://nyayasarathi.vercel.app"
+    if is_production_request:
+        # In production, NEVER redirect to localhost!
+        if configured_frontend and "localhost" not in configured_frontend and "127.0.0.1" not in configured_frontend:
+            frontend_base = configured_frontend.rstrip("/")
+        else:
+            frontend_base = "https://nyayasarathi.vercel.app"
     else:
-        referer = request.headers.get("referer") or request.headers.get("origin")
-        if referer:
-            from urllib.parse import urlparse
-            parsed = urlparse(referer)
-            if parsed.netloc:
-                frontend_base = f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
-            else:
-                frontend_base = "http://localhost:3000"
+        if configured_frontend:
+            frontend_base = configured_frontend.rstrip("/")
         else:
             frontend_base = "http://localhost:3000"
 
