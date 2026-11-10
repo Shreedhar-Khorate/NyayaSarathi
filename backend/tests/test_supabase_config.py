@@ -97,6 +97,74 @@ class TestSupabaseConfig(unittest.TestCase):
         self.assertEqual(data["user"]["email"], "user@nyayasarathi.in")
         self.assertEqual(data["user"]["role"], "USER")
 
+    def test_supa_keepalive_sqlite_fallback(self):
+        """Test GET /supa inserts and immediately deletes dummy row in SQLite fallback mode."""
+        from unittest.mock import patch
+        from fastapi.testclient import TestClient
+        from main import app
+        from services.user_repository import get_db_connection
+
+        with patch.dict(os.environ, {"NYAYASARATHI_USE_SQLITE": "1", "ENVIRONMENT": "development"}):
+            client = TestClient(app)
+            res = client.get("/supa")
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            self.assertEqual(data["status"], "ok")
+            self.assertEqual(data["database"], "sqlite_fallback")
+            self.assertEqual(data["operation"], "insert_and_delete")
+            self.assertEqual(data["table"], "_supabase_keepalive")
+            self.assertTrue(data["ping_id"])
+
+            conn = get_db_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute("SELECT COUNT(*) FROM _supabase_keepalive WHERE id = ?", (data["ping_id"],))
+                self.assertEqual(cur.fetchone()[0], 0)
+            finally:
+                conn.close()
+
+    def test_supa_keepalive_production_enforcement(self):
+        """Test GET /supa fails with 503 in production if PostgreSQL is disabled."""
+        from unittest.mock import patch
+        from fastapi.testclient import TestClient
+        from main import app
+
+        with patch.dict(os.environ, {"NYAYASARATHI_USE_SQLITE": "1", "ENVIRONMENT": "production"}):
+            client = TestClient(app)
+            res = client.get("/supa")
+            self.assertEqual(res.status_code, 503)
+
+    def test_supa_keepalive_postgres_insert_and_delete(self):
+        """Test POST /supa executes CREATE TABLE, INSERT, DELETE, and commits on Postgres."""
+        from contextlib import contextmanager
+        from unittest.mock import MagicMock, patch
+        from fastapi.testclient import TestClient
+        from main import app
+
+        mock_cur = MagicMock()
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cur
+
+        @contextmanager
+        def fake_pg_scope():
+            yield mock_conn
+
+        with patch("services.user_repository.is_postgres_authoritative", return_value=True), \
+             patch("services.user_repository.pg_connection_scope", fake_pg_scope):
+            client = TestClient(app)
+            res = client.post("/supa")
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            self.assertEqual(data["status"], "ok")
+            self.assertEqual(data["database"], "supabase_postgres")
+            self.assertEqual(data["operation"], "insert_and_delete")
+
+            executed_sql = " ".join(str(call.args[0]) for call in mock_cur.execute.call_args_list)
+            self.assertIn("CREATE TABLE IF NOT EXISTS public._supabase_keepalive", executed_sql)
+            self.assertIn("INSERT INTO public._supabase_keepalive", executed_sql)
+            self.assertIn("DELETE FROM public._supabase_keepalive", executed_sql)
+            self.assertEqual(mock_conn.commit.call_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

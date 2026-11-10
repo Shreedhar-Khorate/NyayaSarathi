@@ -463,3 +463,35 @@ After successful Google authentication, the backend exchanged tokens and issued 
 
 **Final Status:**
 **COMPLETED & VERIFIED**
+
+
+---
+
+### [2026-11-10 20:25] – Added `/supa` Supabase Keep-Alive Write+Delete Route
+
+**Objective:**
+Prevent Supabase free-tier automatic 7-day inactivity pausing by exposing a dedicated `/supa` endpoint (`GET` & `POST`) that creates/uses a dummy table (`_supabase_keepalive`), inserts a timestamped record, and immediately deletes it.
+
+**Files Created:**
+- `backend/migrations/007_supabase_keepalive.sql`
+
+**Files Modified:**
+- `backend/main.py`
+- `backend/tests/test_supabase_config.py`
+- `logs.md`
+
+**Changes Implemented:**
+1. Created migration `backend/migrations/007_supabase_keepalive.sql` defining `public._supabase_keepalive (id TEXT PRIMARY KEY, pinged_at TIMESTAMPTZ)`.
+2. Added `GET /supa` and `POST /supa` in `backend/main.py`:
+   - Ensures `_supabase_keepalive` exists idempotently.
+   - Inserts a unique UUID row with UTC timestamp and commits.
+   - Immediately deletes the row by ID and commits, keeping table storage at 0 rows.
+   - Supports SQLite fallback locally while strictly returning HTTP 503 if PostgreSQL is unavailable in production.
+3. Added 3 unit tests in `backend/tests/test_supabase_config.py` covering SQLite fallback, production PostgreSQL enforcement (503), and PostgreSQL SQL execution/commits.
+
+**Tests Executed & Results:**
+1. Live Supabase PostgreSQL probe (`GET /supa`): Returned `200 OK` (`database: "supabase_postgres"`, `operation: "insert_and_delete"`), and verified `SELECT COUNT(*) FROM public._supabase_keepalive` returned `0` (PASSED).
+2. `python -m pytest backend/tests/test_supabase_config.py -v`: **9 passed** in 7.46s (PASSED).
+
+**Final Status:**
+**COMPLETED & VERIFIED**

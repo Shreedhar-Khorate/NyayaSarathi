@@ -13,6 +13,7 @@ import json
 import time
 import uuid
 import logging
+from datetime import datetime, timezone
 
 from logger import (
     setup_logging, get_logger,
@@ -336,6 +337,113 @@ def readiness_check():
         "database": db_status,
         "authoritative_postgres": authoritative,
     }
+
+
+@app.get("/supa", tags=["Health"])
+@app.post("/supa", tags=["Health"])
+def supabase_keepalive():
+    """
+    Supabase Keep-Alive Route:
+    Inserts a dummy record into `_supabase_keepalive` and immediately deletes it
+    to register genuine write activity and prevent Supabase free-tier auto-pausing.
+    """
+    is_prod = os.getenv("ENVIRONMENT", "").strip().lower() == "production"
+    from services.user_repository import (
+        is_postgres_authoritative,
+        pg_connection_scope,
+        get_db_connection,
+    )
+
+    try:
+        authoritative = is_postgres_authoritative()
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "database": "configuration_error", "detail": str(e)},
+        )
+
+    ping_id = uuid.uuid4().hex
+    pinged_at = datetime.now(timezone.utc).isoformat()
+
+    if authoritative:
+        try:
+            with pg_connection_scope() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS public._supabase_keepalive (
+                            id TEXT PRIMARY KEY,
+                            pinged_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+                        );
+                        """
+                    )
+                    cur.execute(
+                        "INSERT INTO public._supabase_keepalive (id, pinged_at) VALUES (%s, %s);",
+                        (ping_id, pinged_at),
+                    )
+                    conn.commit()
+                    cur.execute(
+                        "DELETE FROM public._supabase_keepalive WHERE id = %s;",
+                        (ping_id,),
+                    )
+                    conn.commit()
+            log.info(f"Supabase keep-alive write+delete verified (ping_id={ping_id}).", extra={"component": "DB"})
+            return {
+                "status": "ok",
+                "database": "supabase_postgres",
+                "operation": "insert_and_delete",
+                "table": "_supabase_keepalive",
+                "ping_id": ping_id,
+                "pinged_at": pinged_at,
+            }
+        except Exception as e:
+            log.error(f"Supabase keep-alive failed: {e}", extra={"component": "DB"})
+            return JSONResponse(
+                status_code=503,
+                content={"status": "error", "database": "supabase_postgres", "detail": "Keep-alive write failed."},
+            )
+
+    if is_prod:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "database": "sqlite_unauthorized", "detail": "Production requires PostgreSQL"},
+        )
+
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS _supabase_keepalive (
+                id TEXT PRIMARY KEY,
+                pinged_at TEXT NOT NULL
+            );
+            """
+        )
+        cur.execute(
+            "INSERT INTO _supabase_keepalive (id, pinged_at) VALUES (?, ?);",
+            (ping_id, pinged_at),
+        )
+        conn.commit()
+        cur.execute("DELETE FROM _supabase_keepalive WHERE id = ?;", (ping_id,))
+        conn.commit()
+        log.info(f"Local keep-alive write+delete verified (ping_id={ping_id}).", extra={"component": "DB"})
+        return {
+            "status": "ok",
+            "database": "sqlite_fallback",
+            "operation": "insert_and_delete",
+            "table": "_supabase_keepalive",
+            "ping_id": ping_id,
+            "pinged_at": pinged_at,
+        }
+    except Exception as e:
+        log.error(f"Local keep-alive failed: {e}", extra={"component": "DB"})
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "database": "sqlite_fallback", "detail": str(e)},
+        )
+    finally:
+        conn.close()
 
 
 # ── Startup / Shutdown Events ─────────────────────────────────────────────────
