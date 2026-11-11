@@ -11,3 +11,4 @@ CREATE TABLE IF NOT EXISTS public._supabase_keepalive (
     pinged_at  TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
+ALTER TABLE public._supabase_keepalive ENABLE ROW LEVEL SECURITY;

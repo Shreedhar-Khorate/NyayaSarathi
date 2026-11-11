@@ -495,3 +495,62 @@ Prevent Supabase free-tier automatic 7-day inactivity pausing by exposing a dedi
 
 **Final Status:**
 **COMPLETED & VERIFIED**
+
+
+---
+
+### [2026-11-11 19:49] – Remediated `rls_disabled_in_public` Across All Supabase Public Tables
+
+**Problem Identified:**
+Supabase Security Advisors flagged `rls_disabled_in_public` (critical vulnerability). Inspection of live `pg_tables` and anonymous PostgREST queries confirmed:
+1. 7 tables in `public` (`users`, `rag_documents`, `rag_chunks`, `judgments`, `ingestion_log`, `_schema_migrations`, `_supabase_keepalive`) had `RLS=False`.
+2. Overly permissive `USING (TRUE)` policies on `user_activity_history` (`public`) and `role_change_audit` (`authenticated`) allowed anonymous/public PostgREST reads (`users` exposed 31 rows and `user_activity_history` exposed 95 rows to `anon`).
+
+**Files Created:**
+- `backend/migrations/008_enable_rls_all_public_tables.sql`
+
+**Files Modified:**
+- `backend/migrations/007_supabase_keepalive.sql`
+- `backend/main.py`
+- `backend/scripts/run_migrations.py`
+- `logs.md`
+
+**Changes Implemented:**
+1. Created and applied `backend/migrations/008_enable_rls_all_public_tables.sql`:
+   - Enabled Row-Level Security (`ENABLE ROW LEVEL SECURITY`) on all 13 `public` tables (`users`, `rag_documents`, `rag_chunks`, `judgments`, `ingestion_log`, `user_activity_history`, `role_change_audit`, `chat_conversations`, `chat_messages`, `chat_attachments`, `chat_participant_state`, `_schema_migrations`, `_supabase_keepalive`).
+   - Dropped permissive `public` / `authenticated` `USING (true)` policies (`"Users can only read own history"`, `"Authenticated Read Role Audit"`, `"Public Read Judgments"`).
+   - Configured explicit `TO service_role` policies so PostgREST blocks all `anon` and `authenticated` requests while FastAPI (`DATABASE_URL` / `service_role`) continues operating normally.
+2. Updated `backend/migrations/007_supabase_keepalive.sql`, `/supa` in `backend/main.py`, and `backend/scripts/run_migrations.py` so `_supabase_keepalive` and `_schema_migrations` always enforce `ENABLE ROW LEVEL SECURITY`.
+
+**Tests Executed & Results:**
+1. `python backend/scripts/run_migrations.py`: Applied migrations `007` and `008` to Supabase PostgreSQL cleanly (PASSED).
+2. Live `pg_tables` audit: All 13 tables in `public` confirmed `RLS=True` (PASSED).
+3. Live PostgREST `anon` probe: `users`, `user_activity_history`, `role_change_audit`, `rag_documents`, `_supabase_keepalive`, `_schema_migrations`, `chat_conversations` all returned `Content-Range=*/0` (zero rows exposed) (PASSED).
+4. Live FastAPI verification with RLS enabled: `GET /ready` (200), `GET /supa` (200), `POST /api/auth/login` (200) (PASSED).
+
+**Final Status:**
+**COMPLETED & VERIFIED**
+
+
+---
+
+### [2026-11-11 19:54] – Added `HEAD /supa` Support for UptimeRobot HTTP Monitors
+
+**Problem Identified:**
+UptimeRobot's HTTP/S monitor reported `https://nyayasarathi.onrender.com/supa` as Down. Probing `HEAD https://nyayasarathi.onrender.com/supa` returned `HTTP 405 Method Not Allowed`, because UptimeRobot sends `HEAD` requests by default and `/supa` only registered `GET` and `POST`.
+
+**Files Modified:**
+- `backend/main.py`
+- `backend/tests/test_supabase_config.py`
+- `logs.md`
+
+**Changes Implemented:**
+1. Added `@app.head("/supa", tags=["Health"])` to `supabase_keepalive()` in `backend/main.py`.
+2. Added `test_supa_keepalive_head_method` in `backend/tests/test_supabase_config.py`.
+
+**Tests Executed & Results:**
+- Live probe before fix: `HEAD https://nyayasarathi.onrender.com/supa` -> `HTTP 405 Method Not Allowed` (confirmed root cause).
+- `python -m pytest backend/tests/test_supabase_config.py -v`: **10 passed** in 32.47s (PASSED).
+
+**Final Status:**
+**COMPLETED & VERIFIED — READY FOR PUSH TO RENDER**

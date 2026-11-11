@@ -165,6 +165,28 @@ class TestSupabaseConfig(unittest.TestCase):
             self.assertIn("DELETE FROM public._supabase_keepalive", executed_sql)
             self.assertEqual(mock_conn.commit.call_count, 2)
 
+    def test_supa_keepalive_head_method(self):
+        """Test HEAD /supa returns 200 OK (required by UptimeRobot HTTP monitors)."""
+        from contextlib import contextmanager
+        from unittest.mock import MagicMock, patch
+        from fastapi.testclient import TestClient
+        from main import app
+
+        mock_cur = MagicMock()
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cur
+
+        @contextmanager
+        def fake_pg_scope():
+            yield mock_conn
+
+        with patch("services.user_repository.is_postgres_authoritative", return_value=True), \
+             patch("services.user_repository.pg_connection_scope", fake_pg_scope):
+            client = TestClient(app)
+            res = client.head("/supa")
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(mock_conn.commit.call_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -41,6 +41,7 @@ def run_migrations():
             version TEXT PRIMARY KEY,
             applied_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
         );
+        ALTER TABLE public._schema_migrations ENABLE ROW LEVEL SECURITY;
     """)
 
     migration_files = sorted(

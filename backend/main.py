@@ -340,6 +340,7 @@ def readiness_check():
 
 
 @app.get("/supa", tags=["Health"])
+@app.head("/supa", tags=["Health"])
 @app.post("/supa", tags=["Health"])
 def supabase_keepalive():
     """
@@ -375,6 +376,7 @@ def supabase_keepalive():
                             id TEXT PRIMARY KEY,
                             pinged_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
                         );
+                        ALTER TABLE public._supabase_keepalive ENABLE ROW LEVEL SECURITY;
                         """
                     )
                     cur.execute(
