@@ -149,7 +149,7 @@ NyayaSarathi/
 │   ├── public/
 │   └── package.json
 │
-├── logs.md
+├── LICENSE
 ├── README.md
 └── .gitignore
 Directory and filename details should be adjusted to match the current repository.

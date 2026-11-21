@@ -2,7 +2,7 @@
 NyayaSarathi — Supabase Database Setup & Demo Credential Seeder.
 Uses credentials from backend/.env (zero hardcoded values).
 Connects to Supabase via PostgreSQL (psycopg2) and the Supabase Client.
-Creates the project tables and seeds the demo credentials from LOGINS.md.
+Creates the project tables and seeds the demo credentials for local/staging testing.
 """
 
 import os
