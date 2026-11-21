@@ -12,19 +12,19 @@
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-[![Render Backend](https://img.shields.io/badge/Render-Backend%20Live-46E3B7?style=flat-square&logo=render&logoColor=black)](https://nyayasarathi.onrender.com/ready)
-[![Vercel Frontend](https://img.shields.io/badge/Vercel-Frontend%20Live-000000?style=flat-square&logo=vercel&logoColor=white)](https://nyayasarathi.vercel.app)
+[![Render](https://img.shields.io/badge/Render-FastAPI%20Backend-46E3B7?style=flat-square&logo=render&logoColor=black)](https://render.com)
+[![Vercel](https://img.shields.io/badge/Vercel-Next.js%20Frontend-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com)
 [![Tests Passing](https://img.shields.io/badge/Tests-264%20Passed-success?style=flat-square&logo=pytest&logoColor=white)](backend/tests/)
-[![KeepAlive Bot](https://img.shields.io/badge/KeepAlive%20Bots-Active%2024%2F7-blueviolet?style=flat-square&logo=githubactions&logoColor=white)](.github/workflows/keepalive.yml)
+[![KeepAlive Architecture](https://img.shields.io/badge/KeepAlive%20Bots-Active%2024%2F7-blueviolet?style=flat-square&logo=uptimerobot&logoColor=white)](#-dual-keep-alive-bots-infrastructure)
 
 <p align="center">
   <strong>Empowering Indian Advocates, Judicial Researchers, and Litigants with Explainable Legal AI</strong>
 </p>
 
 <p align="center">
-  <a href="https://nyayasarathi.vercel.app">🌐 Live Application</a> •
-  <a href="https://nyayasarathi.onrender.com/docs">📖 Interactive Swagger API</a> •
-  <a href="#-dual-keep-alive-bots-infrastructure">🤖 Keep-Alive Bots</a> •
+  <a href="#-executive-overview">📌 Overview</a> •
+  <a href="#-core-capabilities">✨ Capabilities</a> •
+  <a href="#-dual-keep-alive-bots-infrastructure">🤖 Keep-Alive Architecture</a> •
   <a href="#-quickstart--installation">⚡ Quickstart</a> •
   <a href="#-api-endpoint-reference">📡 API Reference</a>
 </p>
@@ -78,37 +78,32 @@ The system features dedicated workflows for **Citizens (Litigants)**, **Advocate
 
 ## 🤖 Dual Keep-Alive Bots Infrastructure
 
-Free-tier cloud environments (Render Web Services and Supabase PostgreSQL) automatically sleep or pause during periods of inactivity. NyayaSarathi embeds a **two-tier automated keep-alive bot system** to maintain 99.9% availability without paid add-ons:
+Free-tier cloud deployments (such as Render Web Services and Supabase PostgreSQL) automatically sleep or pause during periods of inactivity. NyayaSarathi implements a **two-tier keep-alive bot architecture** to maintain reliable 24/7 availability:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   🤖 NyayaSarathi Dual Keep-Alive System               │
 ├───────────────────────────────────┬────────────────────────────────────┤
-│ 🌐 Bot 1: Render Warm-Up Bot      │ 🗄️ Bot 2: Supabase Persistence Bot │
+│ 🌐 Bot 1: Web Service Warm-Up Bot │ 🗄️ Bot 2: Supabase Persistence Bot │
 │ Endpoint: GET /ready              │ Endpoint: GET /supa                │
-│ Cadence:  Every 12 Minutes        │ Cadence:  Every 12 Minutes         │
+│ Cadence:  Every 10–12 Minutes     │ Cadence:  Every 12–30 Minutes      │
 │ Prevents: 15-minute idle spindown │ Prevents: 7-day auto-pause policy  │
 │ Mechanism: HTTP readiness ping    │ Mechanism: Write + delete DB pulse │
 └───────────────────────────────────┴────────────────────────────────────┘
 ```
 
-### 1. Automated GitHub Actions Bot (`keepalive.yml`)
-Runs seamlessly 24/7 on GitHub hosted runners. Pings both endpoints on a recurring cron schedule:
-- **Workflow File:** [`.github/workflows/keepalive.yml`](file:///.github/workflows/keepalive.yml)
-- **Schedule:** `*/12 * * * *` (Every 12 minutes)
-- **Manual Trigger:** Supports one-click dispatch from GitHub Actions tab.
+### 1. Bot 1: Web Service Warm-Up Bot (`GET /ready`)
+- **Target Route:** `GET /ready`
+- **Function:** Queries internal readiness status without running expensive model inferences, keeping the web container warm and eliminating cold starts.
 
-### 2. Standalone Python Bot CLI (`keepalive_bot.py`)
-For local monitoring, custom VPS deployments, or background server daemons:
-- **Script:** [`backend/scripts/keepalive_bot.py`](file:///backend/scripts/keepalive_bot.py)
-- **Run continuous daemon:**
-  ```bash
-  python backend/scripts/keepalive_bot.py
-  ```
-- **Single test check:**
-  ```bash
-  python backend/scripts/keepalive_bot.py --once
-  ```
+### 2. Bot 2: Supabase Active Persistence Bot (`GET /supa`)
+- **Target Route:** `GET /supa` (also supports `HEAD` and `POST`)
+- **Function:** Safely inserts and immediately removes a temporary timestamp entry in the database `_supabase_keepalive` table. This registers genuine database write/delete transactions so Supabase's free project inactivity policy (7 days) is never triggered.
+
+### 3. Setting Up the Keep-Alive Monitors
+You can hook up any free uptime monitoring tool (e.g., [UptimeRobot](https://uptimerobot.com), [cron-job.org](https://cron-job.org), or a scheduled task):
+1. **Monitor 1 (Render Warm-Up):** Set an HTTP `GET` monitor to `<YOUR_BACKEND_URL>/ready` with an interval of **10–12 minutes**.
+2. **Monitor 2 (Supabase Keep-Alive):** Set an HTTP `GET` monitor to `<YOUR_BACKEND_URL>/supa` with an interval of **15–30 minutes**.
 
 ---
 
