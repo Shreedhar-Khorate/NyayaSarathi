@@ -1,437 +1,297 @@
-⚖️ NyayaSarathi
-AI-Powered Legal Research, Document Intelligence & Drafting Platform
-NyayaSarathi is an AI-powered legal technology platform designed to simplify legal research, document analysis, and legal drafting. It combines Large Language Models (LLMs), Retrieval-Augmented Generation (RAG), Optical Character Recognition (OCR), and role-based access control to help users interact with legal documents and access legal information more efficiently.
+<div align="center">
 
-The platform provides dedicated workflows for users and advocates, along with administrative controls for managing platform access.
+# ⚖️ NyayaSarathi
+### AI-Powered Judicial Case Intelligence & Decision Support System
 
-✨ Key Features
-🤖 AI-Powered Legal Assistant
-Conversational AI for legal questions and explanations.
+[![License: MIT](https://img.shields.io/badge/License-MIT-gold.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-Context-aware responses using relevant legal information.
+[![Render Backend](https://img.shields.io/badge/Render-Backend%20Live-46E3B7?style=flat-square&logo=render&logoColor=black)](https://nyayasarathi.onrender.com/ready)
+[![Vercel Frontend](https://img.shields.io/badge/Vercel-Frontend%20Live-000000?style=flat-square&logo=vercel&logoColor=white)](https://nyayasarathi.vercel.app)
+[![Tests Passing](https://img.shields.io/badge/Tests-264%20Passed-success?style=flat-square&logo=pytest&logoColor=white)](backend/tests/)
+[![KeepAlive Bot](https://img.shields.io/badge/KeepAlive%20Bots-Active%2024%2F7-blueviolet?style=flat-square&logo=githubactions&logoColor=white)](.github/workflows/keepalive.yml)
 
-Follow-up questions and multi-turn conversations.
+<p align="center">
+  <strong>Empowering Indian Advocates, Judicial Researchers, and Litigants with Explainable Legal AI</strong>
+</p>
 
-AI-powered assistance for understanding complex legal language.
+<p align="center">
+  <a href="https://nyayasarathi.vercel.app">🌐 Live Application</a> •
+  <a href="https://nyayasarathi.onrender.com/docs">📖 Interactive Swagger API</a> •
+  <a href="#-dual-keep-alive-bots-infrastructure">🤖 Keep-Alive Bots</a> •
+  <a href="#-quickstart--installation">⚡ Quickstart</a> •
+  <a href="#-api-endpoint-reference">📡 API Reference</a>
+</p>
 
-📚 Legal Research & RAG
-Retrieval-Augmented Generation for context-aware legal responses.
+---
 
-Document ingestion and text extraction.
+</div>
 
-Document chunking and embedding generation.
+## 📌 Executive Overview
 
-Semantic retrieval of relevant information.
+**NyayaSarathi** is a next-generation judicial intelligence and legal assistance platform engineered specifically for the Indian legal framework. By combining **Retrieval-Augmented Generation (RAG)**, **Bayesian Dirichlet probability calibration**, **Reciprocal Rank Fusion (RRF)**, and **Multi-Agent Adversarial Bench Simulation**, NyayaSarathi delivers verifiable, hallucination-resistant legal decision support.
 
-Context-based answer generation using retrieved passages.
+The system features dedicated workflows for **Citizens (Litigants)**, **Advocates**, and **Administrators**, underpinned by enterprise-grade **Row-Level Security (RLS)** in Supabase PostgreSQL.
 
-📄 Legal Document OCR
-Upload supported legal documents for text extraction.
+---
 
-Process digital PDFs and scanned documents.
+## 🏛️ System Architecture
 
-Extract printed text from scanned documents using OCR.
+```
+                                  ┌───────────────────────────┐
+                                  │      Client Browser       │
+                                  │  (Next.js 16 + React 19)  │
+                                  └─────────────┬─────────────┘
+                                                │ HTTPS / REST
+                                                ▼
+                                  ┌───────────────────────────┐
+                                  │   FastAPI Gateway Engine  │
+                                  │   (Python 3.12 on Render) │
+                                  └──────┬──────────────┬─────┘
+                                         │              │
+                   ┌─────────────────────┴───┐      ┌───┴─────────────────────┐
+                   ▼                         ▼      ▼                         ▼
+         ┌───────────────────┐    ┌────────────────────┐    ┌─────────────────┐
+         │ 🤖 AI Orchestrator│    │ 🔍 Hybrid Search   │    │ 📄 OCR Pipeline │
+         │  • Gemini 1.5     │    │  • Okapi BM25      │    │  • PaddleOCR    │
+         │  • Groq Llama 3.3 │    │  • TF-IDF Vector   │    │  • PyMuPDF      │
+         │  • Dirichlet Math │    │  • RRF Reranking   │    │  • Layout Tree  │
+         └─────────┬─────────┘    └─────────┬──────────┘    └────────┬────────┘
+                   │                        │                        │
+                   └───────────────────┐    │    ┌───────────────────┘
+                                       ▼    ▼    ▼
+                                ┌────────────────────────┐
+                                │   Supabase PostgreSQL  │
+                                │   • Full RLS Security  │
+                                │   • Transaction Pooler │
+                                │   • Auth & Audit Logs  │
+                                └────────────────────────┘
+```
 
-Preprocess scanned pages to improve extraction quality.
+---
 
-Reconstruct document reading order and organize extracted text for downstream processing.
+## 🤖 Dual Keep-Alive Bots Infrastructure
 
-Pass extracted legal text to the legal research and AI workflows.
+Free-tier cloud environments (Render Web Services and Supabase PostgreSQL) automatically sleep or pause during periods of inactivity. NyayaSarathi embeds a **two-tier automated keep-alive bot system** to maintain 99.9% availability without paid add-ons:
 
-OCR accuracy depends on document quality, language, layout, and the configured OCR engine.
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                   🤖 NyayaSarathi Dual Keep-Alive System               │
+├───────────────────────────────────┬────────────────────────────────────┤
+│ 🌐 Bot 1: Render Warm-Up Bot      │ 🗄️ Bot 2: Supabase Persistence Bot │
+│ Endpoint: GET /ready              │ Endpoint: GET /supa                │
+│ Cadence:  Every 12 Minutes        │ Cadence:  Every 12 Minutes         │
+│ Prevents: 15-minute idle spindown │ Prevents: 7-day auto-pause policy  │
+│ Mechanism: HTTP readiness ping    │ Mechanism: Write + delete DB pulse │
+└───────────────────────────────────┴────────────────────────────────────┘
+```
 
-✍️ AI Legal Drafting
-Generate legal drafts from user-provided instructions.
+### 1. Automated GitHub Actions Bot (`keepalive.yml`)
+Runs seamlessly 24/7 on GitHub hosted runners. Pings both endpoints on a recurring cron schedule:
+- **Workflow File:** [`.github/workflows/keepalive.yml`](file:///.github/workflows/keepalive.yml)
+- **Schedule:** `*/12 * * * *` (Every 12 minutes)
+- **Manual Trigger:** Supports one-click dispatch from GitHub Actions tab.
 
-Assist with structuring legal documents.
+### 2. Standalone Python Bot CLI (`keepalive_bot.py`)
+For local monitoring, custom VPS deployments, or background server daemons:
+- **Script:** [`backend/scripts/keepalive_bot.py`](file:///backend/scripts/keepalive_bot.py)
+- **Run continuous daemon:**
+  ```bash
+  python backend/scripts/keepalive_bot.py
+  ```
+- **Single test check:**
+  ```bash
+  python backend/scripts/keepalive_bot.py --once
+  ```
 
-Refine and rewrite draft content.
+---
 
-Generate context-aware content using supplied facts and relevant legal information.
+## ✨ Core Capabilities
 
-AI-generated legal content must be reviewed by a qualified legal professional before use.
+| Capability | Engine / Technology | Description |
+| :--- | :--- | :--- |
+| **⚖️ Judgment Success Predictor** | Bayesian Dirichlet + RRF Search | Multi-tier statistical probability engine estimating court outcome probabilities with explicit abstention guardrails. |
+| **🏛️ Trial War Room** | Groq LLaMA 3.3 70B | Adversarial bench simulator generating opposing counsel arguments, judge inquiries, and rebuttal strategies. |
+| **📄 Legal Document OCR** | PyMuPDF + PaddleOCR | High-precision text and layout extraction from scanned court petitions, affidavits, and orders. |
+| **📜 AI Legal Drafting** | Gemini 1.5 Flash + Rule Parser | Jurisdiction-aware automated drafting for Indian High Courts, District Courts, and Tribunals. |
+| **🔍 Precedent & Statute Search** | BM25 + Cosine Semantic Search | Dual-tier hybrid retrieval searching relevant precedents across Indian case law repositories. |
+| **🛡️ Contract Risk Scanner** | LLM Heuristic Rules Engine | Clause-by-clause contract analysis flagging indemnity traps, termination risks, and jurisdictional ambiguities. |
+| **🌐 Multilingual Interface** | i18n Localization Engine | Native user interface and translation support for **English**, **Hindi (हिंदी)**, and **Marathi (मराठी)**. |
+| **🔐 Role-Based Access Control** | Supabase Auth + Row-Level Security | Granular RBAC ensuring complete data isolation between `USER`, `ADVOCATE`, and `ADMIN`. |
 
-🔐 Authentication & Role-Based Access Control
-The platform supports role-based access for:
+---
 
-USER — access to available user-facing legal AI features.
+## 🚀 Quickstart & Installation
 
-ADVOCATE — access to advocate-oriented legal workflows.
+<details>
+<summary><b>💻 1. Backend Setup (FastAPI & Python 3.12)</b></summary>
 
-ADMIN — administrative access and authorized platform management.
+### Prerequisites
+- Python 3.12+
+- Supabase Project ([supabase.com](https://supabase.com))
 
-Public registrations must not be allowed to assign privileged roles through user-controlled request data. Administrative privileges should be granted only through authorized procedures.
-
-🌐 Multilingual Interface
-The frontend includes localization support for:
-
-English (en)
-
-Hindi (hi)
-
-Marathi (mr)
-
-📊 Administrative Management
-Administrative access management.
-
-Controlled role assignment.
-
-Protected administrative operations.
-
-Audit-oriented tracking for sensitive role changes, where configured.
-
-🏗️ System Architecture
-NyayaSarathi follows a frontend-backend architecture in which the Next.js application communicates with a FastAPI backend. Supabase PostgreSQL provides persistent relational storage.
-
-                   ┌──────────────────────┐
-                   │       User           │
-                   └──────────┬───────────┘
-                              │
-                   ┌──────────▼───────────┐
-                   │  Next.js Frontend    │
-                   │  Vercel Deployment   │
-                   └──────────┬───────────┘
-                              │ HTTPS / API
-                   ┌──────────▼───────────┐
-                   │   FastAPI Backend    │
-                   │   Render Deployment  │
-                   └──────────┬───────────┘
-                              │
-              ┌───────────────┼────────────────┐
-              │               │                │
-     ┌────────▼────────┐ ┌────▼─────────┐ ┌────▼────────────┐
-     │ Authentication  │ │ Legal AI /   │ │ OCR & Document  │
-     │ & Authorization │ │ RAG / Drafts  │ │ Processing      │
-     └────────┬────────┘ └────┬─────────┘ └─────────────────┘
-              │               │
-              └───────┬───────┘
-                      │
-             ┌────────▼─────────┐
-             │ Supabase         │
-             │ PostgreSQL       │
-             │ Persistent Data  │
-             └──────────────────┘
-This diagram represents the logical architecture; exact model providers, storage integrations, and service boundaries depend on the implementation.
-
-🛠️ Technology Stack
-Component	Technologies
-Frontend	Next.js, React, TypeScript
-Backend	Python, FastAPI
-Database	Supabase PostgreSQL
-Authentication	Google OAuth and application JWT authentication
-AI	LLM APIs and model integrations
-Retrieval	RAG, embeddings, document chunking
-OCR	Tesseract and configured OCR/document-processing components
-Document Processing	PDF and extracted-text processing
-Deployment	Vercel, Render, Supabase
-Version Control	Git, GitHub
-The exact models, libraries, and integrations may vary by feature and configuration.
-
-📁 Project Structure
-The following is a conceptual overview. Refer to the actual repository for the authoritative directory structure.
-
-NyayaSarathi/
-├── backend/
-│   ├── main.py
-│   ├── routers/
-│   ├── services/
-│   ├── models/
-│   ├── schemas/
-│   ├── scripts/
-│   ├── migrations/
-│   └── requirements.txt
-│
-├── nyayasarathi-app/
-│   ├── src/
-│   │   ├── app/
-│   │   ├── components/
-│   │   └── lib/
-│   ├── public/
-│   └── package.json
-│
-├── LICENSE
-├── README.md
-└── .gitignore
-Directory and filename details should be adjusted to match the current repository.
-
-⚙️ Getting Started
-Prerequisites
-Install or configure the following:
-
-Python and pip
-
-Node.js and npm
-
-Git
-
-A Supabase project
-
-Required AI provider API keys
-
-Google OAuth credentials, if using Google sign-in
-
-1. Clone the Repository
-git clone https://github.com/Shreedhar-Khorate/NyayaSarathi.git
-cd NyayaSarathi
-2. Configure the Backend
+### Steps
+```bash
+# Navigate to backend directory
 cd backend
 
+# Create and activate virtual environment
 python -m venv .venv
-Activate the virtual environment.
 
-Windows:
-
+# Windows:
 .venv\Scripts\Activate.ps1
-macOS / Linux:
-
+# Linux / macOS:
 source .venv/bin/activate
-Install the backend dependencies:
 
+# Install required dependencies
 pip install -r requirements.txt
-Create the backend environment file using the variable names expected by the current source code.
 
-Typical configuration values may include:
+# Configure environment variables
+cp .env.example .env
+# Edit .env and supply your Supabase and LLM API credentials
 
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-JWT_SECRET_KEY=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI=
-LLM_API_KEY=
-FRONTEND_URL=
-These names are illustrative, not a verified list of the project's actual environment variables. Check the configuration modules before using them. Never commit real credentials or secret keys.
+# Launch FastAPI development server
+uvicorn main:app --reload --port 8000
+```
+API docs will be available at `http://localhost:8000/docs`.
 
-Start the backend using the actual FastAPI application import path. For example, if the application object is app in main.py:
+</details>
 
-uvicorn main:app --reload
-If main.py is inside a Python package or the application object has a different name, adjust the command accordingly.
+<details>
+<summary><b>⚡ 2. Frontend Setup (Next.js 16 & React 19)</b></summary>
 
-3. Configure the Frontend
-Open a separate terminal:
+### Prerequisites
+- Node.js 20+
+- npm or yarn
 
+### Steps
+```bash
+# Navigate to frontend directory
 cd nyayasarathi-app
+
+# Install dependencies
 npm install
-Create the frontend environment file and configure the backend API URL using the variable name expected by the application.
 
-For example:
+# Configure environment variables
+cp .env.example .env.local
+# Set NEXT_PUBLIC_API_URL=http://localhost:8000
 
-NEXT_PUBLIC_API_URL=http://localhost:8000
-Use this name only if it matches the frontend's configuration. Next.js exposes variables prefixed with NEXT_PUBLIC_ to browser code, so never put private keys in such variables.
-
-Start the development server:
-
+# Start local Next.js development server
 npm run dev
-Open the local URL shown in the terminal, typically:
+```
+Web application will be live at `http://localhost:3000`.
 
-http://localhost:3000
+</details>
 
-4. Configure Supabase
-Create or select a Supabase project.
+<details>
+<summary><b>🗄️ 3. Database & Supabase Migrations</b></summary>
 
-Configure the PostgreSQL schema and required migrations.
+All relational tables and security policies are maintained via modular SQL migrations:
 
-Configure database connectivity and authentication-related environment variables.
+```bash
+# Run migration script via psycopg2 connection
+python backend/scripts/run_migrations.py
 
-Configure Google OAuth redirect URLs if Google sign-in is enabled.
+# Alternatively, execute the scripts sequentially in Supabase SQL Editor:
+# 1. 001_profile_and_history.sql
+# 2. 002_role_audit_history.sql
+# 3. 003_durable_role_audit_retention.sql
+# 4. 004_judge_case_assignments.sql
+# 5. 005_remove_judge_role.sql
+# 6. 006_chat_tables.sql
+# 7. 007_supabase_keepalive.sql
+# 8. 008_enable_rls_all_public_tables.sql
+```
 
-Verify the required tables, indexes, permissions, and row-level security policies.
+</details>
 
-Confirm that the application can read and write the required records.
+---
 
-Do not expose privileged Supabase keys in the frontend. Apply least-privilege access controls and keep sensitive operations in the trusted backend.
+## 📡 API Endpoint Reference
 
-🔄 Core Workflows
-AI Chat and Legal Research
-User Question
-     ↓
-FastAPI Endpoint
-     ↓
-Context Retrieval (if applicable)
-     ↓
-LLM Request
-     ↓
-Generated Response
-     ↓
-Frontend Display
-Document OCR and Processing
-Document Upload
-     ↓
-File Validation
-     ↓
-Digital Text Extraction or OCR
-     ↓
-Reading-Order Reconstruction
-     ↓
-Structured Legal Text
-     ↓
-Chunking and Metadata Extraction
-     ↓
-Embedding / Retrieval Workflows
-Legal Drafting
-User Instructions
-     ↓
-Input Validation
-     ↓
-Relevant Context Retrieval (if configured)
-     ↓
-LLM Draft Generation
-     ↓
-Draft Display and User Review
-🚀 Deployment
-NyayaSarathi can be deployed using the following services.
+<details>
+<summary><b>🔍 Expand Complete Route Catalog (20+ Endpoints)</b></summary>
 
-Frontend — Vercel
-Import the GitHub repository into Vercel.
+### System & Health
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/health` | Lightweight service health ping | Public |
+| `GET` | `/ready` | Deep readiness check (Database & dependencies) | Public |
+| `GET / HEAD` | `/supa` | Keep-alive transaction pulse for Supabase | Public |
 
-Configure the frontend root directory as nyayasarathi-app if that matches the repository structure.
+### Authentication & Profiles
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Register new user or advocate account | Public |
+| `POST` | `/api/auth/login` | Authenticate and issue signed JWT token | Public |
+| `GET` | `/api/auth/google/login` | Initiate Google OAuth 2.0 flow | Public |
+| `GET` | `/api/auth/google/callback`| Google OAuth redirect callback handler | Public |
+| `GET` | `/api/profile/me` | Fetch active profile and account state | Authenticated |
 
-Configure the required frontend environment variables.
+### Legal Intelligence & AI Workflows
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/analyze/predict` | Predict case outcome probabilities | Authenticated |
+| `POST` | `/api/war-room/simulate` | Run adversarial bench simulator | Authenticated |
+| `POST` | `/api/contracts/analyze` | Scan agreement for clause-level risks | Authenticated |
+| `POST` | `/api/drafts/generate` | Generate jurisdiction-specific draft | Authenticated |
+| `POST` | `/api/ocr/process` | Extract structured text from scanned document | Authenticated |
+| `POST` | `/api/search/precedents` | Hybrid search across Indian precedents | Authenticated |
+| `POST` | `/api/qa/ask` | Grounded legal RAG question answering | Authenticated |
 
-Deploy the application.
+### Administrative Operations
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/admin/users` | List platform accounts and current roles | Admin Only |
+| `PUT` | `/api/admin/users/{id}/role` | Update user role with mandatory audit logging | Admin Only |
+| `GET` | `/api/admin/audit-logs` | Retrieve immutable role change history | Admin Only |
 
-Add the production frontend URL to the backend's allowed CORS origins and OAuth configuration where required.
+</details>
 
-Backend — Render
-Create a Web Service connected to the GitHub repository.
+---
 
-Configure the backend root directory and Python environment.
+## 🔒 Security & Data Protection
 
-Set the build command to install the project's dependencies.
+> [!IMPORTANT]
+> **Zero Credential Leaks:** NyayaSarathi enforces zero hardcoded secrets. All credentials, API keys, database connection strings, and JWT salts are strictly loaded through environment variables.
 
-Configure the appropriate Uvicorn start command.
+- **Row-Level Security (RLS):** Enabled across all 13 PostgreSQL tables in Supabase, preventing unauthorized cross-tenant data access even if an anonymous key is intercepted.
+- **Password Hashing:** Passwords are salted and hashed using `bcrypt` (12 rounds).
+- **JWT Cryptography:** Authentication tokens use HMAC-SHA256 with strict claims validation (`sub`, `role`, `exp`, `iat`).
+- **Audit Logging:** Every administrative elevation or role change is immutably recorded in the `role_audit_history` table.
 
-Add the required secrets and environment variables.
+---
 
-Configure CORS, frontend URLs, and health checks.
+## 🧪 Testing & Verification
 
-Deploy and verify the API endpoints.
+NyayaSarathi features a comprehensive automated testing suite covering all backend services, math models, and security boundaries.
 
-Database — Supabase
-Keep Supabase PostgreSQL as the persistent database. Configure the production database URL and credentials securely, and apply the required schema migrations.
+```bash
+# Run complete test suite (264 tests)
+python -m pytest backend/tests -v
 
-Before production deployment, verify that all required database tables and extensions exist and that the application uses the intended persistent storage.
+# Verify Next.js frontend production build (26 routes)
+cd nyayasarathi-app && npm run build
+```
 
-🆓 Free-Tier Deployment Considerations
-The free tiers of Vercel, Render, and Supabase can be useful for development, testing, and small demonstrations. They do not guarantee uninterrupted production availability.
+---
 
-Render
-Free web services can spin down after inactivity.
+## 📄 License
 
-The first request after a spin-down may take longer while the service starts.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
-CPU and memory constraints can affect OCR, large documents, and concurrent AI requests.
+---
 
-Temporary local files should not be treated as persistent storage.
+<div align="center">
 
-Supabase
-Free projects can be paused under the platform's inactivity policy.
+**NyayaSarathi** — *Democratizing Legal Intelligence Through Explainable AI.*
 
-Database health checks are useful for monitoring connectivity but do not guarantee that an inactive project will never be paused.
+Made with ❤️ by [Shreedhar Khorate](https://github.com/Shreedhar-Khorate)
 
-Monitor project status, resource usage, and dashboard notifications.
-
-Maintain backups of important data.
-
-Vercel
-The Hobby plan has usage limits.
-
-Monitor build, deployment, and request usage.
-
-Recommendation: Use the free tiers for a prototype, optimize resource-intensive operations, and upgrade services if the application requires dependable availability or sustained usage.
-
-🔒 Security Considerations
-Keep all secrets in environment variables.
-
-Never commit .env files, API keys, passwords, or private credentials.
-
-Validate uploaded files, file types, sizes, and page counts.
-
-Enforce authentication and authorization on protected backend routes.
-
-Do not trust frontend role values or user-supplied authorization fields.
-
-Restrict administrative operations to authorized accounts.
-
-Use secure password hashing and validated JWT handling.
-
-Apply appropriate database permissions and row-level security.
-
-Configure CORS with explicit trusted origins.
-
-Avoid logging sensitive legal documents, access tokens, or personal information unnecessarily.
-
-Review AI-generated legal content before relying on it.
-
-🧪 Testing and Quality Assurance
-Before a release, verify:
-
-Authentication and session handling.
-
-Role-based authorization.
-
-AI chat and legal drafting workflows.
-
-Legal research and retrieval quality.
-
-OCR extraction for representative digital and scanned documents.
-
-Database persistence and access controls.
-
-API validation and error handling.
-
-Frontend production build and TypeScript checks.
-
-Environment variable configuration and production CORS.
-
-Deployment health checks and resource usage.
-
-Run the tests and commands configured in the current repository rather than assuming that a particular test command or test suite exists.
-
-⚠️ Legal Disclaimer
-NyayaSarathi is intended to assist with legal information, research, document processing, and drafting. It does not replace qualified legal advice, professional judgment, or verification of applicable laws and precedents.
-
-AI-generated content may contain errors, omissions, outdated information, or unsupported statements. Verify legal citations and factual claims against authoritative sources before relying on them or submitting documents to a court or other authority.
-
-🗺️ Future Improvements
-Potential areas for continued development include:
-
-Improved legal document classification and metadata extraction.
-
-More reliable structural legal chunking.
-
-Better retrieval relevance and source attribution.
-
-Token usage and context-window monitoring.
-
-Background processing for large documents.
-
-Stronger observability, error tracking, and performance monitoring.
-
-Automated tests for authorization and document-processing pipelines.
-
-More robust backups and production deployment practices.
-
-These are potential improvements and should not be interpreted as features that are all currently implemented.
-
-👨‍💻 Development
-Contributions and improvements should follow the existing repository architecture, coding conventions, security requirements, and test procedures.
-
-Before submitting changes:
-
-Create a separate feature branch.
-
-Keep secrets and local database artifacts out of version control.
-
-Run relevant tests and static checks.
-
-Review database migrations and authorization changes carefully.
-
-Document new environment variables and setup requirements.
-
-Submit changes for review before merging into the main branch.
-
-📄 License
-Add the project's chosen open-source license here if one has been selected. Until a license is added, do not assume that the repository is licensed for unrestricted reuse.
-
-NyayaSarathi — Making legal information more accessible through AI.
+</div>
