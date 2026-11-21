@@ -43,13 +43,8 @@ SCOPE = "openid email profile"
 def get_google_config(request: Request):
     """
     Dynamically determines Google OAuth configuration and redirect targets:
-    - In production (Render) or non-localhost requests:
-      defaults redirect_uri to 'https://nyayasarathi.onrender.com/api/auth/google/callback'
-      and frontend_base to 'https://nyayasarathi.vercel.app'.
-    - In local development:
-      defaults redirect_uri to 'http://localhost:8000/api/auth/google/callback'
-      and frontend_base to 'http://localhost:3000'.
-    - Can be explicitly overridden via GOOGLE_REDIRECT_URI and FRONTEND_BASE_URL.
+    - Resolves redirect_uri from GOOGLE_REDIRECT_URI or incoming request host.
+    - Resolves frontend_base from FRONTEND_BASE_URL or incoming request origin.
     """
     client_id = os.getenv("GOOGLE_CLIENT_ID", "").strip()
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
@@ -61,29 +56,20 @@ def get_google_config(request: Request):
 
     # 1. Resolve redirect URI
     configured_redirect = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
-    if is_production_request:
-        if configured_redirect and "localhost" not in configured_redirect and "127.0.0.1" not in configured_redirect:
-            redirect_uri = configured_redirect
-        else:
-            redirect_uri = "https://nyayasarathi.onrender.com/api/auth/google/callback"
+    if configured_redirect:
+        redirect_uri = configured_redirect
     else:
-        if configured_redirect:
-            redirect_uri = configured_redirect
-        else:
-            proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-            redirect_uri = f"{proto}://{host or 'localhost:8000'}/api/auth/google/callback"
+        proto = "https" if is_production_request else request.headers.get("x-forwarded-proto", request.url.scheme)
+        redirect_uri = f"{proto}://{host or 'localhost:8000'}/api/auth/google/callback"
 
     # 2. Resolve frontend base URL
     configured_frontend = os.getenv("FRONTEND_BASE_URL", "").strip()
-    if is_production_request:
-        # In production, NEVER redirect to localhost!
-        if configured_frontend and "localhost" not in configured_frontend and "127.0.0.1" not in configured_frontend:
-            frontend_base = configured_frontend.rstrip("/")
-        else:
-            frontend_base = "https://nyayasarathi.vercel.app"
+    if configured_frontend:
+        frontend_base = configured_frontend.rstrip("/")
     else:
-        if configured_frontend:
-            frontend_base = configured_frontend.rstrip("/")
+        origin = request.headers.get("origin") or request.headers.get("referer") or ""
+        if origin and not any(h in origin for h in ("localhost", "127.0.0.1")):
+            frontend_base = origin.rstrip("/")
         else:
             frontend_base = "http://localhost:3000"
 

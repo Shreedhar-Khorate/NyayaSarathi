@@ -52,9 +52,7 @@ app = FastAPI(
 # ── CORS ──────────────────────────────────────────────────────────────────────
 def _get_cors_origins():
     cors_env = os.getenv("CORS_ORIGINS", "").strip()
-    origins = [
-        "https://nyayasarathi.vercel.app",
-    ]
+    origins = []
     if cors_env:
         try:
             parsed = json.loads(cors_env)
